@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcryptjs');
+
 const { nanoid } = require('nanoid');
 
 const app = express();
