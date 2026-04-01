@@ -1,0 +1,18 @@
+{
+  "name": "nm-auctions-v5",
+  "version": "5.0.0",
+  "description": "NM Auctions workflow and intake system ready for deployment on Render",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "nanoid": "^5.1.5"
+  }
+}
