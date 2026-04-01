@@ -115,12 +115,11 @@
 </div>
 
 <script>
-let items = [];
-let filtered = [];
-
-// 🔐 Protect route
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = "/";
+
+let items = [];
+let filtered = [];
 
 // 📥 Load items
 async function loadItems() {
@@ -155,13 +154,16 @@ function render() {
       </div>
     `;
 
-    div.onclick = () => viewItem(i);
+    // 🔥 THIS is the important part (opens item view)
+    div.onclick = () => {
+      window.location.href = `/item.html?id=${i.id}`;
+    };
 
     grid.appendChild(div);
   });
 }
 
-// 🔍 Search filter
+// 🔍 Filter
 function filterItems(val) {
   val = val.toLowerCase();
 
@@ -172,13 +174,6 @@ function filterItems(val) {
   );
 
   render();
-}
-
-// 👁 View item (next step later)
-function viewItem(item) {
-  alert(
-    `${item.code}-${item.number}\n\n${item.name}\n\n${item.consigner}`
-  );
 }
 
 // 🔙 Back
