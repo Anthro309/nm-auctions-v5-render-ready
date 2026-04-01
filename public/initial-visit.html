@@ -4,6 +4,37 @@
   <title>Initial Visit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .label-sheet {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .label {
+      border: 2px solid black;
+      padding: 10px;
+      font-size: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -36,7 +67,7 @@
 
     <button onclick="startVisit()">Start</button>
 
-    <div id="codeDisplay" class="label" style="margin-top:10px;"></div>
+    <div id="codeDisplay" class="label"></div>
   </div>
 
   <!-- ADD ITEM -->
@@ -45,7 +76,6 @@
 
     <input id="itemName" placeholder="Item Name">
 
-    <!-- 📸 CAMERA FIXED INPUT -->
     <input 
       type="file" 
       id="photoInput" 
@@ -53,10 +83,18 @@
       capture="environment"
     >
 
-    <button onclick="addItem()">Add</button>
+    <button onclick="addItem()">Add Item</button>
+
+    <!-- 🏷️ PRINT BUTTON -->
+    <button onclick="printLabels()" style="margin-top:10px;">
+      🖨️ Print Labels
+    </button>
 
     <div id="list" class="grid" style="margin-top:15px;"></div>
   </div>
+
+  <!-- PRINT AREA -->
+  <div id="printArea"></div>
 
 </div>
 
@@ -105,7 +143,6 @@ async function addItem(){
 
   let photoPath = "";
 
-  // Upload photo if exists
   if(file){
     const form = new FormData();
     form.append("photo", file);
@@ -116,7 +153,6 @@ async function addItem(){
     });
 
     const data = await res.json();
-
     if(data.success){
       photoPath = data.path;
     }
@@ -144,7 +180,7 @@ async function addItem(){
 }
 
 // =========================
-// LOAD ITEMS (GRID)
+// LOAD ITEMS
 // =========================
 async function loadItems(){
   if(!code) return;
@@ -168,12 +204,34 @@ async function loadItems(){
       </div>
     `;
 
-    div.onclick = ()=>{
-      window.location.href = "/item.html?id=" + i.id;
-    };
-
     list.appendChild(div);
   });
+}
+
+// =========================
+// PRINT LABELS
+// =========================
+async function printLabels(){
+  const res = await fetch('/items');
+  const items = await res.json();
+
+  const filtered = items.filter(i => i.code === code);
+
+  let html = `<div class="label-sheet">`;
+
+  filtered.forEach(i=>{
+    html += `
+      <div class="label">
+        ${i.code}-${i.number}
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  printArea.innerHTML = html;
+
+  window.print();
 }
 
 // =========================
