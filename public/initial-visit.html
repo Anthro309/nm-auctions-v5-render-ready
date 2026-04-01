@@ -5,19 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
 
+  <!-- QR LIB -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
   <style>
     .label-sheet {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      gap: 12px;
     }
 
     .label {
       border: 2px solid black;
       padding: 10px;
-      font-size: 18px;
       text-align: center;
+      background: white;
+    }
+
+    .label-code {
+      font-size: 18px;
       font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .label-name {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    canvas {
+      margin-top: 5px;
     }
 
     @media print {
@@ -58,7 +75,7 @@
 
 <div class="container">
 
-  <!-- START VISIT -->
+  <!-- START -->
   <div class="card">
     <h2>Start Visit</h2>
 
@@ -70,22 +87,16 @@
     <div id="codeDisplay" class="label"></div>
   </div>
 
-  <!-- ADD ITEM -->
+  <!-- ADD ITEMS -->
   <div id="section" class="card" style="display:none;">
     <h2>Add Item</h2>
 
     <input id="itemName" placeholder="Item Name">
 
-    <input 
-      type="file" 
-      id="photoInput" 
-      accept="image/*" 
-      capture="environment"
-    >
+    <input type="file" id="photoInput" accept="image/*" capture="environment">
 
     <button onclick="addItem()">Add Item</button>
 
-    <!-- 🏷️ PRINT BUTTON -->
     <button onclick="printLabels()" style="margin-top:10px;">
       🖨️ Print Labels
     </button>
@@ -93,7 +104,6 @@
     <div id="list" class="grid" style="margin-top:15px;"></div>
   </div>
 
-  <!-- PRINT AREA -->
   <div id="printArea"></div>
 
 </div>
@@ -209,7 +219,7 @@ async function loadItems(){
 }
 
 // =========================
-// PRINT LABELS
+// PRINT QR LABELS
 // =========================
 async function printLabels(){
   const res = await fetch('/items');
@@ -217,21 +227,31 @@ async function printLabels(){
 
   const filtered = items.filter(i => i.code === code);
 
-  let html = `<div class="label-sheet">`;
+  printArea.innerHTML = `<div class="label-sheet" id="sheet"></div>`;
+  const sheet = document.getElementById("sheet");
 
-  filtered.forEach(i=>{
-    html += `
-      <div class="label">
-        ${i.code}-${i.number}
-      </div>
+  for(const i of filtered){
+    const div = document.createElement("div");
+    div.className = "label";
+
+    const codeText = `${i.code}-${i.number}`;
+
+    div.innerHTML = `
+      <div class="label-code">${codeText}</div>
+      <canvas id="qr-${i.id}"></canvas>
+      <div class="label-name">${i.name}</div>
     `;
-  });
 
-  html += `</div>`;
+    sheet.appendChild(div);
 
-  printArea.innerHTML = html;
+    await QRCode.toCanvas(
+      document.getElementById(`qr-${i.id}`),
+      codeText,
+      { width: 100 }
+    );
+  }
 
-  window.print();
+  setTimeout(()=> window.print(), 500);
 }
 
 // =========================
