@@ -16,7 +16,7 @@ const USERS_FILE = 'users.json';
 const ITEMS_FILE = 'items.json';
 const REPORTS_FILE = 'reports.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
-const INTAKE_FILE = 'intake.json';
+const INTAKE_FILE = 'intake.json'; // ✅ ADDED
 
 // =========================
 // HELPERS
@@ -129,7 +129,7 @@ function validStage(stage) {
 ensureArrayFile(ITEMS_FILE);
 ensureArrayFile(REPORTS_FILE);
 ensureArrayFile(NOTIFICATIONS_FILE);
-ensureArrayFile(INTAKE_FILE);
+ensureArrayFile(INTAKE_FILE); // ✅ ADDED
 ensureUsersExist();
 
 if (!fs.existsSync('public/uploads')) {
@@ -195,18 +195,8 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 // ITEMS
 // =========================
 app.get('/items', (req, res) => {
-  res.json(readJSON(ITEMS_FILE));
-});
-
-app.get('/items/:id', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  res.json(item);
+  res.json(items);
 });
 
 app.post('/items', (req, res) => {
@@ -220,20 +210,13 @@ app.post('/items', (req, res) => {
     number: req.body.number || 1,
     photos: Array.isArray(req.body.photos) ? req.body.photos : [],
     stage: 'Initial Visit',
-    location: null,
-    lotNumber: null,
-    photographedAt: null,
-    lotAssignedAt: null,
-    lotAssignedBy: null,
-    pendingHandoff: null,
     createdAt: new Date().toISOString(),
     logs: []
   };
 
   addLog(newItem, {
     employee: req.body.employee || 'system',
-    action: 'item created',
-    toStage: 'Initial Visit'
+    action: 'item created'
   });
 
   items.push(newItem);
@@ -243,7 +226,7 @@ app.post('/items', (req, res) => {
 });
 
 // =========================
-// INTAKE REPORTS (NEW)
+// INTAKE REPORTS (ADDED)
 // =========================
 app.post('/intake', (req, res) => {
   const intake = readJSON(INTAKE_FILE);
@@ -263,7 +246,8 @@ app.post('/intake', (req, res) => {
 });
 
 app.get('/intake', (req, res) => {
-  res.json(readJSON(INTAKE_FILE));
+  const intake = readJSON(INTAKE_FILE);
+  res.json(intake);
 });
 
 // =========================
