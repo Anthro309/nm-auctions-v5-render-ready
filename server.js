@@ -14,7 +14,7 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 // ✅ ONE-TIME RESET FLAG
-const RESET_ONCE = true;
+const RESET_ONCE = false;
 
 if (RESET_ONCE || !fs.existsSync(DB_FILE)) {
   console.log("🔥 Initializing DB with default user...");
