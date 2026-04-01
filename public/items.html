@@ -42,7 +42,6 @@
 
 <div class="container">
   <h2>Item Library</h2>
-
   <div id="list" class="grid"></div>
 </div>
 
@@ -51,19 +50,22 @@ async function load(){
   const res = await fetch('/items');
   const items = await res.json();
 
-  list.innerHTML="";
+  list.innerHTML = "";
 
   items.forEach(i=>{
-    const div=document.createElement("div");
-    div.className="card";
+    const div = document.createElement("div");
+    div.className = "card";
 
-    div.innerHTML=`
+    div.innerHTML = `
       <div class="code">${i.code}-${i.number}</div>
       <div>${i.name}</div>
       <div class="stage">${i.stage}</div>
     `;
 
-    div.onclick=()=>location.href=`/item.html?id=${i.id}`;
+    // 🔥 REDIRECT TO CONSIGNER VIEW
+    div.onclick = () => {
+      window.location.href = `/consigner.html?code=${i.code}`;
+    };
 
     list.appendChild(div);
   });
