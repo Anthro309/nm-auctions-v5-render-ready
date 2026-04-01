@@ -55,4 +55,110 @@
   </div>
 
   <!-- LOCATION -->
-  <div class="card
+  <div class="card">
+    <h3>Location</h3>
+    <input id="locationInput" placeholder="Rack A1">
+    <button onclick="saveLocation()">Save Location</button>
+  </div>
+
+  <!-- HANDOFF -->
+  <div class="card">
+    <h3>Request Handoff</h3>
+
+    <select id="stageSelect">
+      <option>Received at Studio</option>
+      <option>Review & Cleaning</option>
+      <option>Photograph</option>
+      <option>Prep for Pickup</option>
+    </select>
+
+    <input id="reason" placeholder="Reason (optional)">
+    <button onclick="requestHandoff()">Send Handoff Request</button>
+  </div>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+let item = null;
+
+// =========================
+// LOAD ITEM
+// =========================
+async function load(){
+  const res = await fetch('/items/' + id);
+  item = await res.json();
+
+  title.innerText = item.name;
+  code.innerText = item.code + "-" + item.number;
+  stage.innerText = "Stage: " + item.stage;
+
+  generateQR();
+}
+
+// =========================
+// QR GENERATION
+// =========================
+function generateQR(){
+  const value = item.code + "-" + item.number;
+
+  QRCode.toCanvas(
+    document.getElementById("qr"),
+    value,
+    { width: 200 }
+  );
+
+  qrText.innerText = value;
+}
+
+// =========================
+// LOCATION
+// =========================
+async function saveLocation(){
+  await fetch(`/items/${item.id}/location`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      location: locationInput.value,
+      employee: user.name
+    })
+  });
+
+  alert("Saved");
+}
+
+// =========================
+// HANDOFF
+// =========================
+async function requestHandoff(){
+  await fetch(`/items/${item.id}/request-handoff`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      stage: stageSelect.value,
+      employee: user.name,
+      reason: reason.value
+    })
+  });
+
+  alert("Handoff sent");
+}
+
+// =========================
+// NAV
+// =========================
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+load();
+</script>
+
+</body>
+</html>
