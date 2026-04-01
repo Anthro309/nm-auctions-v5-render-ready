@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reports</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .print-sheet {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
+  <a href="/dashboard.html">Dashboard</a>
+  <a href="/initial-visit.html">Initial Visit</a>
+  <a href="/dropoff.html">Received at Studio</a>
+  <a href="/items.html">Item Library</a>
+  <a href="/reports.html">Reports</a>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Daily Report</h2>
+    <button onclick="generateReport()">Generate Today Report</button>
+    <button onclick="printReport()">Print</button>
+  </div>
+
+  <div id="printArea" class="card print-sheet"></div>
+
+  <div class="card">
+    <h2>Past Reports</h2>
+    <div id="history"></div>
+  </div>
+
+</div>
+
+<script>
+function toggleMenu(){
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
+}
+
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+// =========================
+// GENERATE TODAY REPORT
+// =========================
+async function generateReport(){
+  const res = await fetch('/closeout', { method:'POST' });
+  const data = await res.json();
+
+  renderReport(data.report);
+  loadHistory();
+}
+
+// =========================
+// RENDER REPORT
+// =========================
+function renderReport(report){
+  let html = `
+    <h2>NM Auctions</h2>
+    <h3>Daily Lot Report</h3>
+    <p>${report.date}</p>
+    <hr>
+  `;
+
+  report.items.forEach(i=>{
+    html += `
+      <div style="margin-bottom:15px;">
+        <b>${i.lotNumber}</b><br>
+        ${i.name}
+      </div>
+      <hr>
+    `;
+  });
+
+  printArea.innerHTML = html;
+}
+
+// =========================
+// PRINT
+// =========================
+function printReport(){
+  window.print();
+}
+
+// =========================
+// LOAD HISTORY
+// =========================
+async function loadHistory(){
+  const res = await fetch('/reports');
+  const reports = await res.json();
+
+  history.innerHTML = "";
+
+  reports.reverse().forEach(r=>{
+    const div = document.createElement("div");
+    div.className = "button-card";
+
+    div.innerHTML = `
+      <div class="button-title">${r.date}</div>
+      <div class="button-sub">${r.items.length} items</div>
+    `;
+
+    div.onclick = ()=> renderReport(r);
+
+    history.appendChild(div);
+  });
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>
