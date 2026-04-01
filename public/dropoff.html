@@ -26,7 +26,7 @@
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 15px;
+      margin-top: 10px;
       border-radius: 10px;
       border: none;
       background: #2563eb;
@@ -35,14 +35,20 @@
     }
 
     .item {
-      margin-top: 20px;
-      padding: 15px;
+      margin-top: 15px;
+      padding: 12px;
       background: #111827;
       border-radius: 10px;
+      text-align: left;
     }
 
     .receive {
       background: #22c55e;
+      margin-top: 8px;
+    }
+
+    .received {
+      opacity: 0.4;
     }
   </style>
 </head>
@@ -51,7 +57,7 @@
 
 <div class="wrapper">
 
-  <h1>📱 Scan Item (Drop Off)</h1>
+  <h1>📱 Drop Off Scanner</h1>
 
   <button onclick="startScanner()">Start Scanner</button>
 
@@ -62,6 +68,8 @@
   <button onclick="goBack()">⬅ Back</button>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
 <script>
 const user = JSON.parse(localStorage.getItem('user'));
@@ -92,10 +100,9 @@ function scanLoop() {
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
   const code = jsQR(imageData.data, canvas.width, canvas.height);
 
   if (code) {
@@ -108,4 +115,95 @@ function scanLoop() {
 
 // HANDLE SCAN
 async function handleScan(data) {
-  // EXPECTING: JOHSMI-001
+  const res = await fetch('/items');
+  const items = await res.json();
+
+  const item = items.find(i =>
+    `${i.code}-${i.number}` === data
+  );
+
+  if (!item) {
+    document.getElementById('result').innerHTML =
+      "<p>Item not found</p>";
+    return;
+  }
+
+  const consignerCode = item.code;
+
+  const viewAll = confirm(
+    `View all items for ${consignerCode}?`
+  );
+
+  if (viewAll) {
+    showConsignerItems(items, consignerCode);
+  } else {
+    showSingleItem(item);
+  }
+}
+
+// SHOW SINGLE
+function showSingleItem(item) {
+  document.getElementById('result').innerHTML = `
+    <div class="item">
+      <b>${item.code}-${item.number}</b><br>
+      ${item.name}<br>
+      ${item.consigner}
+
+      <button class="receive" onclick="receiveItem(${item.id}, this)">
+        Mark Received
+      </button>
+    </div>
+  `;
+}
+
+// SHOW ALL FROM CONSIGNER
+function showConsignerItems(items, code) {
+  const container = document.getElementById('result');
+  container.innerHTML = `<h3>Items for ${code}</h3>`;
+
+  items
+    .filter(i => i.code === code)
+    .forEach(i => {
+      const div = document.createElement('div');
+      div.className = "item";
+
+      div.innerHTML = `
+        <b>${i.code}-${i.number}</b><br>
+        ${i.name}<br>
+        ${i.consigner}
+
+        <button class="receive" onclick="receiveItem(${i.id}, this)">
+          Mark Received
+        </button>
+      `;
+
+      container.appendChild(div);
+    });
+}
+
+// RECEIVE
+async function receiveItem(id, btn) {
+  await fetch(`/items/${id}/stage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stage: "Back of House",
+      employee: user.name,
+      skipped: false,
+      reason: null
+    })
+  });
+
+  btn.innerText = "Received ✅";
+  btn.disabled = true;
+  btn.parentElement.classList.add("received");
+}
+
+// BACK
+function goBack() {
+  window.location.href = "/dashboard.html";
+}
+</script>
+
+</body>
+</html>
