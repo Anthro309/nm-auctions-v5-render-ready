@@ -1,79 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NM Auctions V5</title>
-  <style>
-    body { background:#111; color:#fff; font-family:sans-serif; padding:20px; }
-    input, button { padding:10px; margin:5px; font-size:16px; }
-  </style>
+  <title>NM Auctions</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<h1>NM Auctions V5 (LIVE)</h1>
+<div class="box">
+  <h1>NM Auctions</h1>
 
-<div id="login">
-  <input id="name" placeholder="Name">
-  <input id="pin" placeholder="PIN">
+  <input id="name" placeholder="Name" />
+  <input id="pin" placeholder="PIN" type="password"/>
+
   <button onclick="login()">Login</button>
+
+  <p id="error"></p>
 </div>
 
-<div id="app" style="display:none;">
-  <h2>Items</h2>
-
-  <input id="itemName" placeholder="Item name">
-  <button onclick="addItem()">Add Item</button>
-
-  <br><br>
-
-  <button onclick="closeDay()">Daily Close Out</button>
-  <button onclick="loadReports()">View Reports</button>
-
-  <pre id="output"></pre>
-</div>
-
-<script>
-let user;
-
-async function login() {
-  const res = await fetch("/api/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      name: name.value,
-      pin: pin.value
-    })
-  });
-
-  if(res.ok){
-    user = await res.json();
-    login.style.display="none";
-    app.style.display="block";
-  } else {
-    alert("Login failed");
-  }
-}
-
-async function addItem(){
-  await fetch("/api/items", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ name: itemName.value })
-  });
-}
-
-async function closeDay(){
-  const res = await fetch("/api/close-day",{ method:"POST" });
-  const data = await res.json();
-  output.textContent = JSON.stringify(data, null, 2);
-}
-
-async function loadReports(){
-  const res = await fetch("/api/reports");
-  const data = await res.json();
-  output.textContent = JSON.stringify(data, null, 2);
-}
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
