@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Consigner View</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b1b2b;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 200px;
+    }
+
+    .container {
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .item {
+      background: white;
+      border-radius: 10px;
+      padding: 8px;
+      border: 3px solid transparent;
+    }
+
+    .item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .received { border-color: #22c55e; }
+    .missing { border-color: #ef4444; opacity: 0.6; }
+
+    .label {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .primary { background:#1d4ed8; color:white; }
+    .success { background:#22c55e; color:white; }
+
+    .filters button {
+      width: auto;
+      margin-right: 5px;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="card">
+    <h2 id="name"></h2>
+    <p id="code"></p>
+
+    <p id="stats"></p>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card filters">
+    <button onclick="setFilter('all')">All</button>
+    <button onclick="setFilter('received')">Received</button>
+    <button onclick="setFilter('missing')">Missing</button>
+  </div>
+
+  <!-- GRID -->
+  <div class="card">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="card">
+    <button class="success" onclick="receiveAll()">Mark All Received</button>
+    <button class="primary" onclick="goBack()">⬅ Back</button>
+  </div>
+
+</div>
+
+<script>
+let items = [];
+let filtered = [];
+let consignerCode = null;
+let filter = "all";
+
+const params = new URLSearchParams(window.location.search);
+consignerCode = params.get("code");
+
+async function load(){
+  const res = await fetch('/items');
+  items = await res.json();
+
+  items = items.filter(i => i.code === consignerCode);
+
+  if(items.length === 0){
+    alert("No items found");
+    return;
+  }
+
+  document.getElementById('name').innerText = items[0].consigner;
+  document.getElementById('code').innerText = "Code: " + consignerCode;
+
+  updateStats();
+  applyFilter();
+}
+
+function updateStats(){
+  const total = items.length;
+  const received = items.filter(i => i.stage === "Back of House").length;
+  const missing = items.filter(i => i.stage === "Missing at Drop Off").length;
+
+  document.getElementById('stats').innerText =
+    `${received} received / ${missing} missing / ${total} total`;
+}
+
+function setFilter(f){
+  filter = f;
+  applyFilter();
+}
+
+function applyFilter(){
+  if(filter === "received"){
+    filtered = items.filter(i => i.stage === "Back of House");
+  } else if(filter === "missing"){
+    filtered = items.filter(i => i.stage === "Missing at Drop Off");
+  } else {
+    filtered = items;
+  }
+
+  render();
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = "";
+
+  filtered.forEach(i=>{
+    const div = document.createElement('div');
+
+    let cls = "item";
+    if(i.stage === "Back of House") cls += " received";
+    if(i.stage === "Missing at Drop Off") cls += " missing";
+
+    div.className = cls;
+
+    div.innerHTML = `
+      ${i.photos && i.photos[0] ? `<img src="${i.photos[0]}">` : ""}
+      <div class="label"><b>${i.code}-${i.number}</b></div>
+      <div class="label">${i.name}</div>
+      <div class="label">${i.stage}</div>
+    `;
+
+    grid.appendChild(div);
+  });
+}
+
+async function receiveAll(){
+  for(const item of items){
+    await fetch(`/items/${item.id}/stage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        stage:"Back of House"
+      })
+    });
+  }
+
+  alert("All items marked received");
+  location.reload();
+}
+
+function goBack(){
+  window.location.href = "/dashboard.html";
+}
+
+load();
+</script>
+
+</body>
+</html>
