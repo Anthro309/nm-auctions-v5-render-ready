@@ -1,3 +1,22 @@
+function ensureUsersExist() {
+  if (!fs.existsSync('./users.json')) {
+    const defaultUsers = [
+      { name: "Fabian", pin: "1234", isAdmin: true },
+      { name: "James", pin: "1234", isAdmin: true },
+      { name: "Steven", pin: "1234", isAdmin: true },
+      { name: "Mike", pin: "1234", isAdmin: false },
+      { name: "Gio", pin: "1234", isAdmin: false },
+      { name: "Hector", pin: "1234", isAdmin: false },
+      { name: "Michelle", pin: "1234", isAdmin: false },
+      { name: "Sara", pin: "1234", isAdmin: false }
+    ];
+
+    fs.writeFileSync('./users.json', JSON.stringify(defaultUsers, null, 2));
+    console.log("🔥 Users seeded");
+  }
+}
+
+ensureUsersExist();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
