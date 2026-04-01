@@ -25,12 +25,34 @@
       margin-top: 4px;
     }
 
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filters input {
+      flex: 1;
+      min-width: 120px;
+    }
+
     .print-sheet {
       background: white;
       color: black;
       padding: 20px;
       border-radius: 12px;
       margin-top: 20px;
+    }
+
+    .link-btn {
+      margin-top: 10px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     @media print {
@@ -68,42 +90,78 @@
 
 <div class="container">
 
-  <!-- LIST -->
   <div class="card">
     <h2>Intake Reports</h2>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <input id="search" placeholder="Search..." oninput="render()">
+      <input id="dateFilter" type="date" onchange="render()">
+      <input id="employeeFilter" placeholder="Employee..." oninput="render()">
+    </div>
+
     <div id="list"></div>
   </div>
 
-  <!-- VIEW -->
+  <!-- REPORT VIEW -->
   <div id="printArea" class="card print-sheet" style="display:none;"></div>
 
   <button id="printBtn" onclick="printReport()" style="display:none;">
     🖨️ Print
   </button>
 
+  <button id="openConsignerBtn" class="link-btn" style="display:none;">
+    Open Consigner View
+  </button>
+
 </div>
 
 <script>
 let reports = [];
+let currentReport = null;
 
 // =========================
-// LOAD REPORTS
+// LOAD
 // =========================
 async function load(){
   const res = await fetch('/intake');
   reports = await res.json();
+  render();
+}
+
+// =========================
+// RENDER WITH FILTERS
+// =========================
+function render(){
+  const q = search.value.toLowerCase();
+  const dateVal = dateFilter.value;
+  const employeeVal = employeeFilter.value.toLowerCase();
 
   list.innerHTML = "";
 
-  reports.reverse().forEach(r=>{
+  reports.slice().reverse().forEach(r=>{
+    const reportDate = new Date(r.createdAt);
+    const dateMatch = !dateVal || reportDate.toISOString().slice(0,10) === dateVal;
+
+    const textMatch =
+      r.consigner.toLowerCase().includes(q) ||
+      r.code.toLowerCase().includes(q) ||
+      r.items.some(i => i.name.toLowerCase().includes(q));
+
+    const employeeMatch =
+      !employeeVal ||
+      r.items.some(i => (i.employee || '').toLowerCase().includes(employeeVal));
+
+    if (!dateMatch || !textMatch || !employeeMatch) return;
+
     const div = document.createElement("div");
     div.className = "report-card";
 
-    const date = new Date(r.createdAt).toLocaleDateString();
-
     div.innerHTML = `
       <div class="report-title">${r.consigner}</div>
-      <div class="report-sub">${date} • ${r.items.length} items</div>
+      <div class="report-sub">
+        ${reportDate.toLocaleDateString()} • ${r.items.length} items
+      </div>
     `;
 
     div.onclick = ()=> openReport(r);
@@ -116,6 +174,8 @@ async function load(){
 // OPEN REPORT
 // =========================
 function openReport(r){
+  currentReport = r;
+
   let html = `
     <h2>Consignment Intake</h2>
     <p>${r.consigner}</p>
@@ -136,6 +196,12 @@ function openReport(r){
   printArea.innerHTML = html;
   printArea.style.display = "block";
   printBtn.style.display = "block";
+  openConsignerBtn.style.display = "block";
+
+  // 🔗 LINK TO CONSIGNER
+  openConsignerBtn.onclick = ()=>{
+    window.location.href = "/consigner.html?code=" + r.code;
+  };
 }
 
 // =========================
