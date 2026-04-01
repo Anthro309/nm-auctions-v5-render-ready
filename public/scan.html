@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scan Item</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- QR SCANNER LIB -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hint {
+      text-align: center;
+      margin-top: 10px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="goBack()">←</div>
+  <div class="nav-center">Scan Item</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Scan QR Code</h2>
+
+    <div id="reader"></div>
+
+    <div class="hint">
+      Point camera at label
+    </div>
+  </div>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
+
+let scanner;
+
+// =========================
+// START SCANNER
+// =========================
+function startScanner(){
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: 250
+    },
+    onScanSuccess
+  );
+}
+
+// =========================
+// ON SCAN
+// =========================
+async function onScanSuccess(decodedText){
+  try {
+    await scanner.stop();
+  } catch {}
+
+  // decodedText = FABRAM-1
+  const [code, number] = decodedText.split("-");
+
+  const res = await fetch('/items');
+  const items = await res.json();
+
+  const item = items.find(i =>
+    i.code === code && String(i.number) === String(number)
+  );
+
+  if (!item) {
+    alert("Item not found");
+    startScanner();
+    return;
+  }
+
+  // 🔥 OPEN ITEM
+  window.location.href = "/item.html?id=" + item.id;
+}
+
+// =========================
+// NAV
+// =========================
+function goBack(){
+  window.history.back();
+}
+
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+// INIT
+startScanner();
+</script>
+
+</body>
+</html>
