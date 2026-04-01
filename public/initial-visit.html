@@ -1,273 +1,262 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Initial Visit - NM Auctions</title>
+  <title>Initial Visit</title>
 
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: #020617;
-      color: white;
+      font-family: Arial, sans-serif;
+      background: #0b1b2b;
     }
 
-    .box {
-      max-width: 700px;
-      margin: auto;
+    .header {
+      text-align: center;
       padding: 20px;
+    }
+
+    .logo {
+      width: 200px;
+    }
+
+    .container {
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
     }
 
     input {
       width: 100%;
       padding: 12px;
       border-radius: 8px;
-      border: none;
-      background: #111827;
-      color: white;
+      border: 1px solid #ddd;
       margin-top: 10px;
+      font-size: 14px;
     }
 
     button {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
+      padding: 14px;
+      border-radius: 10px;
       border: none;
-      background: #2563eb;
-      color: white;
+      margin-top: 10px;
+      font-size: 15px;
       cursor: pointer;
     }
 
-    .print-btn {
-      background: #22c55e;
+    .primary {
+      background: #1d4ed8;
+      color: white;
     }
 
-    .canvas-box {
-      margin-top: 15px;
-      background: white;
-      border-radius: 10px;
-      padding: 10px;
+    .secondary {
+      background: #e5e7eb;
+    }
+
+    .success {
+      background: #22c55e;
+      color: white;
+    }
+
+    .danger {
+      background: #ef4444;
+      color: white;
     }
 
     canvas {
       width: 100%;
-      height: 200px;
+      height: 180px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
       background: #fff;
-      border-radius: 8px;
     }
 
-    .clear-btn {
-      background: #ef4444;
+    .item {
+      font-size: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
     }
 
-    .card {
-      background: #111827;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
   </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h1>🏠 Initial Visit</h1>
-  <p id="user"></p>
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
 
-  <input id="first" placeholder="First Name">
-  <input id="last" placeholder="Last Name">
+<div class="container">
 
-  <button onclick="startVisit()">Start Visit</button>
+  <!-- CONSIGNER -->
+  <div class="card">
+    <div class="title">Initial Visit</div>
 
-  <h3 id="code"></h3>
+    <input id="first" placeholder="First Name">
+    <input id="last" placeholder="Last Name">
 
-  <div id="section" style="display:none; margin-top:20px;">
+    <button class="primary" onclick="startVisit()">Start Visit</button>
 
-    <input id="itemName" placeholder="Item Name">
-    <input type="file" id="photoInput" accept="image/*" capture="environment">
-
-    <button onclick="addItem()">Add Item</button>
-
-    <!-- SIGNATURE PAD -->
-    <div class="canvas-box">
-      <p style="color:black;">Consigner Signature</p>
-      <canvas id="signaturePad"></canvas>
-      <button class="clear-btn" onclick="clearSignature()">Clear Signature</button>
-    </div>
-
-    <!-- PRINT -->
-    <button class="print-btn" onclick="printReport()">🖨 Print Report</button>
-
-    <div id="list"></div>
-
+    <p id="code"></p>
   </div>
 
-  <button onclick="back()">⬅ Back</button>
+  <!-- ITEMS -->
+  <div class="card" id="section" style="display:none;">
+    <div class="title">Items</div>
+
+    <input id="itemName" placeholder="Item Name">
+
+    <button class="primary" onclick="addItem()">Add Item</button>
+
+    <div id="list"></div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="card" id="sigBox" style="display:none;">
+    <div class="title">Consigner Signature</div>
+
+    <canvas id="signaturePad"></canvas>
+
+    <button class="danger" onclick="clearSignature()">Clear</button>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="card" id="actions" style="display:none;">
+    <button class="success" onclick="printReport()">🖨 Print Report</button>
+    <button class="secondary" onclick="back()">⬅ Back</button>
+  </div>
+
 </div>
 
 <script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
-
-document.getElementById('user').innerText = "Logged in as " + user.name;
-
 let consigner = null;
 let items = [];
-let signatureData = null;
 
-// ===== SIGNATURE PAD =====
-const canvas = document.getElementById('signaturePad');
-const ctx = canvas.getContext('2d');
-
-let drawing = false;
-
-canvas.addEventListener('mousedown', () => drawing = true);
-canvas.addEventListener('mouseup', () => drawing = false);
-canvas.addEventListener('mousemove', draw);
-
-canvas.addEventListener('touchstart', () => drawing = true);
-canvas.addEventListener('touchend', () => drawing = false);
-canvas.addEventListener('touchmove', drawTouch);
-
-function draw(e) {
-  if (!drawing) return;
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#000';
-
-  ctx.lineTo(e.offsetX, e.offsetY);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
+function genCode(f,l){
+  return (f.slice(0,3)+l.slice(0,3)).toUpperCase();
 }
 
-function drawTouch(e) {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
-  if (!drawing) return;
-
-  ctx.lineTo(x, y);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-}
-
-function clearSignature() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// ===== CORE =====
-function genCode(f, l) {
-  return (f.slice(0,3) + l.slice(0,3)).toUpperCase();
-}
-
-function startVisit() {
+function startVisit(){
   const f = first.value.trim();
   const l = last.value.trim();
 
-  if (!f || !l) return alert("Enter full name");
+  if(!f||!l) return alert("Enter name");
 
   consigner = {
-    name: f + " " + l,
-    code: genCode(f, l)
+    name: f+" "+l,
+    code: genCode(f,l)
   };
 
-  code.innerText = "Consigner Code: " + consigner.code;
-  section.style.display = "block";
+  code.innerText = "Code: "+consigner.code;
+
+  section.style.display="block";
+  sigBox.style.display="block";
+  actions.style.display="block";
 }
 
-async function addItem() {
+function addItem(){
   const name = itemName.value.trim();
-  if (!name) return alert("Enter item name");
+  if(!name) return;
 
   const item = {
     name,
-    consigner: consigner.name,
     code: consigner.code,
-    number: items.length + 1,
-    photos: []
+    number: items.length+1
   };
-
-  await fetch('/items', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(item)
-  });
 
   items.push(item);
   render();
 
-  itemName.value = "";
+  itemName.value="";
 }
 
-function render() {
-  list.innerHTML = "";
+function render(){
+  list.innerHTML="";
 
   items.forEach(i=>{
-    const div = document.createElement('div');
-    div.className = "card";
-    div.innerHTML = `<b>${i.code}-${i.number}</b><br>${i.name}`;
+    const div=document.createElement("div");
+    div.className="item";
+    div.innerText = `${i.code}-${i.number} — ${i.name}`;
     list.appendChild(div);
   });
 }
 
-// ===== PRINT =====
-function printReport() {
-  if (!items.length) return alert("No items");
+/* SIGNATURE */
+const canvas = document.getElementById('signaturePad');
+const ctx = canvas.getContext('2d');
 
-  const signature = canvas.toDataURL();
+let drawing=false;
 
-  let rows = "";
-  items.forEach(i => {
-    rows += `<tr><td>${i.code}-${i.number}</td><td>${i.name}</td></tr>`;
+canvas.onmousedown=()=>drawing=true;
+canvas.onmouseup=()=>drawing=false;
+canvas.onmousemove=(e)=>{
+  if(!drawing) return;
+  ctx.lineWidth=2;
+  ctx.lineCap="round";
+  ctx.strokeStyle="#000";
+
+  ctx.lineTo(e.offsetX,e.offsetY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX,e.offsetY);
+};
+
+function clearSignature(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+/* PRINT */
+function printReport(){
+  const sig = canvas.toDataURL();
+
+  let rows="";
+  items.forEach(i=>{
+    rows+=`<tr><td>${i.code}-${i.number}</td><td>${i.name}</td></tr>`;
   });
 
-  const html = `
+  const html=`
   <html>
-  <head>
-    <style>
-      body { font-family: Arial; padding: 40px; }
-      .logo { width: 220px; }
-      table { width:100%; border-collapse: collapse; margin-top:20px; }
-      th, td { border:1px solid #ccc; padding:10px; }
-    </style>
-  </head>
-  <body>
-
-    <img src="/logo.png" class="logo">
+  <body style="font-family:Arial;padding:40px;">
+    <img src="/logo.png" width="200">
 
     <h2>Consignment Intake Report</h2>
 
     <p><b>Consigner:</b> ${consigner.name}</p>
     <p><b>Code:</b> ${consigner.code}</p>
-    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
 
-    <table>
-      <tr><th>Item Code</th><th>Description</th></tr>
+    <table border="1" cellspacing="0" cellpadding="8" width="100%">
+      <tr><th>Item</th><th>Description</th></tr>
       ${rows}
     </table>
 
     <h3>Signature</h3>
-    <img src="${signature}" width="300">
-
+    <img src="${sig}" width="300">
   </body>
   </html>
   `;
 
-  const win = window.open('', '', 'width=900,height=700');
+  const win = window.open('');
   win.document.write(html);
   win.document.close();
   win.print();
 }
 
-function back() {
-  window.location.href = "/dashboard.html";
+function back(){
+  window.location.href="/dashboard.html";
 }
 </script>
 
