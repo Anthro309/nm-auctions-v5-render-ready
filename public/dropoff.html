@@ -1,207 +1,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Drop Off Scanner</title>
+  <title>Drop Off</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #020617;
-      color: white;
-      text-align: center;
+    body { margin:0; font-family:Arial; background:#0b1b2b; }
+    .header { text-align:center; padding:20px; }
+    .logo { width:200px; }
+
+    .container {
+      background:#f3f4f6;
+      min-height:100vh;
+      padding:20px;
     }
 
-    .wrapper {
-      padding: 20px;
-    }
-
-    video {
-      width: 100%;
-      max-width: 400px;
-      border-radius: 12px;
-      margin-top: 20px;
+    .card {
+      background:white;
+      border-radius:12px;
+      padding:20px;
+      margin-bottom:15px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      text-align:center;
     }
 
     button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      font-size: 16px;
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:10px;
+      margin-top:10px;
+      font-size:15px;
     }
 
-    .item {
-      margin-top: 15px;
-      padding: 12px;
-      background: #111827;
-      border-radius: 10px;
-      text-align: left;
-    }
-
-    .receive {
-      background: #22c55e;
-      margin-top: 8px;
-    }
-
-    .received {
-      opacity: 0.4;
-    }
+    .primary { background:#1d4ed8; color:white; }
+    .success { background:#22c55e; color:white; }
   </style>
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
 
-  <h1>📱 Drop Off Scanner</h1>
+<div class="container">
 
-  <button onclick="startScanner()">Start Scanner</button>
-
-  <video id="video" autoplay></video>
+  <div class="card">
+    <h2>Drop Off Scanner</h2>
+    <button class="primary" onclick="startScanner()">Start Scanner</button>
+    <video id="video" width="100%" style="margin-top:10px;"></video>
+  </div>
 
   <div id="result"></div>
-
-  <button onclick="goBack()">⬅ Back</button>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
 <script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
-
 let video = document.getElementById("video");
-let scanning = false;
+let scanning=false;
 
-// START CAMERA
-async function startScanner() {
+async function startScanner(){
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" }
+    video:{facingMode:"environment"}
   });
-
-  video.srcObject = stream;
-  scanning = true;
-
-  scanLoop();
+  video.srcObject=stream;
+  scanning=true;
+  scan();
 }
 
-// SCAN LOOP
-function scanLoop() {
-  if (!scanning) return;
+function scan(){
+  if(!scanning) return;
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
 
-  ctx.drawImage(video, 0, 0);
+  ctx.drawImage(video,0,0);
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, canvas.width, canvas.height);
+  const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+  const code=jsQR(img.data,canvas.width,canvas.height);
 
-  if (code) {
-    scanning = false;
+  if(code){
+    scanning=false;
     handleScan(code.data);
   } else {
-    requestAnimationFrame(scanLoop);
+    requestAnimationFrame(scan);
   }
 }
 
-// HANDLE SCAN
-async function handleScan(data) {
+async function handleScan(data){
   const res = await fetch('/items');
   const items = await res.json();
 
-  const item = items.find(i =>
-    `${i.code}-${i.number}` === data
-  );
+  const found = items.find(i => `${i.code}-${i.number}` === data);
 
-  if (!item) {
-    document.getElementById('result').innerHTML =
-      "<p>Item not found</p>";
+  if(!found){
+    result.innerHTML="<div class='card'>Not found</div>";
     return;
   }
 
-  const consignerCode = item.code;
+  const same = items.filter(i=>i.code===found.code);
 
-  const viewAll = confirm(
-    `View all items for ${consignerCode}?`
-  );
+  let html=`<div class="card"><h3>${found.code}</h3>`;
 
-  if (viewAll) {
-    showConsignerItems(items, consignerCode);
-  } else {
-    showSingleItem(item);
-  }
+  same.forEach(i=>{
+    html+=`
+      <div style="margin-top:10px;">
+        ${i.code}-${i.number} — ${i.name}
+        <button class="success" onclick="receive(${i.id}, this)">Receive</button>
+      </div>
+    `;
+  });
+
+  html+="</div>";
+
+  result.innerHTML=html;
 }
 
-// SHOW SINGLE
-function showSingleItem(item) {
-  document.getElementById('result').innerHTML = `
-    <div class="item">
-      <b>${item.code}-${item.number}</b><br>
-      ${item.name}<br>
-      ${item.consigner}
-
-      <button class="receive" onclick="receiveItem(${item.id}, this)">
-        Mark Received
-      </button>
-    </div>
-  `;
-}
-
-// SHOW ALL FROM CONSIGNER
-function showConsignerItems(items, code) {
-  const container = document.getElementById('result');
-  container.innerHTML = `<h3>Items for ${code}</h3>`;
-
-  items
-    .filter(i => i.code === code)
-    .forEach(i => {
-      const div = document.createElement('div');
-      div.className = "item";
-
-      div.innerHTML = `
-        <b>${i.code}-${i.number}</b><br>
-        ${i.name}<br>
-        ${i.consigner}
-
-        <button class="receive" onclick="receiveItem(${i.id}, this)">
-          Mark Received
-        </button>
-      `;
-
-      container.appendChild(div);
-    });
-}
-
-// RECEIVE
-async function receiveItem(id, btn) {
-  await fetch(`/items/${id}/stage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: "Back of House",
-      employee: user.name,
-      skipped: false,
-      reason: null
+async function receive(id,btn){
+  await fetch(`/items/${id}/stage`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      stage:"Back of House",
+      employee:"system"
     })
   });
 
-  btn.innerText = "Received ✅";
-  btn.disabled = true;
-  btn.parentElement.classList.add("received");
-}
-
-// BACK
-function goBack() {
-  window.location.href = "/dashboard.html";
+  btn.innerText="Received";
+  btn.disabled=true;
 }
 </script>
 
