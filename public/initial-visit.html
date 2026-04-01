@@ -36,6 +36,9 @@
 </div>
 
 <script>
+/* =============================
+   🔐 USER SESSION
+============================= */
 const user = JSON.parse(localStorage.getItem('user'));
 
 if (!user) {
@@ -45,7 +48,136 @@ if (!user) {
 document.getElementById('user').innerText =
   "Logged in as " + user.name;
 
+
+/* =============================
+   🧠 STATE
+============================= */
 let consigner = null;
 let items = [];
 
-// 🔤 Generate consigner code
+
+/* =============================
+   🔤 GENERATE CODE
+============================= */
+function genCode(f, l) {
+  return (f.slice(0,3) + l.slice(0,3)).toUpperCase();
+}
+
+
+/* =============================
+   🏠 START VISIT
+============================= */
+function startVisit() {
+  const f = document.getElementById('first').value.trim();
+  const l = document.getElementById('last').value.trim();
+
+  if (!f || !l) {
+    alert("Enter full name");
+    return;
+  }
+
+  consigner = {
+    name: f + " " + l,
+    code: genCode(f, l)
+  };
+
+  document.getElementById('code').innerText =
+    "Consigner Code: " + consigner.code;
+
+  document.getElementById('section').style.display = "block";
+}
+
+
+/* =============================
+   📸 UPLOAD PHOTO
+============================= */
+async function uploadPhoto(file) {
+  const form = new FormData();
+  form.append("photo", file);
+
+  const res = await fetch('/upload', {
+    method: 'POST',
+    body: form
+  });
+
+  const data = await res.json();
+  return data.path;
+}
+
+
+/* =============================
+   ➕ ADD ITEM
+============================= */
+async function addItem() {
+  const name = document.getElementById('itemName').value.trim();
+  const file = document.getElementById('photoInput').files[0];
+
+  if (!name) {
+    alert("Enter item name");
+    return;
+  }
+
+  let photoPath = null;
+
+  if (file) {
+    photoPath = await uploadPhoto(file);
+  }
+
+  const item = {
+    name,
+    consigner: consigner.name,
+    code: consigner.code,
+    number: items.length + 1,
+    photos: photoPath ? [photoPath] : []
+  };
+
+  // 💾 Save to backend
+  await fetch('/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item)
+  });
+
+  items.push(item);
+
+  render();
+
+  // reset inputs
+  document.getElementById('itemName').value = "";
+  document.getElementById('photoInput').value = "";
+}
+
+
+/* =============================
+   🎨 RENDER ITEMS
+============================= */
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = "";
+
+  items.forEach(i => {
+    const div = document.createElement('div');
+    div.className = "card";
+
+    div.innerHTML = `
+      <b>${i.code}-${i.number}</b>
+      <div style="margin-top:5px">${i.name}</div>
+      <div style="font-size:12px;color:#9ca3af">Initial Visit</div>
+      ${i.photos[0] ? `<img src="${i.photos[0]}" width="100%">` : ""}
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+
+/* =============================
+   🔙 BACK
+============================= */
+function back() {
+  window.location.href = "/dashboard.html";
+}
+</script>
+
+</body>
+</html>
