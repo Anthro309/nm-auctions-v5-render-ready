@@ -27,70 +27,132 @@
 
 <div class="container">
 
+  <!-- START VISIT -->
   <div class="card">
     <h2>Start Visit</h2>
+
     <input id="first" placeholder="First Name">
     <input id="last" placeholder="Last Name">
+
     <button onclick="startVisit()">Start</button>
+
+    <div id="codeDisplay" class="label" style="margin-top:10px;"></div>
   </div>
 
+  <!-- ADD ITEM -->
   <div id="section" class="card" style="display:none;">
     <h2>Add Item</h2>
+
     <input id="itemName" placeholder="Item Name">
-    <input type="file" id="photoInput" accept="image/*">
+
+    <!-- 📸 CAMERA FIXED INPUT -->
+    <input 
+      type="file" 
+      id="photoInput" 
+      accept="image/*" 
+      capture="environment"
+    >
+
     <button onclick="addItem()">Add</button>
 
-    <div id="list" class="grid"></div>
+    <div id="list" class="grid" style="margin-top:15px;"></div>
   </div>
 
 </div>
 
 <script>
-let code, count=1;
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
 
+let code = null;
+let count = 1;
+
+// =========================
+// START VISIT
+// =========================
 function startVisit(){
-  const f = first.value.slice(0,3).toUpperCase();
-  const l = last.value.slice(0,3).toUpperCase();
-  code = f + l;
+  const f = first.value.trim();
+  const l = last.value.trim();
+
+  if(!f || !l){
+    alert("Enter first and last name");
+    return;
+  }
+
+  const firstCode = f.substring(0,3).toUpperCase();
+  const lastCode = l.substring(0,3).toUpperCase();
+
+  code = firstCode + lastCode;
+
+  codeDisplay.innerText = "Consigner Code: " + code;
 
   section.style.display = "block";
+
+  loadItems();
 }
 
+// =========================
+// ADD ITEM
+// =========================
 async function addItem(){
+  const name = itemName.value.trim();
   const file = photoInput.files[0];
-  let photo = "";
 
+  if(!name){
+    alert("Enter item name");
+    return;
+  }
+
+  let photoPath = "";
+
+  // Upload photo if exists
   if(file){
     const form = new FormData();
     form.append("photo", file);
 
-    const res = await fetch('/upload',{method:'POST',body:form});
+    const res = await fetch('/upload',{
+      method:'POST',
+      body: form
+    });
+
     const data = await res.json();
-    photo = data.path;
+
+    if(data.success){
+      photoPath = data.path;
+    }
   }
 
-  const item = {
-    name: itemName.value,
+  const newItem = {
+    name,
     consigner: first.value + " " + last.value,
     code,
     number: count++,
-    photos: photo ? [photo] : []
+    photos: photoPath ? [photoPath] : [],
+    employee: user.name
   };
 
   await fetch('/items',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(item)
+    body: JSON.stringify(newItem)
   });
+
+  itemName.value = "";
+  photoInput.value = "";
 
   loadItems();
 }
 
+// =========================
+// LOAD ITEMS (GRID)
+// =========================
 async function loadItems(){
+  if(!code) return;
+
   const res = await fetch('/items');
   const items = await res.json();
 
-  const filtered = items.filter(i=>i.code===code);
+  const filtered = items.filter(i => i.code === code);
 
   list.innerHTML = "";
 
@@ -102,13 +164,21 @@ async function loadItems(){
       ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
       <div style="padding:14px">
         <div class="title">${i.name}</div>
+        <div class="label">${i.code}-${i.number}</div>
       </div>
     `;
+
+    div.onclick = ()=>{
+      window.location.href = "/item.html?id=" + i.id;
+    };
 
     list.appendChild(div);
   });
 }
 
+// =========================
+// NAV
+// =========================
 function toggleMenu(){
   sidebar.classList.toggle("open");
   overlay.classList.toggle("show");
