@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -14,6 +15,7 @@
 </div>
 
 <div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
   <a href="/dashboard.html">Dashboard</a>
   <a href="/initial-visit.html">Initial Visit</a>
   <a href="/dropoff.html">Received at Studio</a>
@@ -23,12 +25,9 @@
 
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
-<div id="notification" class="notification"></div>
-
 <div class="container">
 
-  <div class="grid">
-
+  <div class="grid" style="margin-bottom:18px;">
     <div class="button-card" onclick="go('/initial-visit.html')">
       <div class="button-title">Initial Visit</div>
       <div class="button-sub">Capture consignments on-site</div>
@@ -41,48 +40,185 @@
 
     <div class="button-card" onclick="go('/items.html')">
       <div class="button-title">Item Library</div>
-      <div class="button-sub">View all consigners</div>
+      <div class="button-sub">Browse consigners and items</div>
     </div>
 
     <div class="button-card" onclick="go('/reports.html')">
       <div class="button-title">Daily Reports</div>
       <div class="button-sub">Close out and print</div>
     </div>
+  </div>
 
+  <div class="card">
+    <h2>Pending Handoffs</h2>
+    <div id="handoffs" class="notification-panel"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin-bottom:0;">Notifications</h2>
+      <button onclick="markAllNotificationsRead()">Mark All Read</button>
+    </div>
+    <div id="notifications" class="notification-panel" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Performance</h2>
+    <div id="performance" class="performance-grid"></div>
   </div>
 
 </div>
 
 <script>
-function toggleMenu(){
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
+const user = JSON.parse(localStorage.getItem('user')) || { name: 'system', isAdmin: false };
+
+function toggleMenu() {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
 }
 
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = '/';
 }
 
-function go(p){
+function go(p) {
   window.location.href = p;
 }
 
-/* 🔔 HANDOFF NOTIFICATION SYSTEM */
-function showNotification(text){
-  const n = document.getElementById("notification");
-  n.innerText = text;
-  n.style.display = "block";
+async function loadPendingHandoffs() {
+  const res = await fetch('/handoffs/pending');
+  const items = await res.json();
+  const container = document.getElementById('handoffs');
 
-  setTimeout(()=>{
-    n.style.display = "none";
-  },3000);
+  if (!items.length) {
+    container.innerHTML = '<div class="label">No pending handoffs</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'notification-card';
+
+    card.innerHTML = `
+      <div class="notification-message">${item.code}-${item.number} → ${item.pendingHandoff.requestedStage}</div>
+      <div class="notification-meta">Requested by ${item.pendingHandoff.requestedBy}</div>
+      <div class="notification-meta">${new Date(item.pendingHandoff.requestedAt).toLocaleString()}</div>
+      <div class="button-group" style="margin-top:12px;">
+        <button onclick="acceptHandoff(${item.id})">Accept</button>
+        <button onclick="rejectHandoff(${item.id})">Reject</button>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
 }
 
-/* Example trigger (you’ll call this after handoffs) */
-setTimeout(()=>{
-  showNotification("New items ready for review");
-},2000);
+async function acceptHandoff(id) {
+  await fetch(`/items/${id}/accept-handoff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      employee: user.name
+    })
+  });
+
+  await loadPendingHandoffs();
+  await loadNotifications();
+  await loadPerformance();
+}
+
+async function rejectHandoff(id) {
+  const reason = prompt('Reason for rejection:') || 'Rejected';
+
+  await fetch(`/items/${id}/reject-handoff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      employee: user.name,
+      reason
+    })
+  });
+
+  await loadPendingHandoffs();
+  await loadNotifications();
+  await loadPerformance();
+}
+
+async function loadNotifications() {
+  const res = await fetch('/notifications');
+  const notifications = await res.json();
+  const container = document.getElementById('notifications');
+
+  if (!notifications.length) {
+    container.innerHTML = '<div class="label">No notifications</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  notifications.slice(0, 10).forEach(notification => {
+    const card = document.createElement('div');
+    card.className = 'notification-card';
+
+    card.innerHTML = `
+      <div class="notification-message">${notification.message}</div>
+      <div class="notification-meta">${new Date(notification.createdAt).toLocaleString()}</div>
+      <div class="notification-meta">${notification.read ? 'Read' : 'Unread'}</div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+async function markAllNotificationsRead() {
+  await fetch('/notifications/mark-all-read', {
+    method: 'POST'
+  });
+
+  await loadNotifications();
+}
+
+async function loadPerformance() {
+  const res = await fetch('/performance');
+  const stats = await res.json();
+  const container = document.getElementById('performance');
+
+  if (!stats.length) {
+    container.innerHTML = '<div class="label">No performance data yet</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  stats.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'performance-card';
+
+    card.innerHTML = `
+      <div class="performance-name">${row.employee}</div>
+      <div class="performance-stat">Created: ${row.created}</div>
+      <div class="performance-stat">Handoff Requested: ${row.handoffRequested}</div>
+      <div class="performance-stat">Handoff Accepted: ${row.handoffAccepted}</div>
+      <div class="performance-stat">Handoff Rejected: ${row.handoffRejected}</div>
+      <div class="performance-stat">Stage Changes: ${row.stageChanges}</div>
+      <div class="performance-stat">Lots Assigned: ${row.lotsAssigned}</div>
+      <div class="performance-stat">Location Updates: ${row.locationUpdates}</div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+async function init() {
+  await loadPendingHandoffs();
+  await loadNotifications();
+  await loadPerformance();
+}
+
+init();
 </script>
 
 </body>
