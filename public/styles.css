@@ -1,108 +1,117 @@
-/* ===== RESET ===== */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  background: #f3f4f6;
+}
+
+/* NAVBAR */
+.navbar {
+  height: 60px;
   background: #0b1b2b;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
 }
 
-/* ===== HEADER ===== */
-.header {
-  text-align: center;
-  padding: 24px 0;
+.nav-left {
+  font-size: 22px;
+  cursor: pointer;
 }
 
-.logo {
-  width: 180px;
+.nav-center img {
+  height: 28px;
 }
 
-/* ===== MAIN ===== */
+.nav-right {
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: -250px;
+  top: 0;
+  width: 230px;
+  height: 100%;
+  background: #0b1b2b;
+  color: white;
+  padding: 20px;
+  transition: 0.25s;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 12px 0;
+}
+
+/* OVERLAY */
+.overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  display: none;
+}
+
+.overlay.show {
+  display: block;
+}
+
+/* CONTENT */
 .container {
-  background: #f9fafb;
-  min-height: 100vh;
-  padding: 24px;
+  padding: 20px;
 }
 
-/* ===== CARD ===== */
+/* CARD */
 .card {
   background: white;
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* ===== TEXT ===== */
-h2 {
-  margin: 0 0 10px;
-  font-size: 20px;
-}
-
-.label {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 4px;
-}
-
-/* ===== BUTTONS ===== */
-button {
-  border: none;
-  border-radius: 10px;
-  padding: 12px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.2s;
-}
-
-.primary {
-  background: #1d4ed8;
-  color: white;
-}
-
-.primary:hover {
-  background: #1e40af;
-}
-
-.secondary {
-  background: #e5e7eb;
-}
-
-.success {
-  background: #16a34a;
-  color: white;
-}
-
-/* ===== GRID ===== */
+/* GRID */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
-/* ===== ITEM CARD ===== */
+/* ITEM */
 .item {
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  background: white;
   border: 2px solid transparent;
-  transition: 0.2s;
 }
 
 .item img {
   width: 100%;
-  height: 150px;
+  height: 140px;
   object-fit: cover;
 }
 
-/* STATES */
-.item.received {
-  border-color: #16a34a;
-}
+.item.received { border-color: #16a34a; }
+.item.missing { border-color: #dc2626; opacity: 0.7; }
 
-.item.missing {
-  border-color: #dc2626;
-  opacity: 0.7;
-}
+.title { font-weight: 600; }
+.label { font-size: 12px; color: #6b7280; }
 
-.item:hover {
-  transform: translateY(-2px);
+/* BUTTON */
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  background: #1d4ed8;
+  color: white;
 }
