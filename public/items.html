@@ -26,13 +26,21 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
+
   <div class="card">
-    <h2>All Consigners</h2>
-    <div id="list" class="grid"></div>
+    <h2>Item Library</h2>
+
+    <!-- SEARCH -->
+    <input id="search" placeholder="Search by name, code, or consigner" oninput="render()">
+
+    <div id="list" class="grid" style="margin-top:15px;"></div>
   </div>
+
 </div>
 
 <script>
+let allItems = [];
+
 function toggleMenu(){
   sidebar.classList.toggle("open");
   overlay.classList.toggle("show");
@@ -43,13 +51,30 @@ function logout(){
   window.location.href = "/";
 }
 
+// =========================
+// LOAD
+// =========================
 async function load(){
   const res = await fetch('/items');
-  const items = await res.json();
+  allItems = await res.json();
+  render();
+}
+
+// =========================
+// RENDER WITH SEARCH
+// =========================
+function render(){
+  const q = search.value.toLowerCase();
+
+  const filtered = allItems.filter(i =>
+    i.name.toLowerCase().includes(q) ||
+    i.code.toLowerCase().includes(q) ||
+    i.consigner.toLowerCase().includes(q)
+  );
 
   const grouped = {};
 
-  items.forEach(i=>{
+  filtered.forEach(i=>{
     if(!grouped[i.code]) grouped[i.code] = [];
     grouped[i.code].push(i);
   });
