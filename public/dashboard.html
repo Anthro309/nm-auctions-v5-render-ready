@@ -7,88 +7,47 @@
     body {
       margin: 0;
       font-family: Arial;
-      background: linear-gradient(to bottom, #0f172a, #020617);
+      background: #020617;
       color: white;
     }
 
     .wrapper {
-      max-width: 1000px;
+      max-width: 900px;
       margin: auto;
       padding: 30px 20px;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 35px;
-    }
-
-    .header h1 {
-      font-size: 30px;
-      letter-spacing: 1px;
-    }
-
-    .header p {
-      color: #94a3b8;
-      font-size: 14px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 18px;
+      gap: 15px;
     }
 
     .card {
       background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 14px;
-      padding: 22px;
+      padding: 20px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: 0.2s;
     }
 
     .card:hover {
-      transform: translateY(-4px);
-      border-color: #3b82f6;
-      background: #0f172a;
+      transform: translateY(-3px);
+      background: #1f2937;
     }
 
-    .card.primary {
-      border-color: #3b82f6;
-      background: linear-gradient(145deg, #1e3a8a, #0f172a);
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .card p {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-top: 6px;
+    .primary {
+      border: 2px solid #3b82f6;
     }
 
     .logout {
-      margin-top: 30px;
+      margin-top: 20px;
+      padding: 12px;
       width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
       background: #ef4444;
+      border: none;
+      border-radius: 8px;
       color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .logout:hover {
-      background: #dc2626;
-    }
-
-    @media (max-width: 700px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
     }
   </style>
 </head>
@@ -97,31 +56,25 @@
 
 <div class="wrapper">
 
-  <div class="header">
-    <h1>NM Auctions</h1>
-    <p id="welcome"></p>
-  </div>
+  <h1>NM Auctions</h1>
+  <p id="welcome"></p>
 
   <div class="grid">
 
     <div class="card primary" onclick="goTo('initial-visit')">
-      <h3>🏠 Initial Visit</h3>
-      <p>Walk property, tag items, capture photos</p>
+      🏠 Initial Visit
+    </div>
+
+    <div class="card" onclick="goTo('dropoff')">
+      🚚 Drop Off (Receive Items)
     </div>
 
     <div class="card" onclick="goTo('items')">
-      <h3>📦 Item Library</h3>
-      <p>Search, view, and manage all items</p>
+      📦 Item Library
     </div>
 
     <div class="card" onclick="goTo('workflow')">
-      <h3>🔄 Workflow</h3>
-      <p>Move items through processing stages</p>
-    </div>
-
-    <div class="card" onclick="goTo('reports')">
-      <h3>📊 Reports</h3>
-      <p>Daily summaries and tracking</p>
+      🔄 Workflow
     </div>
 
   </div>
@@ -132,10 +85,7 @@
 
 <script>
 const user = JSON.parse(localStorage.getItem('user'));
-
-if (!user) {
-  window.location.href = "/";
-}
+if (!user) window.location.href = "/";
 
 document.getElementById('welcome').innerText =
   "Welcome " + user.name;
