@@ -1,168 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Item</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>Item Detail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
+
+  <!-- QR LIB -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+  <style>
+    .qr-box {
+      margin-top: 15px;
+      text-align: center;
+      background: #111827;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    .qr-code canvas {
+      width: 140px !important;
+      height: 140px !important;
+    }
+
+    .qr-label {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #9ca3af;
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-left">☰</div>
   <div class="nav-center">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
-<div id="sidebar" class="sidebar">
-  <div class="sidebar-title">Auction Legacy</div>
-  <a href="/dashboard.html">Dashboard</a>
-  <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/dropoff.html">Received at Studio</a>
-  <a href="/items.html">Item Library</a>
-  <a href="/reports.html">Reports</a>
-</div>
-
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
-
 <div class="container">
 
   <div class="card">
-    <div id="image"></div>
     <h2 id="title"></h2>
-    <div class="label" id="code"></div>
-    <div id="stageBadge"></div>
-    <div id="lotBadge"></div>
-    <div class="label" id="locationText"></div>
-    <div class="label" id="pendingText"></div>
+    <div id="code"></div>
+    <div id="stage"></div>
   </div>
 
-  <div class="card">
-    <h3>Location</h3>
-    <input id="location" placeholder="Rack A1">
-    <button onclick="saveLocation()">Save Location</button>
-  </div>
-
-  <div class="card">
-    <h3>Request Handoff</h3>
-    <select id="handoffStage">
-      <option value="Received at Studio">Received at Studio</option>
-      <option value="Review & Cleaning">Review & Cleaning</option>
-      <option value="Photograph">Photograph</option>
-      <option value="Prep for Pickup">Prep for Pickup</option>
-      <option value="Picked Up">Picked Up</option>
-    </select>
-    <input id="handoffReason" placeholder="Reason (optional)">
-    <button onclick="requestHandoff()">Send Handoff Request</button>
-  </div>
-
-  <div class="card">
-    <h3>Direct Stage Change</h3>
-    <div class="button-group">
-      <button onclick="setStage('Received at Studio')">Received</button>
-      <button onclick="setStage('Review & Cleaning')">Cleaning</button>
-      <button onclick="setStage('Photograph')">Photograph</button>
-      <button onclick="setStage('Prep for Pickup')">Prep</button>
-      <button onclick="setStage('Picked Up')">Picked Up</button>
+  <!-- QR CODE -->
+  <div class="card qr-box">
+    <div class="qr-code">
+      <canvas id="qr"></canvas>
     </div>
+    <div id="qrText" class="qr-label"></div>
   </div>
 
-</div>
-
-<script>
-const user = JSON.parse(localStorage.getItem('user')) || { name: 'system' };
-let item;
-let id = new URLSearchParams(window.location.search).get('id');
-
-function toggleMenu() {
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
-}
-
-function logout() {
-  localStorage.removeItem('user');
-  window.location.href = '/';
-}
-
-async function load() {
-  const res = await fetch(`/items/${id}`);
-  item = await res.json();
-  render();
-}
-
-function render() {
-  image.innerHTML = item.photos?.[0]
-    ? `<img src="${item.photos[0]}" style="width:100%;border-radius:14px;display:block;">`
-    : '';
-
-  title.innerText = item.name;
-  code.innerText = `${item.code}-${item.number}`;
-
-  let stageClass = 'blue';
-  if (item.stage === 'Received at Studio') stageClass = 'green';
-  if (item.stage === 'Missing at Drop Off') stageClass = 'red';
-
-  stageBadge.innerHTML = `<span class="badge ${stageClass}">${item.stage}</span>`;
-  lotBadge.innerHTML = item.lotNumber ? `<span class="badge gold">Lot ${item.lotNumber}</span>` : '';
-  locationText.innerText = item.location ? `Location: ${item.location}` : 'Location: Not set';
-  pendingText.innerText = item.pendingHandoff
-    ? `Pending handoff to ${item.pendingHandoff.requestedStage} by ${item.pendingHandoff.requestedBy}`
-    : 'No pending handoff';
-
-  location.value = item.location || '';
-  handoffStage.value = item.stage;
-}
-
-async function saveLocation() {
-  await fetch(`/items/${item.id}/location`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: location.value,
-      employee: user.name
-    })
-  });
-
-  await load();
-}
-
-async function requestHandoff() {
-  await fetch(`/items/${item.id}/request-handoff`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: handoffStage.value,
-      employee: user.name,
-      reason: handoffReason.value
-    })
-  });
-
-  await load();
-  alert('Handoff request sent');
-}
-
-async function setStage(stageName) {
-  const res = await fetch(`/items/${item.id}/stage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: stageName,
-      employee: user.name
-    })
-  });
-
-  const data = await res.json();
-  item = data.item;
-
-  if (stageName === 'Photograph' && item.lotNumber) {
-    alert('Lot assigned: ' + item.lotNumber);
-  }
-
-  render();
-}
-
-load();
-</script>
-
-</body>
-</html>
+  <!-- LOCATION -->
+  <div class="card
