@@ -4,40 +4,106 @@
   <title>Drop Off</title>
 
   <style>
-    body { margin:0; font-family:Arial; background:#0b1b2b; }
-    .header { text-align:center; padding:20px; }
-    .logo { width:200px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1b2b;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 200px;
+    }
 
     .container {
-      background:#f3f4f6;
-      min-height:100vh;
-      padding:20px;
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 20px;
     }
 
     .card {
-      background:white;
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:15px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.08);
-      text-align:center;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
 
     button {
-      width:100%;
-      padding:14px;
-      border:none;
-      border-radius:10px;
-      margin-top:10px;
-      font-size:15px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 10px;
+      font-size: 15px;
+      cursor: pointer;
     }
 
-    .primary { background:#1d4ed8; color:white; }
+    .primary {
+      background: #1d4ed8;
+      color: white;
+    }
+
+    .success {
+      background: #22c55e;
+      color: white;
+    }
 
     video {
-      width:100%;
-      border-radius:10px;
-      margin-top:10px;
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      background: #000;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .item {
+      background: white;
+      border-radius: 10px;
+      padding: 8px;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .item img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #e5e7eb;
+    }
+
+    .item.received {
+      border-color: #22c55e;
+    }
+
+    .label {
+      font-size: 12px;
+      margin-top: 6px;
+      color: #111827;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-actions button {
+      width: auto;
+      flex: 1;
+      min-width: 150px;
     }
   </style>
 </head>
@@ -51,22 +117,28 @@
 <div class="container">
 
   <div class="card">
-    <h2>Scan Item</h2>
+    <h2>Receive at Studio</h2>
     <button class="primary" onclick="startScanner()">Start Scanner</button>
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
   </div>
+
+  <div id="workspace"></div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
 <script>
-let video = document.getElementById("video");
-let scanning = false;
+const user = JSON.parse(localStorage.getItem('user')) || { name: 'system' };
 
-async function startScanner(){
+let video = document.getElementById('video');
+let scanning = false;
+let currentItems = [];
+let currentCode = null;
+
+async function startScanner() {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:"environment"}
+    video: { facingMode: 'environment' }
   });
 
   video.srcObject = stream;
@@ -74,21 +146,26 @@ async function startScanner(){
   scanLoop();
 }
 
-function scanLoop(){
-  if(!scanning) return;
+function scanLoop() {
+  if (!scanning) return;
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!video.videoWidth || !video.videoHeight) {
+    requestAnimationFrame(scanLoop);
+    return;
+  }
 
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  ctx.drawImage(video,0,0);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  const img = ctx.getImageData(0,0,canvas.width,canvas.height);
-  const code = jsQR(img.data,canvas.width,canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, canvas.width, canvas.height);
 
-  if(code){
+  if (code) {
     scanning = false;
     handleScan(code.data);
   } else {
@@ -96,19 +173,98 @@ function scanLoop(){
   }
 }
 
-async function handleScan(data){
+async function handleScan(data) {
   const res = await fetch('/items');
   const items = await res.json();
 
   const found = items.find(i => `${i.code}-${i.number}` === data);
 
-  if(!found){
-    alert("Item not found");
+  if (!found) {
+    workspace.innerHTML = `
+      <div class="card">
+        <h3>Item not found</h3>
+        <button class="primary" onclick="startScanner()">Scan Again</button>
+      </div>
+    `;
     return;
   }
 
-  // 🔥 REDIRECT TO CONSIGNER VIEW
-  window.location.href = `/consigner.html?code=${found.code}`;
+  currentCode = found.code;
+  currentItems = items
+    .filter(i => i.code === found.code)
+    .map(i => ({
+      ...i,
+      received: i.stage === 'Received at Studio'
+    }));
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const consignerName = currentItems.length ? currentItems[0].consigner : '';
+
+  let html = `
+    <div class="card">
+      <h3>${consignerName}</h3>
+      <p>Code: ${currentCode}</p>
+
+      <div class="top-actions">
+        <button class="primary" onclick="window.location.href='/consigner.html?code=${currentCode}'">Open Consigner View</button>
+        <button class="success" onclick="confirmIntake()">Confirm Intake</button>
+      </div>
+
+      <div class="grid">
+  `;
+
+  currentItems.forEach((item, index) => {
+    html += `
+      <div class="item ${item.received ? 'received' : ''}" onclick="toggleItem(${index})">
+        ${item.photos && item.photos[0] ? `<img src="${item.photos[0]}">` : `<img src="" alt="">`}
+        <div class="label"><b>${item.code}-${item.number}</b></div>
+        <div class="label">${item.name}</div>
+        <div class="label">${item.received ? 'Marked Received' : 'Tap to Mark Received'}</div>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  workspace.innerHTML = html;
+}
+
+function toggleItem(index) {
+  currentItems[index].received = !currentItems[index].received;
+  renderGrid();
+}
+
+async function confirmIntake() {
+  for (const item of currentItems) {
+    if (item.received) {
+      await fetch(`/items/${item.id}/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: 'Received at Studio',
+          employee: user.name
+        })
+      });
+    } else {
+      await fetch(`/items/${item.id}/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: 'Missing at Drop Off',
+          employee: user.name
+        })
+      });
+    }
+  }
+
+  alert('Studio intake complete');
+  window.location.href = `/consigner.html?code=${currentCode}`;
 }
 </script>
 
