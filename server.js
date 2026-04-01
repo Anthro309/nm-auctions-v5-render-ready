@@ -16,6 +16,7 @@ const USERS_FILE = 'users.json';
 const ITEMS_FILE = 'items.json';
 const REPORTS_FILE = 'reports.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
+const INTAKE_FILE = 'intake.json';
 
 // =========================
 // HELPERS
@@ -128,6 +129,7 @@ function validStage(stage) {
 ensureArrayFile(ITEMS_FILE);
 ensureArrayFile(REPORTS_FILE);
 ensureArrayFile(NOTIFICATIONS_FILE);
+ensureArrayFile(INTAKE_FILE);
 ensureUsersExist();
 
 if (!fs.existsSync('public/uploads')) {
@@ -193,8 +195,7 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 // ITEMS
 // =========================
 app.get('/items', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  res.json(items);
+  res.json(readJSON(ITEMS_FILE));
 });
 
 app.get('/items/:id', (req, res) => {
@@ -241,385 +242,28 @@ app.post('/items', (req, res) => {
   res.json(newItem);
 });
 
-app.post('/items/:id', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const index = items.findIndex(i => String(i.id) === String(req.params.id));
-
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  const existing = items[index];
-
-  const updated = {
-    ...existing,
-    ...req.body,
-    id: existing.id,
-    logs: existing.logs,
-    createdAt: existing.createdAt
-  };
-
-  items[index] = updated;
-  writeJSON(ITEMS_FILE, items);
-
-  res.json(updated);
-});
-
 // =========================
-// REQUEST HANDOFF
+// INTAKE REPORTS (NEW)
 // =========================
-app.post('/items/:id/request-handoff', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  const requestedStage = req.body.stage;
-  const employee = req.body.employee || 'system';
-  const reason = req.body.reason || null;
-
-  if (!requestedStage || !validStage(requestedStage)) {
-    return res.status(400).json({ success: false, message: 'Valid requested stage is required' });
-  }
-
-  item.pendingHandoff = {
-    requestedStage,
-    fromStage: item.stage,
-    requestedBy: employee,
-    requestedAt: new Date().toISOString(),
-    reason
-  };
-
-  addLog(item, {
-    employee,
-    action: 'handoff requested',
-    fromStage: item.stage,
-    toStage: requestedStage,
-    reason
-  });
-
-  addNotification(
-    `${employee} sent ${item.code}-${item.number} to ${requestedStage}`,
-    item.id,
-    item.code,
-    'handoff-request'
-  );
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({
-    success: true,
-    item
-  });
-});
-
-// =========================
-// ACCEPT HANDOFF
-// =========================
-app.post('/items/:id/accept-handoff', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  if (!item.pendingHandoff) {
-    return res.status(400).json({ success: false, message: 'No pending handoff' });
-  }
-
-  const employee = req.body.employee || 'system';
-  const fromStage = item.stage;
-  const nextStage = item.pendingHandoff.requestedStage;
-
-  item.stage = nextStage;
-
-  if (nextStage === 'Photograph' && !item.lotNumber) {
-    const lot = nextLotNumber(items, new Date());
-    item.lotNumber = lot;
-    item.photographedAt = new Date().toISOString();
-    item.lotAssignedAt = new Date().toISOString();
-    item.lotAssignedBy = employee;
-
-    addLog(item, {
-      employee,
-      action: 'lot assigned',
-      note: `Assigned lot ${lot}`
-    });
-  }
-
-  addLog(item, {
-    employee,
-    action: 'handoff accepted',
-    fromStage,
-    toStage: nextStage
-  });
-
-  addNotification(
-    `${employee} accepted ${item.code}-${item.number} into ${nextStage}`,
-    item.id,
-    item.code,
-    'handoff-accepted'
-  );
-
-  item.pendingHandoff = null;
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({
-    success: true,
-    item
-  });
-});
-
-// =========================
-// REJECT HANDOFF
-// =========================
-app.post('/items/:id/reject-handoff', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  if (!item.pendingHandoff) {
-    return res.status(400).json({ success: false, message: 'No pending handoff' });
-  }
-
-  const employee = req.body.employee || 'system';
-  const rejectReason = req.body.reason || 'Rejected';
-
-  addLog(item, {
-    employee,
-    action: 'handoff rejected',
-    fromStage: item.stage,
-    toStage: item.pendingHandoff.requestedStage,
-    reason: rejectReason
-  });
-
-  addNotification(
-    `${employee} rejected handoff for ${item.code}-${item.number}: ${rejectReason}`,
-    item.id,
-    item.code,
-    'handoff-rejected'
-  );
-
-  item.pendingHandoff = null;
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({
-    success: true,
-    item
-  });
-});
-
-// =========================
-// PENDING HANDOFFS
-// =========================
-app.get('/handoffs/pending', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const pending = items.filter(i => i.pendingHandoff);
-  res.json(pending);
-});
-
-// =========================
-// DIRECT STAGE UPDATE
-// =========================
-app.post('/items/:id/stage', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  const employee = req.body.employee || 'system';
-  const newStage = req.body.stage;
-  const reason = req.body.reason || null;
-  const fromStage = item.stage;
-
-  if (!newStage || !validStage(newStage)) {
-    return res.status(400).json({ success: false, message: 'Valid stage is required' });
-  }
-
-  item.stage = newStage;
-
-  if (newStage === 'Photograph' && !item.lotNumber) {
-    const lot = nextLotNumber(items, new Date());
-    item.lotNumber = lot;
-    item.photographedAt = new Date().toISOString();
-    item.lotAssignedAt = new Date().toISOString();
-    item.lotAssignedBy = employee;
-
-    addLog(item, {
-      employee,
-      action: 'lot assigned',
-      note: `Assigned lot ${lot}`
-    });
-  }
-
-  addLog(item, {
-    employee,
-    action: 'stage changed',
-    fromStage,
-    toStage: newStage,
-    reason
-  });
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({
-    success: true,
-    item
-  });
-});
-
-// =========================
-// LOCATION
-// =========================
-app.post('/items/:id/location', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  const employee = req.body.employee || 'system';
-  const location = req.body.location || null;
-
-  item.location = location;
-
-  addLog(item, {
-    employee,
-    action: 'location updated',
-    note: `Location set to ${location || 'none'}`
-  });
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({
-    success: true,
-    item
-  });
-});
-
-// =========================
-// NOTIFICATIONS
-// =========================
-app.get('/notifications', (req, res) => {
-  const notifications = readJSON(NOTIFICATIONS_FILE);
-  res.json(notifications);
-});
-
-app.post('/notifications/:id/read', (req, res) => {
-  const notifications = readJSON(NOTIFICATIONS_FILE);
-  const notification = notifications.find(n => String(n.id) === String(req.params.id));
-
-  if (!notification) {
-    return res.status(404).json({ success: false, message: 'Notification not found' });
-  }
-
-  notification.read = true;
-  writeJSON(NOTIFICATIONS_FILE, notifications);
-
-  res.json({ success: true, notification });
-});
-
-app.post('/notifications/mark-all-read', (req, res) => {
-  const notifications = readJSON(NOTIFICATIONS_FILE);
-
-  for (const notification of notifications) {
-    notification.read = true;
-  }
-
-  writeJSON(NOTIFICATIONS_FILE, notifications);
-  res.json({ success: true });
-});
-
-app.post('/notifications/clear', (req, res) => {
-  writeJSON(NOTIFICATIONS_FILE, []);
-  res.json({ success: true });
-});
-
-// =========================
-// PERFORMANCE
-// =========================
-app.get('/performance', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const stats = {};
-
-  for (const item of items) {
-    const logs = Array.isArray(item.logs) ? item.logs : [];
-
-    for (const log of logs) {
-      const employee = log.employee || 'system';
-
-      if (!stats[employee]) {
-        stats[employee] = {
-          employee,
-          created: 0,
-          handoffRequested: 0,
-          handoffAccepted: 0,
-          handoffRejected: 0,
-          stageChanges: 0,
-          lotsAssigned: 0,
-          locationUpdates: 0
-        };
-      }
-
-      if (log.action === 'item created') stats[employee].created += 1;
-      if (log.action === 'handoff requested') stats[employee].handoffRequested += 1;
-      if (log.action === 'handoff accepted') stats[employee].handoffAccepted += 1;
-      if (log.action === 'handoff rejected') stats[employee].handoffRejected += 1;
-      if (log.action === 'stage changed') stats[employee].stageChanges += 1;
-      if (log.action === 'lot assigned') stats[employee].lotsAssigned += 1;
-      if (log.action === 'location updated') stats[employee].locationUpdates += 1;
-    }
-  }
-
-  res.json(Object.values(stats));
-});
-
-// =========================
-// REPORTS
-// =========================
-app.post('/closeout', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const reports = readJSON(REPORTS_FILE);
-  const today = new Date().toDateString();
-
-  const todaysItems = items
-    .filter(i => i.photographedAt && new Date(i.photographedAt).toDateString() === today)
-    .sort((a, b) => new Date(a.photographedAt) - new Date(b.photographedAt));
+app.post('/intake', (req, res) => {
+  const intake = readJSON(INTAKE_FILE);
 
   const report = {
     id: Date.now(),
-    date: today,
-    createdAt: new Date().toISOString(),
-    items: todaysItems.map(i => ({
-      id: i.id,
-      lotNumber: i.lotNumber,
-      name: i.name
-    }))
+    code: req.body.code,
+    consigner: req.body.consigner,
+    items: req.body.items,
+    createdAt: new Date().toISOString()
   };
 
-  reports.push(report);
-  writeJSON(REPORTS_FILE, reports);
+  intake.push(report);
+  writeJSON(INTAKE_FILE, intake);
 
-  res.json({
-    success: true,
-    report
-  });
+  res.json({ success: true, report });
 });
 
-app.get('/reports', (req, res) => {
-  const reports = readJSON(REPORTS_FILE);
-  res.json(reports);
+app.get('/intake', (req, res) => {
+  res.json(readJSON(INTAKE_FILE));
 });
 
 // =========================
