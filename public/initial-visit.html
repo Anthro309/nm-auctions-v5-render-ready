@@ -2,12 +2,55 @@
 <html>
 <head>
   <title>Initial Visit - NM Auctions</title>
-  <link rel="stylesheet" href="styles.css">
 
   <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #020617;
+      color: white;
+    }
+
+    .box {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #111827;
+      color: white;
+      margin-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
     .print-btn {
       background: #22c55e;
-      margin-top: 10px;
+    }
+
+    .grid {
+      margin-top: 15px;
+    }
+
+    .card {
+      background: #111827;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -21,7 +64,7 @@
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
 
-  <button class="primary" onclick="startVisit()">Start Visit</button>
+  <button onclick="startVisit()">Start Visit</button>
 
   <h3 id="code"></h3>
 
@@ -31,9 +74,9 @@
 
     <input type="file" id="photoInput" accept="image/*" capture="environment">
 
-    <button class="primary" onclick="addItem()">Add Item</button>
+    <button onclick="addItem()">Add Item</button>
 
-    <!-- 🖨 PRINT BUTTON -->
+    <!-- PRINT -->
     <button class="print-btn" onclick="printReport()">
       🖨 Print Consigner Report
     </button>
@@ -55,12 +98,12 @@ document.getElementById('user').innerText =
 let consigner = null;
 let items = [];
 
-// CODE
+// GENERATE CODE
 function genCode(f, l) {
   return (f.slice(0,3) + l.slice(0,3)).toUpperCase();
 }
 
-// START
+// START VISIT
 function startVisit() {
   const f = first.value.trim();
   const l = last.value.trim();
@@ -76,7 +119,7 @@ function startVisit() {
   section.style.display = "block";
 }
 
-// UPLOAD
+// UPLOAD PHOTO
 async function uploadPhoto(file) {
   const form = new FormData();
   form.append("photo", file);
@@ -124,7 +167,7 @@ async function addItem() {
   photoInput.value = "";
 }
 
-// RENDER
+// RENDER ITEMS
 function render() {
   list.innerHTML = "";
 
@@ -133,45 +176,124 @@ function render() {
     div.className = "card";
 
     div.innerHTML = `
-      <b>${i.code}-${i.number}</b>
-      <div>${i.name}</div>
+      <b>${i.code}-${i.number}</b><br>
+      ${i.name}
     `;
 
     list.appendChild(div);
   });
 }
 
-// 🖨 PRINT REPORT
+// PRINT REPORT (PRO VERSION)
 function printReport() {
   if (!items.length) {
     alert("No items to print");
     return;
   }
 
-  let content = `
-    <h2>NM Auctions</h2>
-    <p><b>Consigner:</b> ${consigner.name}</p>
-    <p><b>Code:</b> ${consigner.code}</p>
-    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
+  const logoUrl = "/logo.png";
 
-    <hr>
-
-    <ol>
-  `;
-
+  let rows = "";
   items.forEach(i => {
-    content += `<li>${i.code}-${i.number} — ${i.name}</li>`;
+    rows += `
+      <tr>
+        <td>${i.code}-${i.number}</td>
+        <td>${i.name}</td>
+      </tr>
+    `;
   });
 
-  content += `
-    </ol>
+  const html = `
+  <html>
+  <head>
+    <title>Consigner Report</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 40px;
+        color: #000;
+      }
 
-    <br><br>
-    <p>Consigner Signature: __________________________</p>
+      .header {
+        text-align: center;
+      }
+
+      .logo {
+        width: 220px;
+        margin-bottom: 10px;
+      }
+
+      h2 {
+        margin: 5px 0;
+      }
+
+      .info {
+        margin-top: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th, td {
+        border: 1px solid #ccc;
+        padding: 10px;
+      }
+
+      th {
+        background: #f3f4f6;
+      }
+
+      .signature {
+        margin-top: 60px;
+      }
+
+      .line {
+        margin-top: 40px;
+        border-top: 1px solid #000;
+        width: 300px;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="header">
+      <img src="${logoUrl}" class="logo">
+      <h2>Consignment Intake Report</h2>
+    </div>
+
+    <div class="info">
+      <p><strong>Consigner:</strong> ${consigner.name}</p>
+      <p><strong>Code:</strong> ${consigner.code}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item Code</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+
+    <div class="signature">
+      <p>Consigner Signature:</p>
+      <div class="line"></div>
+    </div>
+
+  </body>
+  </html>
   `;
 
-  const win = window.open('', '', 'width=800,height=600');
-  win.document.write(content);
+  const win = window.open('', '', 'width=900,height=700');
+  win.document.write(html);
   win.document.close();
   win.print();
 }
