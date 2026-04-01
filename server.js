@@ -1,138 +1,134 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const DB_PATH = path.join(DATA_DIR, 'db.json');
+const DATA_DIR = process.env.DATA_DIR || "./data";
+const DB_FILE = path.join(DATA_DIR, "db.json");
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure data folder exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR);
+}
+
+// Initialize DB
+if (!fs.existsSync(DB_FILE)) {
+  fs.writeFileSync(DB_FILE, JSON.stringify({
+    employees: [
+      { id: "1", name: "Fabian", pin: "1234", mustChangePin: true, isAdmin: true }
+    ],
+    items: [],
+    reports: []
+  }, null, 2));
+}
+
+function readDB() {
+  return JSON.parse(fs.readFileSync(DB_FILE));
+}
+
+function writeDB(data) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+}
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-// Simple ID generator
-function id() {
-  return Math.random().toString(36).substring(2, 12);
-}
+// 🔐 LOGIN (fixed + debug safe)
+app.post("/api/login", (req, res) => {
+  const { name, pin } = req.body;
+  const db = readDB();
 
-// Load DB
-function loadDb() {
-  if (fs.existsSync(DB_PATH)) {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-  }
-  return { employees: [], items: [], reports: [] };
-}
-
-// Save DB
-function saveDb() {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
-}
-
-let db = loadDb();
-
-
-// 🔥 AUTO FIX USERS (IMPORTANT)
-function ensureUser() {
-  if (!db.employees || db.employees.length === 0) {
-    db.employees = [
-      { id: id(), firstName: "Fabian", pin: "1234", isAdmin: true }
-    ];
-    saveDb();
-    return;
-  }
-
-  // Convert old bcrypt users to simple PIN
-  db.employees = db.employees.map(user => ({
-    id: user.id || id(),
-    firstName: user.firstName || "User",
-    pin: "1234", // reset pin
-    isAdmin: user.isAdmin ?? true
-  }));
-
-  saveDb();
-}
-
-ensureUser();
-
-
-// ------------------- AUTH -------------------
-
-app.post('/api/login', (req, res) => {
-  const { firstName, pin } = req.body;
+  console.log("LOGIN ATTEMPT:", name, pin);
 
   const user = db.employees.find(
-    e => e.firstName.toLowerCase() === String(firstName).toLowerCase()
+    e => e.name.toLowerCase() === name.toLowerCase() && e.pin === pin
   );
 
-  if (!user || user.pin !== String(pin)) {
+  if (!user) {
+    console.log("LOGIN FAILED");
     return res.status(401).json({ error: "Invalid login" });
   }
 
-  res.json({ user });
+  console.log("LOGIN SUCCESS");
+  res.json(user);
 });
 
+// Change PIN
+app.post("/api/change-pin", (req, res) => {
+  const { id, newPin } = req.body;
+  const db = readDB();
 
-// ------------------- ITEMS -------------------
+  const user = db.employees.find(e => e.id === id);
+  if (!user) return res.status(404).json({ error: "User not found" });
 
-app.post('/api/items', (req, res) => {
-  const { name } = req.body;
+  user.pin = newPin;
+  user.mustChangePin = false;
+
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// Add Item
+app.post("/api/items", (req, res) => {
+  const db = readDB();
 
   const item = {
-    id: id(),
-    name,
+    id: uuidv4(),
+    name: req.body.name,
     status: "drop_off",
     createdAt: new Date().toISOString()
   };
 
   db.items.push(item);
-  saveDb();
+  writeDB(db);
 
   res.json(item);
 });
 
-app.get('/api/items', (req, res) => {
-  res.json(db.items);
+// Move Item
+app.post("/api/items/:id/move", (req, res) => {
+  const db = readDB();
+  const item = db.items.find(i => i.id === req.params.id);
+
+  if (!item) return res.status(404).json({ error: "Item not found" });
+
+  item.status = req.body.status;
+  item.updatedAt = new Date().toISOString();
+
+  writeDB(db);
+  res.json(item);
 });
 
+// Daily Close Out
+app.post("/api/close-day", (req, res) => {
+  const db = readDB();
 
-// ------------------- DAILY CLOSE -------------------
-
-app.post('/api/close-day', (req, res) => {
   const report = {
-    id: id(),
+    id: uuidv4(),
     date: new Date().toLocaleDateString(),
     items: db.items
   };
 
   db.reports.push(report);
   db.items = [];
-  saveDb();
+
+  writeDB(db);
 
   res.json(report);
 });
 
-app.get('/api/reports', (req, res) => {
+// Get Reports
+app.get("/api/reports", (req, res) => {
+  const db = readDB();
   res.json(db.reports);
 });
 
-
-// ------------------- HEALTH -------------------
-
-app.get('/api/health', (_req, res) => {
-  res.json({ status: "OK" });
+// Fallback
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-
-// ------------------- FRONTEND -------------------
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-
-app.listen(PORT, () => {
-  console.log(`NM Auctions V5 running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Running on " + PORT));
