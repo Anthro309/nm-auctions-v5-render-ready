@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Intake Reports</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .report-card {
+      padding: 16px;
+      border-radius: 12px;
+      background: #111827;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .report-title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .report-sub {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .print-sheet {
+      background: white;
+      color: black;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
+  <a href="/dashboard.html">Dashboard</a>
+  <a href="/initial-visit.html">Initial Visit</a>
+  <a href="/dropoff.html">Received at Studio</a>
+  <a href="/items.html">Item Library</a>
+  <a href="/reports.html">Daily Reports</a>
+  <a href="/intake.html">Intake Reports</a>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <!-- LIST -->
+  <div class="card">
+    <h2>Intake Reports</h2>
+    <div id="list"></div>
+  </div>
+
+  <!-- VIEW -->
+  <div id="printArea" class="card print-sheet" style="display:none;"></div>
+
+  <button id="printBtn" onclick="printReport()" style="display:none;">
+    🖨️ Print
+  </button>
+
+</div>
+
+<script>
+let reports = [];
+
+// =========================
+// LOAD REPORTS
+// =========================
+async function load(){
+  const res = await fetch('/intake');
+  reports = await res.json();
+
+  list.innerHTML = "";
+
+  reports.reverse().forEach(r=>{
+    const div = document.createElement("div");
+    div.className = "report-card";
+
+    const date = new Date(r.createdAt).toLocaleDateString();
+
+    div.innerHTML = `
+      <div class="report-title">${r.consigner}</div>
+      <div class="report-sub">${date} • ${r.items.length} items</div>
+    `;
+
+    div.onclick = ()=> openReport(r);
+
+    list.appendChild(div);
+  });
+}
+
+// =========================
+// OPEN REPORT
+// =========================
+function openReport(r){
+  let html = `
+    <h2>Consignment Intake</h2>
+    <p>${r.consigner}</p>
+    <p>${new Date(r.createdAt).toLocaleDateString()}</p>
+    <hr>
+  `;
+
+  r.items.forEach(i=>{
+    html += `
+      <div style="margin-bottom:10px;">
+        <b>${i.code}-${i.number}</b><br>
+        ${i.name}
+      </div>
+      <hr>
+    `;
+  });
+
+  printArea.innerHTML = html;
+  printArea.style.display = "block";
+  printBtn.style.display = "block";
+}
+
+// =========================
+// PRINT
+// =========================
+function printReport(){
+  window.print();
+}
+
+// =========================
+// NAV
+// =========================
+function toggleMenu(){
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
+}
+
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+load();
+</script>
+
+</body>
+</html>
