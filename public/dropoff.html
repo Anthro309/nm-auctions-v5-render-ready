@@ -33,23 +33,27 @@
     <video id="video" autoplay></video>
   </div>
 
-  <div id="workspace"></div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
 
 <script>
-let items = [];
-let code;
+let scanning = false;
 
 async function startScanner(){
-  const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }});
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"environment" }
+  });
+
   video.srcObject = stream;
+  scanning = true;
+
   scan();
 }
 
 function scan(){
+  if(!scanning) return;
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -62,76 +66,41 @@ function scan(){
   canvas.height = video.videoHeight;
 
   ctx.drawImage(video,0,0);
+
   const img = ctx.getImageData(0,0,canvas.width,canvas.height);
   const qr = jsQR(img.data,canvas.width,canvas.height);
 
   if(qr){
+    scanning = false;
     handleScan(qr.data);
   } else {
     requestAnimationFrame(scan);
   }
 }
 
+// =========================
+// 🔥 AUTO OPEN ITEM
+// =========================
 async function handleScan(data){
   const res = await fetch('/items');
-  const all = await res.json();
+  const items = await res.json();
 
-  const found = all.find(i => `${i.code}-${i.number}` === data);
-  if(!found) return alert("Item not found");
+  const item = items.find(i => `${i.code}-${i.number}` === data);
 
-  code = found.code;
-  items = all.filter(i => i.code === code).map(i => ({...i, received:false}));
-
-  render();
-}
-
-function render(){
-  workspace.innerHTML = `
-    <div class="card">
-      <h2>Confirm Items</h2>
-      <div class="grid" id="grid"></div>
-      <button onclick="confirm()">Confirm Intake</button>
-    </div>
-  `;
-
-  const grid = document.getElementById("grid");
-
-  items.forEach((i,index)=>{
-    const div = document.createElement("div");
-    div.className = "item";
-
-    if(i.received) div.classList.add("received");
-
-    div.innerHTML = `
-      ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
-      <div style="padding:14px">
-        <div class="title">${i.name}</div>
-      </div>
-    `;
-
-    div.onclick = ()=>{
-      items[index].received = !items[index].received;
-      render();
-    };
-
-    grid.appendChild(div);
-  });
-}
-
-async function confirm(){
-  for(const i of items){
-    await fetch(`/items/${i.id}/stage`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        stage: i.received ? "Received at Studio" : "Missing at Drop Off"
-      })
-    });
+  if(!item){
+    alert("Item not found");
+    scanning = true;
+    scan();
+    return;
   }
 
-  window.location.href = "/consigner.html?code=" + code;
+  // 🚀 redirect instantly
+  window.location.href = "/item.html?id=" + item.id;
 }
 
+// =========================
+// NAV
+// =========================
 function toggleMenu(){
   sidebar.classList.toggle("open");
   overlay.classList.toggle("show");
