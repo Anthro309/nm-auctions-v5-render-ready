@@ -13,8 +13,12 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
 }
 
-// Initialize DB
-if (!fs.existsSync(DB_FILE)) {
+// ✅ ONE-TIME RESET FLAG
+const RESET_ONCE = true;
+
+if (RESET_ONCE || !fs.existsSync(DB_FILE)) {
+  console.log("🔥 Initializing DB with default user...");
+
   fs.writeFileSync(DB_FILE, JSON.stringify({
     employees: [
       { id: "1", name: "Fabian", pin: "1234", mustChangePin: true, isAdmin: true }
@@ -35,7 +39,7 @@ function writeDB(data) {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// 🔐 LOGIN (fixed + debug safe)
+// 🔐 LOGIN (case-insensitive name)
 app.post("/api/login", (req, res) => {
   const { name, pin } = req.body;
   const db = readDB();
@@ -43,15 +47,15 @@ app.post("/api/login", (req, res) => {
   console.log("LOGIN ATTEMPT:", name, pin);
 
   const user = db.employees.find(
-    e => e.name.toLowerCase() === name.toLowerCase() && e.pin === pin
+    e => e.name.toLowerCase() === (name || "").toLowerCase() && e.pin === pin
   );
 
   if (!user) {
-    console.log("LOGIN FAILED");
+    console.log("❌ LOGIN FAILED");
     return res.status(401).json({ error: "Invalid login" });
   }
 
-  console.log("LOGIN SUCCESS");
+  console.log("✅ LOGIN SUCCESS");
   res.json(user);
 });
 
@@ -125,10 +129,10 @@ app.get("/api/reports", (req, res) => {
   res.json(db.reports);
 });
 
-// Fallback
+// Frontend fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Running on " + PORT));
+app.listen(PORT, () => console.log("🚀 Running on port " + PORT));
