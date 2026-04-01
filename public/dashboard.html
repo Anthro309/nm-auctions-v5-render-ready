@@ -2,45 +2,153 @@
 <html>
 <head>
   <title>NM Auctions</title>
-  <link rel="stylesheet" href="styles.css">
 
   <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: linear-gradient(to bottom, #0f172a, #020617);
+      color: white;
+    }
+
     .wrapper {
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
       padding: 30px 20px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 35px;
     }
 
     .header h1 {
-      font-size: 28px;
-      margin-bottom: 5px;
+      font-size: 30px;
+      letter-spacing: 1px;
     }
 
     .header p {
-      color: #9ca3af;
+      color: #94a3b8;
       font-size: 14px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      gap: 18px;
     }
 
     .card {
-      background: #1f2937;
-      border-radius: 12px;
-      padding: 20px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      padding: 22px;
       cursor: pointer;
-      transition: 0.2s;
-      text-align: left;
+      transition: all 0.2s ease;
     }
 
     .card:hover {
-      transform: translateY(-3px);
-      background:
+      transform: translateY(-4px);
+      border-color: #3b82f6;
+      background: #0f172a;
+    }
+
+    .card.primary {
+      border-color: #3b82f6;
+      background: linear-gradient(145deg, #1e3a8a, #0f172a);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .card p {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    .logout {
+      margin-top: 30px;
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #ef4444;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .logout:hover {
+      background: #dc2626;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <div class="header">
+    <h1>NM Auctions</h1>
+    <p id="welcome"></p>
+  </div>
+
+  <div class="grid">
+
+    <div class="card primary" onclick="goTo('initial-visit')">
+      <h3>🏠 Initial Visit</h3>
+      <p>Walk property, tag items, capture photos</p>
+    </div>
+
+    <div class="card" onclick="goTo('items')">
+      <h3>📦 Item Library</h3>
+      <p>Search, view, and manage all items</p>
+    </div>
+
+    <div class="card" onclick="goTo('workflow')">
+      <h3>🔄 Workflow</h3>
+      <p>Move items through processing stages</p>
+    </div>
+
+    <div class="card" onclick="goTo('reports')">
+      <h3>📊 Reports</h3>
+      <p>Daily summaries and tracking</p>
+    </div>
+
+  </div>
+
+  <button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+
+if (!user) {
+  window.location.href = "/";
+}
+
+document.getElementById('welcome').innerText =
+  "Welcome " + user.name;
+
+function goTo(page) {
+  window.location.href = "/" + page + ".html";
+}
+
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = "/";
+}
+</script>
+
+</body>
+</html>
