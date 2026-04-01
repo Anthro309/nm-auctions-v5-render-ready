@@ -4,45 +4,58 @@
   <title>Initial Visit</title>
 
   <style>
-    body { margin:0; font-family:Arial; background:#0b1b2b; }
-    .header { text-align:center; padding:20px; }
-    .logo { width:200px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1b2b;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .logo {
+      width: 200px;
+    }
 
     .container {
-      background:#f3f4f6;
-      min-height:100vh;
-      padding:20px;
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 20px;
     }
 
     .card {
-      background:white;
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:15px;
-      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
 
     input {
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:8px;
-      border:1px solid #ddd;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
     }
 
     button {
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:8px;
-      border:none;
-      background:#1d4ed8;
-      color:white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #1d4ed8;
+      color: white;
+      cursor: pointer;
     }
 
     .item {
-      margin-top:10px;
-      font-size:14px;
+      margin-top: 10px;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -68,7 +81,7 @@
 
   <div class="card" id="section" style="display:none;">
     <input id="itemName" placeholder="Item Name">
-    <input type="file" id="photoInput" accept="image/*">
+    <input type="file" id="photoInput" accept="image/*" capture="environment">
 
     <button onclick="addItem()">Add Item</button>
 
@@ -78,34 +91,39 @@
 </div>
 
 <script>
+const user = JSON.parse(localStorage.getItem('user')) || { name: 'system' };
+
 let consigner = null;
 let items = [];
 
-function genCode(f,l){
-  return (f.slice(0,3)+l.slice(0,3)).toUpperCase();
+function genCode(f, l) {
+  return (f.slice(0, 3) + l.slice(0, 3)).toUpperCase();
 }
 
-function startVisit(){
+function startVisit() {
   const f = first.value.trim();
   const l = last.value.trim();
 
-  if(!f || !l) return alert("Enter name");
+  if (!f || !l) {
+    alert('Enter name');
+    return;
+  }
 
   consigner = {
-    name: f + " " + l,
-    code: genCode(f,l)
+    name: f + ' ' + l,
+    code: genCode(f, l)
   };
 
-  code.innerText = "Code: " + consigner.code;
-  section.style.display = "block";
+  code.innerText = 'Code: ' + consigner.code;
+  section.style.display = 'block';
 }
 
-async function uploadPhoto(file){
+async function uploadPhoto(file) {
   const form = new FormData();
-  form.append("photo", file);
+  form.append('photo', file);
 
   const res = await fetch('/upload', {
-    method:'POST',
+    method: 'POST',
     body: form
   });
 
@@ -113,16 +131,22 @@ async function uploadPhoto(file){
   return data.path;
 }
 
-async function addItem(){
-  if(!consigner) return alert("Start visit first");
+async function addItem() {
+  if (!consigner) {
+    alert('Start visit first');
+    return;
+  }
 
   const name = itemName.value.trim();
-  if(!name) return alert("Enter item name");
+  if (!name) {
+    alert('Enter item name');
+    return;
+  }
 
   let photoPath = null;
-
   const file = photoInput.files[0];
-  if(file){
+
+  if (file) {
     photoPath = await uploadPhoto(file);
   }
 
@@ -132,30 +156,29 @@ async function addItem(){
     code: consigner.code,
     number: items.length + 1,
     photos: photoPath ? [photoPath] : [],
-    stage: "Initial Visit"
+    employee: user.name
   };
 
   const res = await fetch('/items', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(item)
   });
 
   const saved = await res.json();
-
   items.push(saved);
   render();
 
-  itemName.value = "";
-  photoInput.value = "";
+  itemName.value = '';
+  photoInput.value = '';
 }
 
-function render(){
-  list.innerHTML = "";
+function render() {
+  list.innerHTML = '';
 
-  items.forEach(i=>{
-    const div = document.createElement("div");
-    div.className = "item";
+  items.forEach(i => {
+    const div = document.createElement('div');
+    div.className = 'item';
     div.innerText = `${i.code}-${i.number} — ${i.name}`;
     list.appendChild(div);
   });
