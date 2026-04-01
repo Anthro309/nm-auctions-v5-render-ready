@@ -1,253 +1,94 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Item Detail</title>
+  <title>Item</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #020617;
-      color: white;
+    body { margin:0; font-family:Arial; background:#0b1b2b; }
+
+    .header { text-align:center; padding:20px; }
+    .logo { width:200px; }
+
+    .container {
+      background:#f3f4f6;
+      min-height:100vh;
+      padding:20px;
     }
 
-    .wrapper {
-      max-width: 800px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .image {
-      width: 100%;
-      height: 300px;
-      background: #111827;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    .image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .title {
-      margin-top: 15px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .info {
-      margin-top: 5px;
-      color: #9ca3af;
-      font-size: 14px;
-    }
-
-    .section {
-      margin-top: 20px;
+    .card {
+      background:white;
+      border-radius:12px;
+      padding:20px;
+      margin-bottom:15px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
     }
 
     button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      border-radius: 8px;
-      border: none;
-      background: #1f2937;
-      color: white;
-      cursor: pointer;
+      width:100%;
+      padding:12px;
+      margin-top:8px;
+      border:none;
+      border-radius:8px;
     }
 
-    .stage {
-      background: #1e293b;
-    }
-
-    .active {
-      background: #2563eb;
-    }
-
-    .receive {
-      background: #22c55e;
-      font-weight: bold;
-    }
-
-    .receive:hover {
-      background: #16a34a;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #111827;
-      color: white;
-      margin-top: 8px;
-    }
+    .primary { background:#1d4ed8; color:white; }
   </style>
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
 
-  <div id="image" class="image"></div>
+<div class="container">
 
-  <div class="title" id="title"></div>
-
-  <div class="info" id="code"></div>
-  <div class="info" id="consigner"></div>
-  <div class="info" id="stage"></div>
-
-  <!-- 🚚 RECEIVE BUTTON -->
-  <div class="section">
-    <button class="receive" onclick="markReceived()">
-      🚚 Mark as Received (Drop Off)
-    </button>
+  <div class="card">
+    <h2 id="title"></h2>
+    <p id="code"></p>
+    <p id="stage"></p>
   </div>
 
-  <!-- WORKFLOW -->
-  <div class="section">
+  <div class="card">
     <h3>Workflow</h3>
 
-    <button class="stage" onclick="setStage('Back of House')">Back of House</button>
-    <button class="stage" onclick="setStage('Review & Cleaning')">Review & Cleaning</button>
-    <button class="stage" onclick="setStage('Photograph')">Photograph</button>
-    <button class="stage" onclick="setStage('Prep for Pickup')">Prep for Pickup</button>
-    <button class="stage" onclick="setStage('Picked Up')">Picked Up</button>
+    <button class="primary" onclick="setStage('Back of House')">Back of House</button>
+    <button class="primary" onclick="setStage('Review & Cleaning')">Review & Cleaning</button>
+    <button class="primary" onclick="setStage('Photograph')">Photograph</button>
+    <button class="primary" onclick="setStage('Prep for Pickup')">Prep for Pickup</button>
+    <button class="primary" onclick="setStage('Picked Up')">Picked Up</button>
   </div>
-
-  <!-- REASON -->
-  <div class="section">
-    <input id="reason" placeholder="Reason (required if skipping stage)">
-  </div>
-
-  <button onclick="goBack()">⬅ Back</button>
 
 </div>
 
 <script>
-let item = null;
+let item=null;
 
-const stages = [
-  "Initial Visit",
-  "Back of House",
-  "Review & Cleaning",
-  "Photograph",
-  "Prep for Pickup",
-  "Picked Up"
-];
+const id=new URLSearchParams(location.search).get("id");
 
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
-
-const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
-
-// LOAD ITEM
-async function loadItem() {
+async function load(){
   const res = await fetch('/items');
   const items = await res.json();
 
-  item = items.find(i => i.id == id);
+  item = items.find(i=>i.id==id);
 
-  if (!item) return alert("Item not found");
-
-  render();
+  title.innerText=item.name;
+  code.innerText=item.code+"-"+item.number;
+  stage.innerText="Stage: "+item.stage;
 }
 
-// RENDER
-function render() {
-  document.getElementById('title').innerText = item.name;
-  document.getElementById('code').innerText = item.code + "-" + item.number;
-  document.getElementById('consigner').innerText = item.consigner;
-  document.getElementById('stage').innerText = "Stage: " + item.stage;
-
-  const imgDiv = document.getElementById('image');
-  imgDiv.innerHTML = item.photos?.[0]
-    ? `<img src="${item.photos[0]}">`
-    : "No Image";
-
-  highlightStage();
-}
-
-// HIGHLIGHT
-function highlightStage() {
-  const buttons = document.querySelectorAll('.stage');
-
-  buttons.forEach(btn => {
-    if (btn.innerText === item.stage) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-}
-
-// 🚚 MARK RECEIVED
-async function markReceived() {
-  if (item.stage !== "Initial Visit") {
-    alert("Item already received");
-    return;
-  }
-
-  await fetch(`/items/${item.id}/stage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: "Back of House",
-      employee: user.name,
-      skipped: false,
-      reason: null
-    })
+async function setStage(s){
+  await fetch(`/items/${item.id}/stage`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({stage:s})
   });
 
-  item.stage = "Back of House";
-  render();
+  item.stage=s;
+  load();
 }
 
-// SET STAGE
-async function setStage(newStage) {
-
-  if (item.stage === "Initial Visit") {
-    alert("Item must be received first (Drop Off)");
-    return;
-  }
-
-  const currentIndex = stages.indexOf(item.stage);
-  const newIndex = stages.indexOf(newStage);
-
-  const skipped = newIndex > currentIndex + 1;
-  const reason = document.getElementById('reason').value;
-
-  if (skipped && !reason) {
-    alert("You must enter a reason for skipping stages");
-    return;
-  }
-
-  await fetch(`/items/${item.id}/stage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: newStage,
-      employee: user.name,
-      skipped,
-      reason
-    })
-  });
-
-  item.stage = newStage;
-  render();
-
-  document.getElementById('reason').value = "";
-}
-
-// BACK
-function goBack() {
-  window.location.href = "/items.html";
-}
-
-loadItem();
+load();
 </script>
 
 </body>
