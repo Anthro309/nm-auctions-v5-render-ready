@@ -1,105 +1,143 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
-
-const DATA_DIR = process.env.DATA_DIR || "./data";
-const DB_FILE = path.join(DATA_DIR, "db.json");
-
-// Ensure data folder exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
-}
-
-// 🔥 FORCE RESET (this guarantees login works)
-console.log("🔥 Resetting DB with default user...");
-
-fs.writeFileSync(DB_FILE, JSON.stringify({
-  employees: [
-    { id: "1", name: "Fabian", pin: "1234", mustChangePin: true, isAdmin: true }
-  ],
-  items: [],
-  reports: []
-}, null, 2));
-
-function readDB() {
-  return JSON.parse(fs.readFileSync(DB_FILE));
-}
-
-function writeDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-}
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static('public'));
 
-// 🔐 LOGIN (case-insensitive name)
-app.post("/api/login", (req, res) => {
+// ===== FILE PATHS =====
+const USERS_FILE = './users.json';
+const ITEMS_FILE = './items.json';
+const REPORTS_FILE = './reports.json';
+
+// ===== HELPERS =====
+function readJSON(file) {
+  if (!fs.existsSync(file)) return [];
+  return JSON.parse(fs.readFileSync(file));
+}
+
+function writeJSON(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function getMonthLetter() {
+  const months = "ABCDEFGHIJKL";
+  return months[new Date().getMonth()];
+}
+
+function generateLotNumber(items) {
+  const letter = getMonthLetter();
+  const existing = items
+    .filter(i => i.lotNumber)
+    .map(i => parseInt(i.lotNumber.slice(1)) || 0);
+
+  const next = existing.length ? Math.max(...existing) + 1 : 1;
+  return `${letter}${String(next).padStart(3, '0')}`;
+}
+
+// ===== LOGIN =====
+app.post('/login', (req, res) => {
   const { name, pin } = req.body;
-  const db = readDB();
+  const users = readJSON(USERS_FILE);
 
-  console.log("LOGIN ATTEMPT:", name, pin);
-
-  const user = db.employees.find(
-    e => e.name.toLowerCase() === (name || "").toLowerCase() && e.pin === pin
+  const user = users.find(
+    u =>
+      u.name.toLowerCase().trim() === name.toLowerCase().trim() &&
+      u.pin === pin
   );
 
   if (!user) {
-    console.log("❌ LOGIN FAILED");
-    return res.status(401).json({ error: "Invalid login" });
+    return res.status(401).json({ success: false });
   }
 
-  console.log("✅ LOGIN SUCCESS");
-  res.json(user);
+  res.json({ success: true, user });
 });
 
-// Add Item
-app.post("/api/items", (req, res) => {
-  const db = readDB();
+// ===== CREATE ITEM =====
+app.post('/items', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
 
-  const item = {
-    id: uuidv4(),
+  const newItem = {
+    id: Date.now(),
     name: req.body.name,
-    status: "drop_off",
-    createdAt: new Date().toISOString()
+    consigner: req.body.consigner,
+    stage: "Drop off",
+    createdAt: new Date(),
+    logs: []
   };
 
-  db.items.push(item);
-  writeDB(db);
+  items.push(newItem);
+  writeJSON(ITEMS_FILE, items);
+
+  res.json(newItem);
+});
+
+// ===== UPDATE STAGE =====
+app.post('/items/:id/stage', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => i.id == req.params.id);
+
+  if (!item) return res.status(404).send("Item not found");
+
+  const { stage, employee, reason } = req.body;
+
+  if (req.body.skipped && !reason) {
+    return res.status(400).json({ error: "Reason required" });
+  }
+
+  if (stage === "Photograph" && !item.lotNumber) {
+    item.lotNumber = generateLotNumber(items);
+    item.photographedAt = new Date();
+  }
+
+  item.stage = stage;
+
+  item.logs.push({
+    stage,
+    employee,
+    reason: reason || null,
+    timestamp: new Date()
+  });
+
+  writeJSON(ITEMS_FILE, items);
 
   res.json(item);
 });
 
-// Close Day
-app.post("/api/close-day", (req, res) => {
-  const db = readDB();
+// ===== DAILY CLOSEOUT =====
+app.post('/closeout', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const reports = readJSON(REPORTS_FILE);
+
+  const today = new Date().toDateString();
+
+  const todaysItems = items.filter(
+    i =>
+      i.photographedAt &&
+      new Date(i.photographedAt).toDateString() === today
+  );
 
   const report = {
-    id: uuidv4(),
-    date: new Date().toLocaleDateString(),
-    items: db.items
+    date: today,
+    items: todaysItems
   };
 
-  db.reports.push(report);
-  db.items = [];
-
-  writeDB(db);
+  reports.push(report);
+  writeJSON(REPORTS_FILE, reports);
 
   res.json(report);
 });
 
-// Get Reports
-app.get("/api/reports", (req, res) => {
-  const db = readDB();
-  res.json(db.reports);
+// ===== GET REPORTS =====
+app.get('/reports', (req, res) => {
+  const reports = readJSON(REPORTS_FILE);
+  res.json(reports);
 });
 
-// Serve frontend
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// ===== START SERVER =====
+app.listen(PORT, () => {
+  console.log(`🔥 NM Auctions running at http://localhost:${PORT}`);
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🚀 Running on port " + PORT));
