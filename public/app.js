@@ -9,20 +9,21 @@ async function login() {
       body: JSON.stringify({ name, pin })
     });
 
-    console.log("STATUS:", res.status);
-
     const data = await res.json();
-    console.log("RESPONSE:", data);
 
     if (!data.success) {
       document.getElementById('error').innerText = "Invalid login";
       return;
     }
 
-    alert("Welcome " + data.user.name);
+    // 💾 Save user
+    localStorage.setItem('user', JSON.stringify(data.user));
+
+    // 🚪 Go to dashboard
+    window.location.href = "/dashboard.html";
 
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
+    console.error(err);
     document.getElementById('error').innerText = "Server error";
   }
 }
