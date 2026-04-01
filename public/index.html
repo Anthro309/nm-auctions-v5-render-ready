@@ -1,22 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NM Auctions</title>
+  <title>Login</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
 
-<div class="box">
-  <h1>NM Auctions</h1>
+<body style="background:#0b1b2b; display:flex; justify-content:center; align-items:center; height:100vh;">
 
-  <input id="name" placeholder="Name" />
-  <input id="pin" placeholder="PIN" type="password"/>
+<div style="width:320px;">
 
-  <button onclick="login()">Login</button>
+  <div style="text-align:center; margin-bottom:20px;">
+    <img src="/logo.png" style="width:180px;">
+  </div>
 
-  <p id="error"></p>
+  <div class="card">
+
+    <input id="name" placeholder="Name" style="width:100%;padding:12px;margin-bottom:10px;">
+    <input id="pin" placeholder="PIN" type="password" style="width:100%;padding:12px;margin-bottom:10px;">
+
+    <button onclick="login()">Login</button>
+
+    <p id="error" style="color:red;font-size:12px;"></p>
+
+  </div>
+
 </div>
 
-<script src="app.js"></script>
+<script>
+async function login(){
+  const name = document.getElementById('name').value;
+  const pin = document.getElementById('pin').value;
+
+  const res = await fetch('/login', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ name, pin })
+  });
+
+  const data = await res.json();
+
+  if(data.success){
+    localStorage.setItem("user", JSON.stringify(data.user));
+    window.location.href = "/dashboard.html";
+  } else {
+    document.getElementById('error').innerText = "Invalid login";
+  }
+}
+</script>
+
 </body>
 </html>
