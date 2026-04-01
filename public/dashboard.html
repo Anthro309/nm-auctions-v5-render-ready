@@ -6,99 +6,77 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: #020617;
-      color: white;
+      font-family: Arial, sans-serif;
+      background: #0b1b2b;
+      color: #111;
     }
 
-    .wrapper {
-      max-width: 900px;
-      margin: auto;
-      padding: 30px 20px;
+    .header {
+      background: #0b1b2b;
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    .logo {
+      width: 220px;
+    }
+
+    .container {
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 15px;
     }
 
     .card {
-      background: #111827;
-      padding: 20px;
+      background: white;
       border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
       cursor: pointer;
       transition: 0.2s;
     }
 
     .card:hover {
-      transform: translateY(-3px);
-      background: #1f2937;
+      transform: translateY(-2px);
     }
 
-    .primary {
-      border: 2px solid #3b82f6;
+    .card-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 5px;
     }
 
     .logout {
       margin-top: 20px;
-      padding: 12px;
       width: 100%;
-      background: #ef4444;
+      padding: 14px;
+      border-radius: 10px;
       border: none;
-      border-radius: 8px;
+      background: #ef4444;
       color: white;
+      font-weight: bold;
     }
   </style>
 </head>
 
 <body>
 
-<div class="wrapper">
-
-  <h1>NM Auctions</h1>
-  <p id="welcome"></p>
-
-  <div class="grid">
-
-    <div class="card primary" onclick="goTo('initial-visit')">
-      🏠 Initial Visit
-    </div>
-
-    <div class="card" onclick="goTo('dropoff')">
-      🚚 Drop Off (Receive Items)
-    </div>
-
-    <div class="card" onclick="goTo('items')">
-      📦 Item Library
-    </div>
-
-    <div class="card" onclick="goTo('workflow')">
-      🔄 Workflow
-    </div>
-
-  </div>
-
-  <button class="logout" onclick="logout()">Logout</button>
-
-</div>
-
-<script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
-
-document.getElementById('welcome').innerText =
-  "Welcome " + user.name;
-
-function goTo(page) {
-  window.location.href = "/" + page + ".html";
-}
-
-function logout() {
-  localStorage.removeItem('user');
-  window.location.href = "/";
-}
-</script>
-
-</body>
-</html>
+<div class
