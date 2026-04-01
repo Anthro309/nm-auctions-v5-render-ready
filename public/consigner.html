@@ -1,93 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Consigner View</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0b1b2b;
-    }
-
-    .header {
-      text-align: center;
-      padding: 20px;
-    }
-
-    .logo {
-      width: 200px;
-    }
-
-    .container {
-      background: #f3f4f6;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .item {
-      background: white;
-      border-radius: 10px;
-      padding: 8px;
-      border: 3px solid transparent;
-    }
-
-    .item img {
-      width: 100%;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-
-    .received { border-color: #22c55e; }
-    .missing { border-color: #ef4444; opacity: 0.6; }
-
-    .label {
-      font-size: 12px;
-      margin-top: 5px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-    }
-
-    .primary { background:#1d4ed8; color:white; }
-    .success { background:#22c55e; color:white; }
-
-    .filters button {
-      width: auto;
-      margin-right: 5px;
-      padding: 8px 12px;
-      font-size: 12px;
-    }
-
-    .back-btn {
-      background: #e5e7eb;
-      color: black;
-      margin-top: 15px;
-    }
-
-  </style>
+  <title>Consigner</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
@@ -101,15 +16,14 @@
   <!-- HEADER -->
   <div class="card">
     <h2 id="name"></h2>
-    <p id="code"></p>
-    <p id="stats"></p>
+    <div class="label" id="code"></div>
+    <div class="label" id="stats"></div>
 
-    <!-- ✅ BACK BUTTON (RIGHT PLACE) -->
-    <button class="back-btn" onclick="goBack()">⬅ Back to Items</button>
+    <button class="secondary" onclick="goBack()">Back</button>
   </div>
 
   <!-- FILTERS -->
-  <div class="card filters">
+  <div class="card">
     <button onclick="setFilter('all')">All</button>
     <button onclick="setFilter('received')">Received</button>
     <button onclick="setFilter('missing')">Missing</button>
@@ -118,11 +32,6 @@
   <!-- GRID -->
   <div class="card">
     <div id="grid" class="grid"></div>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="card">
-    <button class="success" onclick="receiveAll()">Mark All Received</button>
   </div>
 
 </div>
@@ -142,12 +51,7 @@ async function load(){
 
   items = items.filter(i => i.code === consignerCode);
 
-  if(items.length === 0){
-    alert("No items found");
-    return;
-  }
-
-  document.getElementById('name').innerText = items[0].consigner;
+  document.getElementById('name').innerText = items[0]?.consigner || '';
   document.getElementById('code').innerText = "Code: " + consignerCode;
 
   updateStats();
@@ -156,11 +60,11 @@ async function load(){
 
 function updateStats(){
   const total = items.length;
-  const received = items.filter(i => i.stage === "Back of House").length;
+  const received = items.filter(i => i.stage === "Received at Studio").length;
   const missing = items.filter(i => i.stage === "Missing at Drop Off").length;
 
   document.getElementById('stats').innerText =
-    `${received} received / ${missing} missing / ${total} total`;
+    `${received} received · ${missing} missing · ${total} total`;
 }
 
 function setFilter(f){
@@ -170,7 +74,7 @@ function setFilter(f){
 
 function applyFilter(){
   if(filter === "received"){
-    filtered = items.filter(i => i.stage === "Back of House");
+    filtered = items.filter(i => i.stage === "Received at Studio");
   } else if(filter === "missing"){
     filtered = items.filter(i => i.stage === "Missing at Drop Off");
   } else {
@@ -188,39 +92,30 @@ function render(){
     const div = document.createElement('div');
 
     let cls = "item";
-    if(i.stage === "Back of House") cls += " received";
+    if(i.stage === "Received at Studio") cls += " received";
     if(i.stage === "Missing at Drop Off") cls += " missing";
 
     div.className = cls;
 
     div.innerHTML = `
-      ${i.photos && i.photos[0] ? `<img src="${i.photos[0]}">` : ""}
-      <div class="label"><b>${i.code}-${i.number}</b></div>
-      <div class="label">${i.name}</div>
-      <div class="label">${i.stage}</div>
+      ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
+      <div style="padding:10px">
+        <b>${i.code}-${i.number}</b>
+        <div class="label">${i.name}</div>
+        <div class="label">${i.stage}</div>
+      </div>
     `;
+
+    div.onclick = () => {
+      window.location.href = "/item.html?id=" + i.id;
+    };
 
     grid.appendChild(div);
   });
 }
 
-async function receiveAll(){
-  for(const item of items){
-    await fetch(`/items/${item.id}/stage`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        stage:"Back of House"
-      })
-    });
-  }
-
-  alert("All items marked received");
-  location.reload();
-}
-
 function goBack(){
-  window.location.href = "/items.html";
+  window.location.href = "/dashboard.html";
 }
 
 load();
