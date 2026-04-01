@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Drop Off Scanner</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #020617;
+      color: white;
+      text-align: center;
+    }
+
+    .wrapper {
+      padding: 20px;
+    }
+
+    video {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      border-radius: 10px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+    }
+
+    .item {
+      margin-top: 20px;
+      padding: 15px;
+      background: #111827;
+      border-radius: 10px;
+    }
+
+    .receive {
+      background: #22c55e;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <h1>📱 Scan Item (Drop Off)</h1>
+
+  <button onclick="startScanner()">Start Scanner</button>
+
+  <video id="video" autoplay></video>
+
+  <div id="result"></div>
+
+  <button onclick="goBack()">⬅ Back</button>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
+
+let video = document.getElementById("video");
+let scanning = false;
+
+// START CAMERA
+async function startScanner() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+  });
+
+  video.srcObject = stream;
+  scanning = true;
+
+  scanLoop();
+}
+
+// SCAN LOOP
+function scanLoop() {
+  if (!scanning) return;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+  if (code) {
+    scanning = false;
+    handleScan(code.data);
+  } else {
+    requestAnimationFrame(scanLoop);
+  }
+}
+
+// HANDLE SCAN
+async function handleScan(data) {
+  // EXPECTING: JOHSMI-001
