@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -8,7 +9,21 @@ const PORT = process.env.PORT || 10000;
 app.use(express.json());
 app.use(express.static('public'));
 
-const upload = multer({ dest: 'public/uploads/' });
+// ===== STORAGE CONFIG (NEW) =====
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = 'public/uploads/';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const name = Date.now() + ext;
+    cb(null, name);
+  }
+});
+
+const upload = multer({ storage });
 
 // ===== FILE HELPERS =====
 function readJSON(file){
@@ -57,7 +72,7 @@ app.post('/items/:id/stage', (req,res)=>{
   res.json({ success:true });
 });
 
-// ===== UPLOAD =====
+// ===== UPLOAD (UPDATED) =====
 app.post('/upload', upload.single('photo'), (req,res)=>{
   res.json({
     path: `/uploads/${req.file.filename}`
