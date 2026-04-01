@@ -124,6 +124,23 @@ app.get('/items', (req, res) => {
   res.json(items);
 });
 
+// ===== UPDATE ITEM (DETAIL PAGE USES THIS) =====
+app.post('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+
+  const index = items.findIndex(i => i.id == req.params.id);
+
+  if (index === -1) {
+    return res.status(404).send("Item not found");
+  }
+
+  items[index] = req.body;
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json(items[index]);
+});
+
 // ===== UPDATE ITEM STAGE =====
 app.post('/items/:id/stage', (req, res) => {
   const items = readJSON(ITEMS_FILE);
