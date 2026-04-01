@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Performance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .card-stat {
+      background: #111827;
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .name {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #9ca3af;
+      margin: 2px 0;
+    }
+
+    .stage-box {
+      background: #1f2937;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .stage-title {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
+</div>
+
+<div class="container">
+
+  <!-- EMPLOYEE PERFORMANCE -->
+  <div class="card">
+    <h2>Employee Performance</h2>
+    <div id="employees" class="grid"></div>
+  </div>
+
+  <!-- STAGE TIMES -->
+  <div class="card">
+    <h2>Stage Time Analysis</h2>
+    <div id="stages"></div>
+  </div>
+
+</div>
+
+<script>
+// =========================
+// LOAD
+// =========================
+async function load(){
+  loadEmployees();
+  loadStageTimes();
+}
+
+// =========================
+// EMPLOYEE STATS
+// =========================
+async function loadEmployees(){
+  const res = await fetch('/performance');
+  const data = await res.json();
+
+  employees.innerHTML = "";
+
+  data.forEach(e=>{
+    const div = document.createElement("div");
+    div.className = "card-stat";
+
+    div.innerHTML = `
+      <div class="name">${e.employee}</div>
+      <div class="small">Created: ${e.created}</div>
+      <div class="small">Requested: ${e.handoffRequested}</div>
+      <div class="small">Accepted: ${e.handoffAccepted}</div>
+      <div class="small">Rejected: ${e.handoffRejected}</div>
+      <div class="small">Stage Changes: ${e.stageChanges}</div>
+      <div class="small">Lots Assigned: ${e.lotsAssigned}</div>
+    `;
+
+    employees.appendChild(div);
+  });
+}
+
+// =========================
+// STAGE TIME ANALYTICS
+// =========================
+async function loadStageTimes(){
+  const res = await fetch('/items');
+  const items = await res.json();
+
+  const stageTimes = {};
+
+  items.forEach(item=>{
+    if(!item.logs || item.logs.length < 2) return;
+
+    for(let i = 1; i < item.logs.length; i++){
+      const prev = item.logs[i-1];
+      const curr = item.logs[i];
+
+      if(prev.toStage && curr.toStage){
+        const start = new Date(prev.timestamp);
+        const end = new Date(curr.timestamp);
+
+        const diff = (end - start) / 1000 / 60; // minutes
+
+        if(!stageTimes[prev.toStage]){
+          stageTimes[prev.toStage] = [];
+        }
+
+        stageTimes[prev.toStage].push(diff);
+      }
+    }
+  });
+
+  stages.innerHTML = "";
+
+  Object.keys(stageTimes).forEach(stage=>{
+    const times = stageTimes[stage];
+    const avg = Math.round(times.reduce((a,b)=>a+b,0) / times.length);
+
+    const div = document.createElement("div");
+    div.className = "stage-box";
+
+    div.innerHTML = `
+      <div class="stage-title">${stage}</div>
+      <div class="small">Avg Time: ${avg} mins</div>
+      <div class="small">Samples: ${times.length}</div>
+    `;
+
+    stages.appendChild(div);
+  });
+}
+
+// =========================
+// NAV
+// =========================
+function toggleMenu(){}
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+load();
+</script>
+
+</body>
+</html>
