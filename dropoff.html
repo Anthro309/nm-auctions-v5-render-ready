@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Drop Off - NM Auctions</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #020617;
+      color: white;
+    }
+
+    .wrapper {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #111827;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .list {
+      margin-top: 15px;
+    }
+
+    .item {
+      background: #111827;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .item:hover {
+      background: #1f2937;
+    }
+
+    .received {
+      border-left: 4px solid #22c55e;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    .back {
+      background: #374151;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+  <h1>🚚 Drop Off (Warehouse Intake)</h1>
+
+  <input 
+    placeholder="Search by code, name, or consigner..."
+    oninput="filterItems(this.value)"
+  >
+
+  <div id="list" class="list"></div>
+
+  <button class="back" onclick="goBack()">⬅ Back</button>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
+
+let items = [];
+let filtered = [];
+
+// LOAD ITEMS
+async function loadItems() {
+  const res = await fetch('/items');
+  items = await res.json();
+
+  // only show items NOT received yet
+  filtered = items.filter(i => i.stage === "Initial Visit");
+
+  render();
+}
+
+// RENDER LIST
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = "";
+
+  filtered.forEach(i => {
+    const div = document.createElement('div');
+    div.className = "item";
+
+    div.innerHTML = `
+      <b>${i.code}-${i.number}</b><br>
+      ${i.name}<br>
+      <small>${i.consigner}</small>
+    `;
+
+    div.onclick = () => receiveItem(i);
+
+    list.appendChild(div);
+  });
+}
+
+// RECEIVE ITEM
+async function receiveItem(item) {
+  const confirmReceive = confirm(
+    `Mark ${item.code}-${item.number} as received?`
+  );
+
+  if (!confirmReceive) return;
+
+  await fetch(`/items/${item.id}/stage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stage: "Back of House",
+      employee: user.name,
+      skipped: false,
+      reason: null
+    })
+  });
+
+  // update UI instantly
+  item.stage = "Back of House";
+
+  filtered = filtered.filter(i => i.id !== item.id);
+
+  render();
+}
+
+// SEARCH
+function filterItems(val) {
+  val = val.toLowerCase();
+
+  filtered = items.filter(i =>
+    i.stage === "Initial Visit" &&
+    (
+      i.name.toLowerCase().includes(val) ||
+      i.consigner.toLowerCase().includes(val) ||
+      i.code.toLowerCase().includes(val)
+    )
+  );
+
+  render();
+}
+
+// BACK
+function goBack() {
+  window.location.href = "/dashboard.html";
+}
+
+loadItems();
+</script>
+
+</body>
+</html>
