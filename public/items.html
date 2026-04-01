@@ -1,187 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Item Library</title>
+  <title>Items</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #020617;
-      color: white;
-    }
+    body { margin:0; font-family:Arial; background:#0b1b2b; }
 
-    .wrapper {
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-    }
+    .header { text-align:center; padding:20px; }
+    .logo { width:200px; }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 15px;
-    }
-
-    .search {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      background: #111827;
-      color: white;
-      margin-bottom: 20px;
+    .container {
+      background:#f3f4f6;
+      min-height:100vh;
+      padding:20px;
     }
 
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 15px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:15px;
     }
 
     .card {
-      background: #111827;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: 0.2s;
+      background:white;
+      padding:15px;
+      border-radius:12px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      cursor:pointer;
     }
 
-    .card:hover {
-      transform: scale(1.02);
-    }
-
-    .img {
-      height: 180px;
-      background: #0f172a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .img img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .content {
-      padding: 12px;
-    }
-
-    .code {
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .name {
-      font-size: 14px;
-      margin-top: 5px;
-    }
-
-    .consigner {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-top: 5px;
-    }
-
-    .back {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      background: #1f2937;
-      border: none;
-      border-radius: 8px;
-      color: white;
-    }
+    .code { font-weight:bold; }
+    .stage { font-size:12px; color:#6b7280; }
   </style>
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
 
-  <h1>📦 Item Library</h1>
+<div class="container">
+  <h2>Item Library</h2>
 
-  <input 
-    class="search" 
-    placeholder="Search items or consigner..."
-    oninput="filterItems(this.value)"
-  >
-
-  <div id="grid" class="grid"></div>
-
-  <button class="back" onclick="goBack()">⬅ Back</button>
-
+  <div id="list" class="grid"></div>
 </div>
 
 <script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
-
-let items = [];
-let filtered = [];
-
-// 📥 Load items
-async function loadItems() {
+async function load(){
   const res = await fetch('/items');
-  items = await res.json();
-  filtered = items;
-  render();
-}
+  const items = await res.json();
 
-// 🎨 Render cards
-function render() {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = "";
+  list.innerHTML="";
 
-  filtered.forEach(i => {
-    const div = document.createElement('div');
-    div.className = "card";
+  items.forEach(i=>{
+    const div=document.createElement("div");
+    div.className="card";
 
-    div.innerHTML = `
-      <div class="img">
-        ${
-          i.photos && i.photos[0]
-            ? `<img src="${i.photos[0]}">`
-            : `<span style="color:#6b7280;">No Image</span>`
-        }
-      </div>
-
-      <div class="content">
-        <div class="code">${i.code}-${i.number}</div>
-        <div class="name">${i.name}</div>
-        <div class="consigner">${i.consigner}</div>
-      </div>
+    div.innerHTML=`
+      <div class="code">${i.code}-${i.number}</div>
+      <div>${i.name}</div>
+      <div class="stage">${i.stage}</div>
     `;
 
-    // 🔥 THIS is the important part (opens item view)
-    div.onclick = () => {
-      window.location.href = `/item.html?id=${i.id}`;
-    };
+    div.onclick=()=>location.href=`/item.html?id=${i.id}`;
 
-    grid.appendChild(div);
+    list.appendChild(div);
   });
 }
 
-// 🔍 Filter
-function filterItems(val) {
-  val = val.toLowerCase();
-
-  filtered = items.filter(i =>
-    i.name.toLowerCase().includes(val) ||
-    i.consigner.toLowerCase().includes(val) ||
-    i.code.toLowerCase().includes(val)
-  );
-
-  render();
-}
-
-// 🔙 Back
-function goBack() {
-  window.location.href = "/dashboard.html";
-}
-
-loadItems();
+load();
 </script>
 
 </body>
