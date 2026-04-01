@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Initial Visit</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<div class="box">
+  <h1>🏠 Initial Visit</h1>
+
+  <input id="first" placeholder="First Name">
+  <input id="last" placeholder="Last Name">
+
+  <button onclick="startVisit()">Start Visit</button>
+
+  <h3 id="code"></h3>
+
+  <div id="section" style="display:none;">
+    <input id="itemName" placeholder="Item Name">
+
+    <input type="file" id="photoInput" accept="image/*" capture="environment">
+
+    <button onclick="addItem()">Add Item</button>
+
+    <div id="list"></div>
+  </div>
+
+  <button onclick="back()">Back</button>
+</div>
+
+<script>
+let consigner = null;
+let items = [];
+
+function genCode(f,l){
+  return (f.slice(0,3)+l.slice(0,3)).toUpperCase();
+}
+
+function startVisit(){
+  const f = first.value.trim();
+  const l = last.value.trim();
+
+  if(!f || !l) return alert("Enter name");
+
+  consigner = {
+    name: f+" "+l,
+    code: genCode(f,l)
+  };
+
+  code.innerText = consigner.code;
+  section.style.display = "block";
+}
+
+async function uploadPhoto(file){
+  const form = new FormData();
+  form.append("photo", file);
+
+  const res = await fetch('/upload', {
+    method: 'POST',
+    body: form
+  });
+
+  const data = await res.json();
+  return data.path;
+}
+
+async function addItem(){
+  const name = itemName.value.trim();
+  const file = photoInput.files[0];
+
+  if(!name) return alert("Enter item");
+
+  let photoPath = null;
+
+  if(file){
+    photoPath = await uploadPhoto(file);
+  }
+
+  const item = {
+    name,
+    consigner: consigner.name,
+    code: consigner.code,
+    number: items.length + 1,
+    photos: photoPath ? [photoPath] : []
+  };
+
+  // save to backend
+  await fetch('/items', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(item)
+  });
+
+  items.push(item);
+  render();
+
+  itemName.value = "";
+  photoInput.value = "";
+}
+
+function render(){
+  list.innerHTML = "";
+
+  items.forEach(i=>{
+    const div = document.createElement('div');
+
+    div.innerHTML = `
+      <b>${i.code}-${i.number}</b><br>
+      ${i.name}<br>
+      ${i.photos[0] ? `<img src="${i.photos[0]}" width="100">` : ""}
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+function back(){
+  window.location.href = "/dashboard.html";
+}
+</script>
+
+</body>
+</html>
