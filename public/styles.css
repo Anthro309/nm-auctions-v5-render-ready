@@ -1,31 +1,82 @@
 body {
-  background: #0f172a;
-  color: white;
-  font-family: Arial;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111827; /* deep charcoal */
+  color: #e5e7eb;
 }
 
+/* main container */
 .box {
-  background: #1e293b;
-  padding: 30px;
-  border-radius: 10px;
-  width: 300px;
-  text-align: center;
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 20px;
 }
 
+/* headers */
+h1 {
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+
+h3 {
+  color: #9ca3af;
+}
+
+/* inputs */
 input {
   width: 100%;
-  margin: 10px 0;
-  padding: 10px;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #1f2933;
+  color: white;
 }
 
+/* buttons */
 button {
   width: 100%;
-  padding: 10px;
-  background: #22c55e;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 6px;
   border: none;
+  background: #374151;
+  color: white;
+  font-weight: 500;
   cursor: pointer;
+}
+
+button:hover {
+  background: #4b5563;
+}
+
+/* primary action */
+button.primary {
+  background: #2563eb;
+}
+
+button.primary:hover {
+  background: #1d4ed8;
+}
+
+/* cards */
+.card {
+  background: #1f2933;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+}
+
+/* item grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* images */
+img {
+  border-radius: 6px;
+  margin-top: 8px;
 }
