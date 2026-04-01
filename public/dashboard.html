@@ -1,28 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard</title>
+  <title>NM Auctions Dashboard</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .container {
+      max-width: 500px;
+      margin: auto;
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .grid button {
+      padding: 15px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .logout {
+      margin-top: 20px;
+      background: #ef4444;
+      color: white;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="box">
-  <h1>Dashboard</h1>
+<div class="box container">
+  <h1>NM Auctions</h1>
   <p id="welcome"></p>
 
-  <button onclick="logout()">Logout</button>
+  <div class="grid">
+    <button onclick="goTo('dropoff')">📦 New Drop Off</button>
+    <button onclick="goTo('items')">📋 View Items</button>
+    <button onclick="goTo('workflow')">🔄 Workflow</button>
+    <button onclick="goTo('reports')">📊 Daily Reports</button>
+  </div>
+
+  <button class="logout" onclick="logout()">Logout</button>
 </div>
 
 <script>
+  // 🔐 Check login
   const user = JSON.parse(localStorage.getItem('user'));
 
   if (!user) {
     window.location.href = "/";
   }
 
+  // 👋 Welcome message
   document.getElementById('welcome').innerText =
     "Welcome " + user.name;
 
+  // 🚪 Navigation
+  function goTo(page) {
+    window.location.href = "/" + page + ".html";
+  }
+
+  // 🔓 Logout
   function logout() {
     localStorage.removeItem('user');
     window.location.href = "/";
