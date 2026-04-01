@@ -79,4 +79,57 @@
 
 <body>
 
-<div class
+<div class="header">
+  <img src="/logo.png" class="logo">
+</div>
+
+<div class="container">
+
+  <div class="title">
+    Internal Operations
+  </div>
+
+  <div class="grid">
+
+    <div class="card" onclick="goTo('initial-visit')">
+      <div class="card-title">🏠 Initial Visit</div>
+      <div class="card-desc">Capture items at consigners home</div>
+    </div>
+
+    <div class="card" onclick="goTo('dropoff')">
+      <div class="card-title">🚚 Drop Off</div>
+      <div class="card-desc">Receive items into warehouse</div>
+    </div>
+
+    <div class="card" onclick="goTo('items')">
+      <div class="card-title">📦 Item Library</div>
+      <div class="card-desc">View and manage all items</div>
+    </div>
+
+    <div class="card" onclick="goTo('workflow')">
+      <div class="card-title">🔄 Workflow</div>
+      <div class="card-desc">Track processing stages</div>
+    </div>
+
+  </div>
+
+  <button class="logout" onclick="logout()">Logout</button>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = "/";
+
+function goTo(page) {
+  window.location.href = "/" + page + ".html";
+}
+
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = "/";
+}
+</script>
+
+</body>
+</html>
