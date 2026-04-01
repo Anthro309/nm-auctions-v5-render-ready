@@ -13,20 +13,16 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
 }
 
-// ✅ ONE-TIME RESET FLAG
-const RESET_ONCE = false;
+// 🔥 FORCE RESET (this guarantees login works)
+console.log("🔥 Resetting DB with default user...");
 
-if (RESET_ONCE || !fs.existsSync(DB_FILE)) {
-  console.log("🔥 Initializing DB with default user...");
-
-  fs.writeFileSync(DB_FILE, JSON.stringify({
-    employees: [
-      { id: "1", name: "Fabian", pin: "1234", mustChangePin: true, isAdmin: true }
-    ],
-    items: [],
-    reports: []
-  }, null, 2));
-}
+fs.writeFileSync(DB_FILE, JSON.stringify({
+  employees: [
+    { id: "1", name: "Fabian", pin: "1234", mustChangePin: true, isAdmin: true }
+  ],
+  items: [],
+  reports: []
+}, null, 2));
 
 function readDB() {
   return JSON.parse(fs.readFileSync(DB_FILE));
@@ -59,21 +55,6 @@ app.post("/api/login", (req, res) => {
   res.json(user);
 });
 
-// Change PIN
-app.post("/api/change-pin", (req, res) => {
-  const { id, newPin } = req.body;
-  const db = readDB();
-
-  const user = db.employees.find(e => e.id === id);
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  user.pin = newPin;
-  user.mustChangePin = false;
-
-  writeDB(db);
-  res.json({ success: true });
-});
-
 // Add Item
 app.post("/api/items", (req, res) => {
   const db = readDB();
@@ -91,21 +72,7 @@ app.post("/api/items", (req, res) => {
   res.json(item);
 });
 
-// Move Item
-app.post("/api/items/:id/move", (req, res) => {
-  const db = readDB();
-  const item = db.items.find(i => i.id === req.params.id);
-
-  if (!item) return res.status(404).json({ error: "Item not found" });
-
-  item.status = req.body.status;
-  item.updatedAt = new Date().toISOString();
-
-  writeDB(db);
-  res.json(item);
-});
-
-// Daily Close Out
+// Close Day
 app.post("/api/close-day", (req, res) => {
   const db = readDB();
 
@@ -129,7 +96,7 @@ app.get("/api/reports", (req, res) => {
   res.json(db.reports);
 });
 
-// Frontend fallback
+// Serve frontend
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
