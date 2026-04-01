@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
 
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     .report-card {
       padding: 16px;
@@ -14,16 +17,8 @@
       cursor: pointer;
     }
 
-    .report-title {
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .report-sub {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-top: 4px;
-    }
+    .report-title { font-weight: bold; }
+    .report-sub { font-size: 13px; color: #9ca3af; }
 
     .filters {
       display: flex;
@@ -32,9 +27,28 @@
       flex-wrap: wrap;
     }
 
-    .filters input {
-      flex: 1;
-      min-width: 120px;
+    .analytics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .stat {
+      background: #1f2937;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #9ca3af;
     }
 
     .print-sheet {
@@ -45,14 +59,14 @@
       margin-top: 20px;
     }
 
-    .link-btn {
+    .btn {
       margin-top: 10px;
-      background: #2563eb;
-      color: white;
-      border: none;
       padding: 10px;
       border-radius: 8px;
+      border: none;
       cursor: pointer;
+      background: #2563eb;
+      color: white;
     }
 
     @media print {
@@ -76,28 +90,31 @@
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
-<div id="sidebar" class="sidebar">
-  <div class="sidebar-title">Auction Legacy</div>
-  <a href="/dashboard.html">Dashboard</a>
-  <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/dropoff.html">Received at Studio</a>
-  <a href="/items.html">Item Library</a>
-  <a href="/reports.html">Daily Reports</a>
-  <a href="/intake.html">Intake Reports</a>
-</div>
-
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
-
 <div class="container">
 
-  <div class="card">
-    <h2>Intake Reports</h2>
+  <!-- ANALYTICS -->
+  <div class="card analytics">
+    <div class="stat">
+      <div id="totalReports" class="stat-number">0</div>
+      <div class="stat-label">Reports</div>
+    </div>
 
-    <!-- FILTERS -->
+    <div class="stat">
+      <div id="totalItems" class="stat-number">0</div>
+      <div class="stat-label">Items</div>
+    </div>
+
+    <div class="stat">
+      <div id="topConsigner" class="stat-number">-</div>
+      <div class="stat-label">Top Consigner</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card">
     <div class="filters">
       <input id="search" placeholder="Search..." oninput="render()">
       <input id="dateFilter" type="date" onchange="render()">
-      <input id="employeeFilter" placeholder="Employee..." oninput="render()">
     </div>
 
     <div id="list"></div>
@@ -106,13 +123,8 @@
   <!-- REPORT VIEW -->
   <div id="printArea" class="card print-sheet" style="display:none;"></div>
 
-  <button id="printBtn" onclick="printReport()" style="display:none;">
-    🖨️ Print
-  </button>
-
-  <button id="openConsignerBtn" class="link-btn" style="display:none;">
-    Open Consigner View
-  </button>
+  <button class="btn" onclick="printReport()">🖨️ Print</button>
+  <button class="btn" onclick="exportPDF()">📄 Export PDF</button>
 
 </div>
 
@@ -126,33 +138,53 @@ let currentReport = null;
 async function load(){
   const res = await fetch('/intake');
   reports = await res.json();
+
+  buildAnalytics();
   render();
 }
 
 // =========================
-// RENDER WITH FILTERS
+// ANALYTICS
+// =========================
+function buildAnalytics(){
+  totalReports.innerText = reports.length;
+
+  let itemCount = 0;
+  let consigners = {};
+
+  reports.forEach(r=>{
+    itemCount += r.items.length;
+
+    consigners[r.consigner] =
+      (consigners[r.consigner] || 0) + r.items.length;
+  });
+
+  totalItems.innerText = itemCount;
+
+  const top = Object.entries(consigners)
+    .sort((a,b)=>b[1]-a[1])[0];
+
+  topConsigner.innerText = top ? top[0] : "-";
+}
+
+// =========================
+// RENDER
 // =========================
 function render(){
   const q = search.value.toLowerCase();
   const dateVal = dateFilter.value;
-  const employeeVal = employeeFilter.value.toLowerCase();
 
   list.innerHTML = "";
 
   reports.slice().reverse().forEach(r=>{
     const reportDate = new Date(r.createdAt);
-    const dateMatch = !dateVal || reportDate.toISOString().slice(0,10) === dateVal;
+    const matchDate = !dateVal || reportDate.toISOString().slice(0,10) === dateVal;
 
-    const textMatch =
+    const matchText =
       r.consigner.toLowerCase().includes(q) ||
-      r.code.toLowerCase().includes(q) ||
       r.items.some(i => i.name.toLowerCase().includes(q));
 
-    const employeeMatch =
-      !employeeVal ||
-      r.items.some(i => (i.employee || '').toLowerCase().includes(employeeVal));
-
-    if (!dateMatch || !textMatch || !employeeMatch) return;
+    if (!matchDate || !matchText) return;
 
     const div = document.createElement("div");
     div.className = "report-card";
@@ -184,24 +216,11 @@ function openReport(r){
   `;
 
   r.items.forEach(i=>{
-    html += `
-      <div style="margin-bottom:10px;">
-        <b>${i.code}-${i.number}</b><br>
-        ${i.name}
-      </div>
-      <hr>
-    `;
+    html += `<div><b>${i.code}-${i.number}</b> - ${i.name}</div>`;
   });
 
   printArea.innerHTML = html;
   printArea.style.display = "block";
-  printBtn.style.display = "block";
-  openConsignerBtn.style.display = "block";
-
-  // 🔗 LINK TO CONSIGNER
-  openConsignerBtn.onclick = ()=>{
-    window.location.href = "/consigner.html?code=" + r.code;
-  };
 }
 
 // =========================
@@ -212,11 +231,36 @@ function printReport(){
 }
 
 // =========================
+// EXPORT PDF
+// =========================
+function exportPDF(){
+  if(!currentReport) return alert("Open a report first");
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 10;
+
+  doc.text("Consignment Intake", 10, y);
+  y += 10;
+
+  doc.text(currentReport.consigner, 10, y);
+  y += 10;
+
+  currentReport.items.forEach(i=>{
+    doc.text(`${i.code}-${i.number} - ${i.name}`, 10, y);
+    y += 8;
+  });
+
+  doc.save("intake-report.pdf");
+}
+
+// =========================
 // NAV
 // =========================
 function toggleMenu(){
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
+  sidebar?.classList.toggle("open");
+  overlay?.classList.toggle("show");
 }
 
 function logout(){
