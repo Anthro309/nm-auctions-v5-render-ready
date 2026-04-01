@@ -68,6 +68,7 @@
       margin-top: 10px;
       border-radius: 8px;
       border: none;
+      cursor: pointer;
     }
 
     .primary { background:#1d4ed8; color:white; }
@@ -78,6 +79,12 @@
       margin-right: 5px;
       padding: 8px 12px;
       font-size: 12px;
+    }
+
+    .back-btn {
+      background: #e5e7eb;
+      color: black;
+      margin-top: 15px;
     }
 
   </style>
@@ -95,8 +102,10 @@
   <div class="card">
     <h2 id="name"></h2>
     <p id="code"></p>
-
     <p id="stats"></p>
+
+    <!-- ✅ BACK BUTTON (RIGHT PLACE) -->
+    <button class="back-btn" onclick="goBack()">⬅ Back to Items</button>
   </div>
 
   <!-- FILTERS -->
@@ -114,7 +123,6 @@
   <!-- ACTIONS -->
   <div class="card">
     <button class="success" onclick="receiveAll()">Mark All Received</button>
-    <button class="primary" onclick="goBack()">⬅ Back</button>
   </div>
 
 </div>
@@ -212,7 +220,7 @@ async function receiveAll(){
 }
 
 function goBack(){
-  window.location.href = "/dashboard.html";
+  window.location.href = "/items.html";
 }
 
 load();
