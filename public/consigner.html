@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Consigner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -9,11 +10,12 @@
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center"><img src="/logo.png"></div>
+  <div class="nav-center">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
 <div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
   <a href="/dashboard.html">Dashboard</a>
   <a href="/initial-visit.html">Initial Visit</a>
   <a href="/dropoff.html">Received at Studio</a>
@@ -30,7 +32,7 @@
     <div id="stats" class="label"></div>
   </div>
 
-  <div class="grid" id="grid"></div>
+  <div id="grid" class="grid"></div>
 
 </div>
 
@@ -43,10 +45,8 @@ async function load(){
 
   const list = items.filter(i => i.code === code);
 
-  document.getElementById("name").innerText = list[0]?.consigner || "";
-
-  document.getElementById("stats").innerText =
-    list.length + " items";
+  name.innerText = list[0]?.consigner || "";
+  stats.innerText = list.length + " items";
 
   grid.innerHTML = "";
 
@@ -57,15 +57,20 @@ async function load(){
     if(i.stage === "Received at Studio") div.classList.add("received");
     if(i.stage === "Missing at Drop Off") div.classList.add("missing");
 
+    let badge = `<span class="badge blue">${i.stage}</span>`;
+    if(i.stage === "Received at Studio") badge = `<span class="badge green">Received</span>`;
+    if(i.stage === "Missing at Drop Off") badge = `<span class="badge red">Missing</span>`;
+
     div.innerHTML = `
       ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
-      <div style="padding:10px">
-        <div class="title">${i.code}-${i.number}</div>
-        <div class="label">${i.name}</div>
+      <div style="padding:14px">
+        <div class="title">${i.name}</div>
+        <div class="label">${i.code}-${i.number}</div>
+        ${badge}
       </div>
     `;
 
-    div.onclick = () => {
+    div.onclick = ()=>{
       window.location.href = "/item.html?id=" + i.id;
     };
 
