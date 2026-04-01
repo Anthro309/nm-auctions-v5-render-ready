@@ -21,6 +21,7 @@
   <a href="/dropoff.html">Received at Studio</a>
   <a href="/items.html">Item Library</a>
   <a href="/reports.html">Reports</a>
+  <a href="/scan.html">Scan Item</a> <!-- ✅ ADDED -->
 </div>
 
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
@@ -28,6 +29,13 @@
 <div class="container">
 
   <div class="grid" style="margin-bottom:18px;">
+
+    <!-- ✅ NEW SCAN CARD (PRIMARY ACTION) -->
+    <div class="button-card" onclick="go('/scan.html')" style="background:#1e40af;">
+      <div class="button-title">Scan Item</div>
+      <div class="button-sub">Open item instantly with camera</div>
+    </div>
+
     <div class="button-card" onclick="go('/initial-visit.html')">
       <div class="button-title">Initial Visit</div>
       <div class="button-sub">Capture consignments on-site</div>
@@ -47,6 +55,7 @@
       <div class="button-title">Daily Reports</div>
       <div class="button-sub">Close out and print</div>
     </div>
+
   </div>
 
   <div class="card">
