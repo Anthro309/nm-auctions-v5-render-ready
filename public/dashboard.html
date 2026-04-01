@@ -1,77 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NM Auctions Dashboard</title>
+  <title>NM Auctions</title>
   <link rel="stylesheet" href="styles.css">
+
   <style>
-    .container {
-      max-width: 500px;
+    .wrapper {
+      max-width: 900px;
       margin: auto;
+      padding: 30px 20px;
+    }
+
+    .header {
       text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      color: #9ca3af;
+      font-size: 14px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 15px;
     }
 
-    .grid button {
-      padding: 15px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
+    .card {
+      background: #1f2937;
+      border-radius: 12px;
+      padding: 20px;
       cursor: pointer;
+      transition: 0.2s;
+      text-align: left;
     }
 
-    .logout {
-      margin-top: 20px;
-      background: #ef4444;
-      color: white;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="box container">
-  <h1>NM Auctions</h1>
-  <p id="welcome"></p>
-
-  <div class="grid">
-    <button onclick="goTo('dropoff')">📦 New Drop Off</button>
-    <button onclick="goTo('items')">📋 View Items</button>
-    <button onclick="goTo('workflow')">🔄 Workflow</button>
-    <button onclick="goTo('reports')">📊 Daily Reports</button>
-  </div>
-
-  <button class="logout" onclick="logout()">Logout</button>
-</div>
-
-<script>
-  // 🔐 Check login
-  const user = JSON.parse(localStorage.getItem('user'));
-
-  if (!user) {
-    window.location.href = "/";
-  }
-
-  // 👋 Welcome message
-  document.getElementById('welcome').innerText =
-    "Welcome " + user.name;
-
-  // 🚪 Navigation
-  function goTo(page) {
-    window.location.href = "/" + page + ".html";
-  }
-
-  // 🔓 Logout
-  function logout() {
-    localStorage.removeItem('user');
-    window.location.href = "/";
-  }
-</script>
-
-</body>
-</html>
+    .card:hover {
+      transform: translateY(-3px);
+      background:
