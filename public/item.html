@@ -23,9 +23,6 @@
       background: #111827;
       border-radius: 12px;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .image img {
@@ -41,13 +38,41 @@
     }
 
     .info {
-      margin-top: 8px;
+      margin-top: 5px;
       color: #9ca3af;
       font-size: 14px;
     }
 
     .section {
       margin-top: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: none;
+      background: #1f2937;
+      color: white;
+      cursor: pointer;
+    }
+
+    .stage {
+      background: #1e293b;
+    }
+
+    .active {
+      background: #2563eb;
+    }
+
+    .receive {
+      background: #22c55e;
+      font-weight: bold;
+    }
+
+    .receive:hover {
+      background: #16a34a;
     }
 
     input {
@@ -58,26 +83,6 @@
       background: #111827;
       color: white;
       margin-top: 8px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #1f2937;
-      color: white;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: #2563eb;
-    }
-
-    .back {
-      margin-top: 20px;
-      background: #374151;
     }
   </style>
 </head>
@@ -94,112 +99,150 @@
   <div class="info" id="consigner"></div>
   <div class="info" id="stage"></div>
 
-  <!-- Edit Name -->
+  <!-- 🚚 RECEIVE BUTTON -->
   <div class="section">
-    <input id="nameInput" placeholder="Edit item name">
-    <button onclick="updateName()">Update Name</button>
+    <button class="receive" onclick="markReceived()">
+      🚚 Mark as Received (Drop Off)
+    </button>
   </div>
 
-  <!-- Add Photo -->
+  <!-- WORKFLOW -->
   <div class="section">
-    <input type="file" id="photoInput" accept="image/*" capture="environment">
-    <button class="primary" onclick="addPhoto()">Add Photo</button>
+    <h3>Workflow</h3>
+
+    <button class="stage" onclick="setStage('Back of House')">Back of House</button>
+    <button class="stage" onclick="setStage('Review & Cleaning')">Review & Cleaning</button>
+    <button class="stage" onclick="setStage('Photograph')">Photograph</button>
+    <button class="stage" onclick="setStage('Prep for Pickup')">Prep for Pickup</button>
+    <button class="stage" onclick="setStage('Picked Up')">Picked Up</button>
   </div>
 
-  <button class="back" onclick="goBack()">⬅ Back</button>
+  <!-- REASON -->
+  <div class="section">
+    <input id="reason" placeholder="Reason (required if skipping stage)">
+  </div>
+
+  <button onclick="goBack()">⬅ Back</button>
 
 </div>
 
 <script>
 let item = null;
 
-// get id from URL
-const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
+const stages = [
+  "Initial Visit",
+  "Back of House",
+  "Review & Cleaning",
+  "Photograph",
+  "Prep for Pickup",
+  "Picked Up"
+];
 
-// 🔐 protect route
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = "/";
 
-// load item
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+// LOAD ITEM
 async function loadItem() {
   const res = await fetch('/items');
   const items = await res.json();
 
   item = items.find(i => i.id == id);
 
-  if (!item) {
-    alert("Item not found");
-    return;
-  }
+  if (!item) return alert("Item not found");
 
   render();
 }
 
-// 🎨 render
+// RENDER
 function render() {
-  const imgDiv = document.getElementById('image');
-
-  imgDiv.innerHTML = item.photos && item.photos[0]
-    ? `<img src="${item.photos[0]}">`
-    : "No Image";
-
   document.getElementById('title').innerText = item.name;
   document.getElementById('code').innerText = item.code + "-" + item.number;
   document.getElementById('consigner').innerText = item.consigner;
   document.getElementById('stage').innerText = "Stage: " + item.stage;
 
-  document.getElementById('nameInput').value = item.name;
+  const imgDiv = document.getElementById('image');
+  imgDiv.innerHTML = item.photos?.[0]
+    ? `<img src="${item.photos[0]}">`
+    : "No Image";
+
+  highlightStage();
 }
 
-// ✏️ update name
-async function updateName() {
-  const newName = document.getElementById('nameInput').value;
+// HIGHLIGHT
+function highlightStage() {
+  const buttons = document.querySelectorAll('.stage');
 
-  item.name = newName;
+  buttons.forEach(btn => {
+    if (btn.innerText === item.stage) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
 
-  await fetch('/items/' + item.id, {
+// 🚚 MARK RECEIVED
+async function markReceived() {
+  if (item.stage !== "Initial Visit") {
+    alert("Item already received");
+    return;
+  }
+
+  await fetch(`/items/${item.id}/stage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
+    body: JSON.stringify({
+      stage: "Back of House",
+      employee: user.name,
+      skipped: false,
+      reason: null
+    })
   });
 
+  item.stage = "Back of House";
   render();
 }
 
-// 📸 upload photo
-async function uploadPhoto(file) {
-  const form = new FormData();
-  form.append("photo", file);
+// SET STAGE
+async function setStage(newStage) {
 
-  const res = await fetch('/upload', {
-    method: 'POST',
-    body: form
-  });
+  if (item.stage === "Initial Visit") {
+    alert("Item must be received first (Drop Off)");
+    return;
+  }
 
-  const data = await res.json();
-  return data.path;
-}
+  const currentIndex = stages.indexOf(item.stage);
+  const newIndex = stages.indexOf(newStage);
 
-// ➕ add photo
-async function addPhoto() {
-  const file = document.getElementById('photoInput').files[0];
-  if (!file) return alert("Select photo");
+  const skipped = newIndex > currentIndex + 1;
+  const reason = document.getElementById('reason').value;
 
-  const path = await uploadPhoto(file);
+  if (skipped && !reason) {
+    alert("You must enter a reason for skipping stages");
+    return;
+  }
 
-  item.photos.push(path);
-
-  await fetch('/items/' + item.id, {
+  await fetch(`/items/${item.id}/stage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
+    body: JSON.stringify({
+      stage: newStage,
+      employee: user.name,
+      skipped,
+      reason
+    })
   });
 
+  item.stage = newStage;
   render();
+
+  document.getElementById('reason').value = "";
 }
 
-// 🔙 back
+// BACK
 function goBack() {
   window.location.href = "/items.html";
 }
