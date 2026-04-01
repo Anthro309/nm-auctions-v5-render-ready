@@ -42,15 +42,29 @@
       background: #22c55e;
     }
 
-    .grid {
+    .canvas-box {
       margin-top: 15px;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 200px;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .clear-btn {
+      background: #ef4444;
     }
 
     .card {
       background: #111827;
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -71,17 +85,21 @@
   <div id="section" style="display:none; margin-top:20px;">
 
     <input id="itemName" placeholder="Item Name">
-
     <input type="file" id="photoInput" accept="image/*" capture="environment">
 
     <button onclick="addItem()">Add Item</button>
 
-    <!-- PRINT -->
-    <button class="print-btn" onclick="printReport()">
-      🖨 Print Consigner Report
-    </button>
+    <!-- SIGNATURE PAD -->
+    <div class="canvas-box">
+      <p style="color:black;">Consigner Signature</p>
+      <canvas id="signaturePad"></canvas>
+      <button class="clear-btn" onclick="clearSignature()">Clear Signature</button>
+    </div>
 
-    <div id="list" class="grid"></div>
+    <!-- PRINT -->
+    <button class="print-btn" onclick="printReport()">🖨 Print Report</button>
+
+    <div id="list"></div>
 
   </div>
 
@@ -92,18 +110,63 @@
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = "/";
 
-document.getElementById('user').innerText =
-  "Logged in as " + user.name;
+document.getElementById('user').innerText = "Logged in as " + user.name;
 
 let consigner = null;
 let items = [];
+let signatureData = null;
 
-// GENERATE CODE
+// ===== SIGNATURE PAD =====
+const canvas = document.getElementById('signaturePad');
+const ctx = canvas.getContext('2d');
+
+let drawing = false;
+
+canvas.addEventListener('mousedown', () => drawing = true);
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mousemove', draw);
+
+canvas.addEventListener('touchstart', () => drawing = true);
+canvas.addEventListener('touchend', () => drawing = false);
+canvas.addEventListener('touchmove', drawTouch);
+
+function draw(e) {
+  if (!drawing) return;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000';
+
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+}
+
+function drawTouch(e) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+
+  if (!drawing) return;
+
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ===== CORE =====
 function genCode(f, l) {
   return (f.slice(0,3) + l.slice(0,3)).toUpperCase();
 }
 
-// START VISIT
 function startVisit() {
   const f = first.value.trim();
   const l = last.value.trim();
@@ -119,39 +182,16 @@ function startVisit() {
   section.style.display = "block";
 }
 
-// UPLOAD PHOTO
-async function uploadPhoto(file) {
-  const form = new FormData();
-  form.append("photo", file);
-
-  const res = await fetch('/upload', {
-    method: 'POST',
-    body: form
-  });
-
-  const data = await res.json();
-  return data.path;
-}
-
-// ADD ITEM
 async function addItem() {
   const name = itemName.value.trim();
-  const file = photoInput.files[0];
-
   if (!name) return alert("Enter item name");
-
-  let photoPath = null;
-
-  if (file) {
-    photoPath = await uploadPhoto(file);
-  }
 
   const item = {
     name,
     consigner: consigner.name,
     code: consigner.code,
     number: items.length + 1,
-    photos: photoPath ? [photoPath] : []
+    photos: []
   };
 
   await fetch('/items', {
@@ -164,129 +204,57 @@ async function addItem() {
   render();
 
   itemName.value = "";
-  photoInput.value = "";
 }
 
-// RENDER ITEMS
 function render() {
   list.innerHTML = "";
 
   items.forEach(i=>{
     const div = document.createElement('div');
     div.className = "card";
-
-    div.innerHTML = `
-      <b>${i.code}-${i.number}</b><br>
-      ${i.name}
-    `;
-
+    div.innerHTML = `<b>${i.code}-${i.number}</b><br>${i.name}`;
     list.appendChild(div);
   });
 }
 
-// PRINT REPORT (PRO VERSION)
+// ===== PRINT =====
 function printReport() {
-  if (!items.length) {
-    alert("No items to print");
-    return;
-  }
+  if (!items.length) return alert("No items");
 
-  const logoUrl = "/logo.png";
+  const signature = canvas.toDataURL();
 
   let rows = "";
   items.forEach(i => {
-    rows += `
-      <tr>
-        <td>${i.code}-${i.number}</td>
-        <td>${i.name}</td>
-      </tr>
-    `;
+    rows += `<tr><td>${i.code}-${i.number}</td><td>${i.name}</td></tr>`;
   });
 
   const html = `
   <html>
   <head>
-    <title>Consigner Report</title>
     <style>
-      body {
-        font-family: Arial;
-        padding: 40px;
-        color: #000;
-      }
-
-      .header {
-        text-align: center;
-      }
-
-      .logo {
-        width: 220px;
-        margin-bottom: 10px;
-      }
-
-      h2 {
-        margin: 5px 0;
-      }
-
-      .info {
-        margin-top: 10px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-
-      th, td {
-        border: 1px solid #ccc;
-        padding: 10px;
-      }
-
-      th {
-        background: #f3f4f6;
-      }
-
-      .signature {
-        margin-top: 60px;
-      }
-
-      .line {
-        margin-top: 40px;
-        border-top: 1px solid #000;
-        width: 300px;
-      }
+      body { font-family: Arial; padding: 40px; }
+      .logo { width: 220px; }
+      table { width:100%; border-collapse: collapse; margin-top:20px; }
+      th, td { border:1px solid #ccc; padding:10px; }
     </style>
   </head>
-
   <body>
 
-    <div class="header">
-      <img src="${logoUrl}" class="logo">
-      <h2>Consignment Intake Report</h2>
-    </div>
+    <img src="/logo.png" class="logo">
 
-    <div class="info">
-      <p><strong>Consigner:</strong> ${consigner.name}</p>
-      <p><strong>Code:</strong> ${consigner.code}</p>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-    </div>
+    <h2>Consignment Intake Report</h2>
+
+    <p><b>Consigner:</b> ${consigner.name}</p>
+    <p><b>Code:</b> ${consigner.code}</p>
+    <p><b>Date:</b> ${new Date().toLocaleDateString()}</p>
 
     <table>
-      <thead>
-        <tr>
-          <th>Item Code</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
+      <tr><th>Item Code</th><th>Description</th></tr>
+      ${rows}
     </table>
 
-    <div class="signature">
-      <p>Consigner Signature:</p>
-      <div class="line"></div>
-    </div>
+    <h3>Signature</h3>
+    <img src="${signature}" width="300">
 
   </body>
   </html>
@@ -298,7 +266,6 @@ function printReport() {
   win.print();
 }
 
-// BACK
 function back() {
   window.location.href = "/dashboard.html";
 }
