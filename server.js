@@ -94,17 +94,32 @@ function addLog(item, entry) {
   });
 }
 
-function addNotification(message, itemId = null, code = null) {
+function addNotification(message, itemId = null, code = null, type = 'general') {
   const notifications = readJSON(NOTIFICATIONS_FILE);
+
   notifications.unshift({
     id: Date.now(),
     message,
     itemId,
     code,
+    type,
     createdAt: new Date().toISOString(),
     read: false
   });
+
   writeJSON(NOTIFICATIONS_FILE, notifications);
+}
+
+function validStage(stage) {
+  return [
+    'Initial Visit',
+    'Received at Studio',
+    'Missing at Drop Off',
+    'Review & Cleaning',
+    'Photograph',
+    'Prep for Pickup',
+    'Picked Up'
+  ].includes(stage);
 }
 
 // =========================
@@ -182,6 +197,17 @@ app.get('/items', (req, res) => {
   res.json(items);
 });
 
+app.get('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  res.json(item);
+});
+
 app.post('/items', (req, res) => {
   const items = readJSON(ITEMS_FILE);
 
@@ -224,10 +250,13 @@ app.post('/items/:id', (req, res) => {
   }
 
   const existing = items[index];
+
   const updated = {
     ...existing,
     ...req.body,
-    id: existing.id
+    id: existing.id,
+    logs: existing.logs,
+    createdAt: existing.createdAt
   };
 
   items[index] = updated;
@@ -251,8 +280,8 @@ app.post('/items/:id/request-handoff', (req, res) => {
   const employee = req.body.employee || 'system';
   const reason = req.body.reason || null;
 
-  if (!requestedStage) {
-    return res.status(400).json({ success: false, message: 'Requested stage is required' });
+  if (!requestedStage || !validStage(requestedStage)) {
+    return res.status(400).json({ success: false, message: 'Valid requested stage is required' });
   }
 
   item.pendingHandoff = {
@@ -274,7 +303,8 @@ app.post('/items/:id/request-handoff', (req, res) => {
   addNotification(
     `${employee} sent ${item.code}-${item.number} to ${requestedStage}`,
     item.id,
-    item.code
+    item.code,
+    'handoff-request'
   );
 
   writeJSON(ITEMS_FILE, items);
@@ -330,7 +360,8 @@ app.post('/items/:id/accept-handoff', (req, res) => {
   addNotification(
     `${employee} accepted ${item.code}-${item.number} into ${nextStage}`,
     item.id,
-    item.code
+    item.code,
+    'handoff-accepted'
   );
 
   item.pendingHandoff = null;
@@ -341,6 +372,58 @@ app.post('/items/:id/accept-handoff', (req, res) => {
     success: true,
     item
   });
+});
+
+// =========================
+// REJECT HANDOFF
+// =========================
+app.post('/items/:id/reject-handoff', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  if (!item.pendingHandoff) {
+    return res.status(400).json({ success: false, message: 'No pending handoff' });
+  }
+
+  const employee = req.body.employee || 'system';
+  const rejectReason = req.body.reason || 'Rejected';
+
+  addLog(item, {
+    employee,
+    action: 'handoff rejected',
+    fromStage: item.stage,
+    toStage: item.pendingHandoff.requestedStage,
+    reason: rejectReason
+  });
+
+  addNotification(
+    `${employee} rejected handoff for ${item.code}-${item.number}: ${rejectReason}`,
+    item.id,
+    item.code,
+    'handoff-rejected'
+  );
+
+  item.pendingHandoff = null;
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
+});
+
+// =========================
+// PENDING HANDOFFS
+// =========================
+app.get('/handoffs/pending', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const pending = items.filter(i => i.pendingHandoff);
+  res.json(pending);
 });
 
 // =========================
@@ -359,8 +442,8 @@ app.post('/items/:id/stage', (req, res) => {
   const reason = req.body.reason || null;
   const fromStage = item.stage;
 
-  if (!newStage) {
-    return res.status(400).json({ success: false, message: 'Stage is required' });
+  if (!newStage || !validStage(newStage)) {
+    return res.status(400).json({ success: false, message: 'Valid stage is required' });
   }
 
   item.stage = newStage;
@@ -433,6 +516,31 @@ app.get('/notifications', (req, res) => {
   res.json(notifications);
 });
 
+app.post('/notifications/:id/read', (req, res) => {
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+  const notification = notifications.find(n => String(n.id) === String(req.params.id));
+
+  if (!notification) {
+    return res.status(404).json({ success: false, message: 'Notification not found' });
+  }
+
+  notification.read = true;
+  writeJSON(NOTIFICATIONS_FILE, notifications);
+
+  res.json({ success: true, notification });
+});
+
+app.post('/notifications/mark-all-read', (req, res) => {
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+
+  for (const notification of notifications) {
+    notification.read = true;
+  }
+
+  writeJSON(NOTIFICATIONS_FILE, notifications);
+  res.json({ success: true });
+});
+
 app.post('/notifications/clear', (req, res) => {
   writeJSON(NOTIFICATIONS_FILE, []);
   res.json({ success: true });
@@ -457,6 +565,7 @@ app.get('/performance', (req, res) => {
           created: 0,
           handoffRequested: 0,
           handoffAccepted: 0,
+          handoffRejected: 0,
           stageChanges: 0,
           lotsAssigned: 0,
           locationUpdates: 0
@@ -466,6 +575,7 @@ app.get('/performance', (req, res) => {
       if (log.action === 'item created') stats[employee].created += 1;
       if (log.action === 'handoff requested') stats[employee].handoffRequested += 1;
       if (log.action === 'handoff accepted') stats[employee].handoffAccepted += 1;
+      if (log.action === 'handoff rejected') stats[employee].handoffRejected += 1;
       if (log.action === 'stage changed') stats[employee].stageChanges += 1;
       if (log.action === 'lot assigned') stats[employee].lotsAssigned += 1;
       if (log.action === 'location updated') stats[employee].locationUpdates += 1;
