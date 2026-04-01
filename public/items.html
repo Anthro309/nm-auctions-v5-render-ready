@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Items</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -9,11 +10,12 @@
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center"><img src="/logo.png"></div>
+  <div class="nav-center">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
 <div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
   <a href="/dashboard.html">Dashboard</a>
   <a href="/initial-visit.html">Initial Visit</a>
   <a href="/dropoff.html">Received at Studio</a>
@@ -24,34 +26,13 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
-  <div id="list" class="grid"></div>
+  <div class="card">
+    <h2>All Consigners</h2>
+    <div id="list" class="grid"></div>
+  </div>
 </div>
 
 <script>
-async function load(){
-  const res = await fetch('/items');
-  const items = await res.json();
-
-  list.innerHTML = "";
-
-  items.forEach(i=>{
-    const div = document.createElement('div');
-    div.className = "card";
-
-    div.innerHTML = `
-      <div class="title">${i.code}-${i.number}</div>
-      <div class="label">${i.name}</div>
-      <div class="label">${i.stage}</div>
-    `;
-
-    div.onclick = () => {
-      window.location.href = "/consigner.html?code=" + i.code;
-    };
-
-    list.appendChild(div);
-  });
-}
-
 function toggleMenu(){
   sidebar.classList.toggle("open");
   overlay.classList.toggle("show");
@@ -60,6 +41,38 @@ function toggleMenu(){
 function logout(){
   localStorage.removeItem("user");
   window.location.href = "/";
+}
+
+async function load(){
+  const res = await fetch('/items');
+  const items = await res.json();
+
+  const grouped = {};
+
+  items.forEach(i=>{
+    if(!grouped[i.code]) grouped[i.code] = [];
+    grouped[i.code].push(i);
+  });
+
+  list.innerHTML = "";
+
+  Object.keys(grouped).forEach(code=>{
+    const group = grouped[code];
+
+    const div = document.createElement("div");
+    div.className = "button-card";
+
+    div.innerHTML = `
+      <div class="button-title">${group[0].consigner}</div>
+      <div class="button-sub">${group.length} items</div>
+    `;
+
+    div.onclick = ()=>{
+      window.location.href = "/consigner.html?code=" + code;
+    };
+
+    list.appendChild(div);
+  });
 }
 
 load();
