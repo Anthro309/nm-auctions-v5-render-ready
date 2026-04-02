@@ -3,29 +3,51 @@
 <head>
   <title>Item Detail</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <link rel="stylesheet" href="styles.css">
 
-  <!-- QR LIB -->
+  <!-- QR -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
-    .qr-box {
-      margin-top: 15px;
-      text-align: center;
+    .image-box {
+      width: 100%;
+      height: 220px;
+      border-radius: 16px;
+      overflow: hidden;
       background: #111827;
-      padding: 15px;
-      border-radius: 12px;
+      margin-bottom: 16px;
     }
 
-    .qr-code canvas {
-      width: 140px !important;
-      height: 140px !important;
+    .image-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .qr-box {
+      text-align: center;
+      background: #111827;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
     }
 
     .qr-label {
-      margin-top: 8px;
-      font-size: 14px;
+      font-size: 13px;
       color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .print-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 14px;
+      background: #16a34a;
+      border-radius: 12px;
+      border: none;
+      color: white;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -40,18 +62,24 @@
 
 <div class="container">
 
+  <!-- IMAGE -->
+  <div id="imageBox" class="image-box"></div>
+
+  <!-- INFO -->
   <div class="card">
     <h2 id="title"></h2>
     <div id="code"></div>
     <div id="stage"></div>
   </div>
 
-  <!-- QR CODE -->
+  <!-- QR + PRINT -->
   <div class="card qr-box">
-    <div class="qr-code">
-      <canvas id="qr"></canvas>
-    </div>
+    <canvas id="qr"></canvas>
     <div id="qrText" class="qr-label"></div>
+
+    <button class="print-btn" onclick="printLabels()">
+      🖨️ Print Labels
+    </button>
   </div>
 
   <!-- LOCATION -->
@@ -88,7 +116,7 @@ const id = params.get("id");
 let item = null;
 
 // =========================
-// LOAD ITEM
+// LOAD
 // =========================
 async function load(){
   const res = await fetch('/items/' + id);
@@ -98,11 +126,27 @@ async function load(){
   code.innerText = item.code + "-" + item.number;
   stage.innerText = "Stage: " + item.stage;
 
+  renderImage();
   generateQR();
 }
 
 // =========================
-// QR GENERATION
+// IMAGE FIX
+// =========================
+function renderImage(){
+  if(item.photos && item.photos.length){
+    imageBox.innerHTML = `<img src="${item.photos[0]}">`;
+  } else {
+    imageBox.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9ca3af;">
+        No Image
+      </div>
+    `;
+  }
+}
+
+// =========================
+// QR
 // =========================
 function generateQR(){
   const value = item.code + "-" + item.number;
@@ -114,6 +158,108 @@ function generateQR(){
   );
 
   qrText.innerText = value;
+}
+
+// =========================
+// PRINT MULTI LABEL SHEET
+// =========================
+function printLabels(){
+  const win = window.open('', '', 'width=800,height=1000');
+
+  const name = (item.name || '').slice(0, 50);
+  const code = item.code + "-" + item.number;
+  const date = new Date().toLocaleDateString();
+
+  win.document.write(`
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: Arial;
+          padding: 10px;
+        }
+
+        .sheet {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .label {
+          display: flex;
+          align-items: center;
+          border: 1px solid #ddd;
+          border-radius: 10px;
+          padding: 8px;
+          height: 90px;
+        }
+
+        .qr {
+          width: 70px;
+          height: 70px;
+          margin-right: 10px;
+        }
+
+        .text {
+          font-size: 12px;
+          line-height: 1.2;
+        }
+
+        .name {
+          font-weight: bold;
+        }
+
+        canvas {
+          width: 70px !important;
+          height: 70px !important;
+        }
+      </style>
+    </head>
+
+    <body>
+
+      <div class="sheet" id="sheet"></div>
+
+      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+
+      <script>
+        const sheet = document.getElementById("sheet");
+
+        function createLabel(){
+          const div = document.createElement("div");
+          div.className = "label";
+
+          div.innerHTML = \`
+            <div class="qr"><canvas></canvas></div>
+            <div class="text">
+              <div class="name">${name}</div>
+              <div>Lot: ${item.lotNumber || "-"}</div>
+              <div>${date} • ${item.code}</div>
+            </div>
+          \`;
+
+          sheet.appendChild(div);
+
+          QRCode.toCanvas(
+            div.querySelector("canvas"),
+            "${code}",
+            { width: 70 }
+          );
+        }
+
+        // PRINT 8 LABELS (adjust if needed)
+        for(let i = 0; i < 8; i++){
+          createLabel();
+        }
+
+        window.print();
+      <\/script>
+
+    </body>
+    </html>
+  `);
+
+  win.document.close();
 }
 
 // =========================
