@@ -3,241 +3,240 @@
 <head>
   <title>Initial Visit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <link rel="stylesheet" href="styles.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-
-  <style>
-    .label-sheet {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .label-box {
-      border: 1px solid black;
-      padding: 6px;
-      text-align: center;
-      background: white;
-      height: 120px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .code {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .name {
-      font-size: 10px;
-    }
-
-    canvas {
-      width: 70px !important;
-      height: 70px !important;
-      margin: auto;
-    }
-
-    @media print {
-      body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
-      #printArea {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-      }
-    }
-  </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-left">☰</div>
+  <div class="nav-center">Initial Visit</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
 <div class="container">
 
+  <!-- CONSIGNER -->
   <div class="card">
-    <h2>Initial Visit</h2>
+    <h2>Start Visit</h2>
 
     <input id="first" placeholder="First Name">
     <input id="last" placeholder="Last Name">
 
-    <button onclick="startVisit()">Start Visit</button>
+    <button onclick="startVisit()">Start</button>
 
-    <div id="codeDisplay"></div>
+    <div id="codeDisplay" style="margin-top:10px;font-weight:bold;"></div>
   </div>
 
-  <div id="section" class="card" style="display:none;">
-
+  <!-- ADD ITEM -->
+  <div class="card">
     <h2>Add Item</h2>
 
     <input id="itemName" placeholder="Item Name">
     <input type="file" id="photoInput" accept="image/*" capture="environment">
 
     <button onclick="addItem()">Add Item</button>
-
-    <button onclick="printLabels()">Print Labels</button>
-
-    <button onclick="endVisit()" style="background:#16a34a;">
-      End Visit + Report
-    </button>
-
-    <div id="list" class="grid"></div>
-
   </div>
 
-  <div id="printArea"></div>
+  <!-- ITEMS -->
+  <div class="card">
+    <h2>Items</h2>
+    <div id="items"></div>
+  </div>
+
+  <!-- PRINT SHEET -->
+  <div class="card">
+    <button onclick="printSheet()" style="background:#16a34a;">
+      🖨️ Print Label Sheet
+    </button>
+  </div>
 
 </div>
 
 <script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
+let consignerCode = null;
+let consignerName = "";
 
-let code = null;
-let count = 1;
-
-// START
+// =========================
+// START VISIT
+// =========================
 function startVisit(){
-  const f = first.value.trim();
-  const l = last.value.trim();
+  const f = first.value.trim().toUpperCase();
+  const l = last.value.trim().toUpperCase();
 
-  code = f.substring(0,3).toUpperCase() + l.substring(0,3).toUpperCase();
+  if(!f || !l) return alert("Enter names");
 
-  codeDisplay.innerText = "Code: " + code;
-  section.style.display = "block";
+  consignerCode = f.slice(0,3) + l.slice(0,3);
+  consignerName = f + " " + l;
 
-  loadItems();
+  codeDisplay.innerText = "Consigner Code: " + consignerCode;
 }
 
+// =========================
 // ADD ITEM
+// =========================
 async function addItem(){
+  if(!consignerCode) return alert("Start visit first");
+
   const name = itemName.value;
-  const file = photoInput.files[0];
 
-  let photo = "";
+  let photoPath = null;
 
-  if(file){
+  if(photoInput.files[0]){
     const form = new FormData();
-    form.append("photo", file);
+    form.append("photo", photoInput.files[0]);
 
-    const res = await fetch('/upload',{method:'POST',body:form});
-    const data = await res.json();
-    photo = data.path;
+    const upload = await fetch('/upload', {
+      method:'POST',
+      body: form
+    });
+
+    const data = await upload.json();
+    photoPath = data.path;
   }
+
+  const itemsRes = await fetch('/items');
+  const items = await itemsRes.json();
+
+  const count = items.filter(i => i.code === consignerCode).length + 1;
 
   await fetch('/items',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
       name,
-      consigner: first.value + " " + last.value,
-      code,
-      number: count++,
-      photos: photo ? [photo] : [],
-      employee: user.name
+      consigner: consignerName,
+      code: consignerCode,
+      number: count,
+      photos: photoPath ? [photoPath] : []
     })
   });
+
+  itemName.value = "";
+  photoInput.value = "";
 
   loadItems();
 }
 
+// =========================
 // LOAD ITEMS
+// =========================
 async function loadItems(){
+  if(!consignerCode) return;
+
   const res = await fetch('/items');
-  const items = await res.json();
+  const all = await res.json();
 
-  const filtered = items.filter(i => i.code === code);
+  const list = all.filter(i => i.code === consignerCode);
 
-  list.innerHTML = "";
+  items.innerHTML = "";
 
-  filtered.forEach(i=>{
+  list.forEach(i=>{
     const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-      ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
-      <div style="padding:10px;">
-        <div class="title">${i.name}</div>
-      </div>
-    `;
-
-    list.appendChild(div);
+    div.innerHTML = `${i.code}-${i.number} • ${i.name}`;
+    items.appendChild(div);
   });
 }
 
-// PRINT LABELS
-async function printLabels(){
+// =========================
+// PRINT FULL SHEET
+// =========================
+async function printSheet(){
+  if(!consignerCode) return alert("Start visit first");
+
   const res = await fetch('/items');
-  const items = await res.json();
+  const all = await res.json();
 
-  const filtered = items.filter(i => i.code === code);
+  const list = all.filter(i => i.code === consignerCode);
 
-  printArea.innerHTML = `<div class="label-sheet" id="sheet"></div>`;
-  const sheet = document.getElementById("sheet");
+  const win = window.open('', '', 'width=800,height=1000');
 
-  for(const i of filtered){
-    const div = document.createElement("div");
-    div.className = "label-box";
+  win.document.write(`
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial; padding: 10px; }
 
-    const qrId = "qr" + i.id;
+        .sheet {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
 
-    div.innerHTML = `
-      <div class="code">${i.code}-${i.number}</div>
-      <canvas id="${qrId}"></canvas>
-      <div class="name">${i.name}</div>
-    `;
+        .label {
+          display: flex;
+          align-items: center;
+          border: 1px solid #ddd;
+          border-radius: 10px;
+          padding: 8px;
+          height: 90px;
+        }
 
-    sheet.appendChild(div);
+        .qr {
+          width: 70px;
+          height: 70px;
+          margin-right: 10px;
+        }
 
-    await QRCode.toCanvas(
-      document.getElementById(qrId),
-      `${i.code}-${i.number}`,
-      { width: 70 }
-    );
-  }
+        .text {
+          font-size: 12px;
+        }
 
-  setTimeout(()=> window.print(), 300);
+        canvas {
+          width: 70px !important;
+          height: 70px !important;
+        }
+      </style>
+    </head>
+
+    <body>
+
+      <div class="sheet" id="sheet"></div>
+
+      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+
+      <script>
+        const items = ${JSON.stringify(list)};
+        const sheet = document.getElementById("sheet");
+
+        items.forEach(i=>{
+          const div = document.createElement("div");
+          div.className = "label";
+
+          div.innerHTML = \`
+            <div class="qr"><canvas></canvas></div>
+            <div class="text">
+              <div><b>\${i.name.slice(0,40)}</b></div>
+              <div>\${i.code}-\${i.number}</div>
+            </div>
+          \`;
+
+          sheet.appendChild(div);
+
+          QRCode.toCanvas(
+            div.querySelector("canvas"),
+            i.code + "-" + i.number,
+            { width: 70 }
+          );
+        });
+
+        window.print();
+      <\/script>
+
+    </body>
+    </html>
+  `);
+
+  win.document.close();
 }
 
-// END VISIT + SAVE REPORT
-async function endVisit(){
-  const res = await fetch('/items');
-  const items = await res.json();
-
-  const filtered = items.filter(i => i.code === code);
-
-  // 💾 SAVE REPORT
-  await fetch('/intake',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      code,
-      consigner: first.value + " " + last.value,
-      items: filtered
-    })
-  });
-
-  // PRINT
-  let html = `
-    <h2>Consignment Intake</h2>
-    <p>${first.value} ${last.value}</p>
-    <p>${new Date().toLocaleDateString()}</p>
-    <hr>
-  `;
-
-  filtered.forEach(i=>{
-    html += `<div><b>${i.code}-${i.number}</b> - ${i.name}</div>`;
-  });
-
-  printArea.innerHTML = html;
-
-  setTimeout(()=> window.print(), 300);
+// =========================
+// NAV
+// =========================
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
 }
 </script>
 
