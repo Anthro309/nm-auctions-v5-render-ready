@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
 // FILE PATHS
@@ -16,7 +17,7 @@ const USERS_FILE = 'users.json';
 const ITEMS_FILE = 'items.json';
 const REPORTS_FILE = 'reports.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
-const INTAKE_FILE = 'intake.json'; // ✅ ADDED
+const INTAKE_FILE = 'intake.json';
 
 // =========================
 // HELPERS
@@ -28,7 +29,7 @@ function readJSON(file) {
     if (!raw.trim()) return [];
     return JSON.parse(raw);
   } catch (err) {
-    console.error('READ ERROR:', err);
+    console.error('READ ERROR:', file, err);
     return [];
   }
 }
@@ -129,11 +130,12 @@ function validStage(stage) {
 ensureArrayFile(ITEMS_FILE);
 ensureArrayFile(REPORTS_FILE);
 ensureArrayFile(NOTIFICATIONS_FILE);
-ensureArrayFile(INTAKE_FILE); // ✅ ADDED
+ensureArrayFile(INTAKE_FILE);
 ensureUsersExist();
 
-if (!fs.existsSync('public/uploads')) {
-  fs.mkdirSync('public/uploads', { recursive: true });
+if (!fs.existsSync(path.join(__dirname, 'public/uploads'))) {
+  fs.mkdirSync(path.join(__dirname, 'public/uploads'), { recursive: true });
+  console.log('📁 Created public/uploads');
 }
 
 // =========================
@@ -141,15 +143,26 @@ if (!fs.existsSync('public/uploads')) {
 // =========================
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/uploads/');
+    cb(null, path.join(__dirname, 'public/uploads'));
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${Date.now()}${ext}`);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 15 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image uploads are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 // =========================
 // LOGIN
@@ -181,13 +194,19 @@ app.post('/login', (req, res) => {
 // UPLOAD
 // =========================
 app.post('/upload', upload.single('photo'), (req, res) => {
+  console.log('📸 /upload hit');
+
   if (!req.file) {
+    console.log('❌ No file uploaded');
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
 
+  console.log('✅ File saved:', req.file.filename);
+
   res.json({
     success: true,
-    path: `/uploads/${req.file.filename}`
+    path: `/uploads/${req.file.filename}`,
+    filename: req.file.filename
   });
 });
 
@@ -199,6 +218,17 @@ app.get('/items', (req, res) => {
   res.json(items);
 });
 
+app.get('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  res.json(item);
+});
+
 app.post('/items', (req, res) => {
   const items = readJSON(ITEMS_FILE);
 
@@ -208,25 +238,405 @@ app.post('/items', (req, res) => {
     consigner: req.body.consigner || '',
     code: req.body.code || '',
     number: req.body.number || 1,
+    part: req.body.part || null,
     photos: Array.isArray(req.body.photos) ? req.body.photos : [],
     stage: 'Initial Visit',
+    location: null,
+    lotNumber: null,
+    photographedAt: null,
+    lotAssignedAt: null,
+    lotAssignedBy: null,
+    pendingHandoff: null,
     createdAt: new Date().toISOString(),
     logs: []
   };
 
   addLog(newItem, {
     employee: req.body.employee || 'system',
-    action: 'item created'
+    action: 'item created',
+    toStage: 'Initial Visit'
   });
 
   items.push(newItem);
   writeJSON(ITEMS_FILE, items);
 
-  res.json(newItem);
+  res.json({
+    success: true,
+    item: newItem
+  });
+});
+
+app.post('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const index = items.findIndex(i => String(i.id) === String(req.params.id));
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  const existing = items[index];
+
+  const updated = {
+    ...existing,
+    ...req.body,
+    id: existing.id,
+    logs: existing.logs,
+    createdAt: existing.createdAt
+  };
+
+  items[index] = updated;
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item: updated
+  });
+});
+
+app.post('/items/:id/location', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  const employee = req.body.employee || 'system';
+  const location = req.body.location || null;
+
+  item.location = location;
+
+  addLog(item, {
+    employee,
+    action: 'location updated',
+    note: `Location set to ${location || 'none'}`
+  });
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
+});
+
+app.post('/items/:id/stage', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  const employee = req.body.employee || 'system';
+  const newStage = req.body.stage;
+  const reason = req.body.reason || null;
+  const fromStage = item.stage;
+
+  if (!newStage || !validStage(newStage)) {
+    return res.status(400).json({ success: false, message: 'Valid stage is required' });
+  }
+
+  item.stage = newStage;
+
+  if (newStage === 'Photograph' && !item.lotNumber) {
+    const lot = nextLotNumber(items, new Date());
+    item.lotNumber = lot;
+    item.photographedAt = new Date().toISOString();
+    item.lotAssignedAt = new Date().toISOString();
+    item.lotAssignedBy = employee;
+
+    addLog(item, {
+      employee,
+      action: 'lot assigned',
+      note: `Assigned lot ${lot}`
+    });
+  }
+
+  addLog(item, {
+    employee,
+    action: 'stage changed',
+    fromStage,
+    toStage: newStage,
+    reason
+  });
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
 });
 
 // =========================
-// INTAKE REPORTS (ADDED)
+// HANDOFFS
+// =========================
+app.post('/items/:id/request-handoff', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  const requestedStage = req.body.stage;
+  const employee = req.body.employee || 'system';
+  const reason = req.body.reason || null;
+
+  if (!requestedStage || !validStage(requestedStage)) {
+    return res.status(400).json({ success: false, message: 'Valid requested stage is required' });
+  }
+
+  item.pendingHandoff = {
+    requestedStage,
+    fromStage: item.stage,
+    requestedBy: employee,
+    requestedAt: new Date().toISOString(),
+    reason
+  };
+
+  addLog(item, {
+    employee,
+    action: 'handoff requested',
+    fromStage: item.stage,
+    toStage: requestedStage,
+    reason
+  });
+
+  addNotification(
+    `${employee} sent ${item.code}-${item.number} to ${requestedStage}`,
+    item.id,
+    item.code,
+    'handoff-request'
+  );
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
+});
+
+app.post('/items/:id/accept-handoff', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  if (!item.pendingHandoff) {
+    return res.status(400).json({ success: false, message: 'No pending handoff' });
+  }
+
+  const employee = req.body.employee || 'system';
+  const fromStage = item.stage;
+  const nextStage = item.pendingHandoff.requestedStage;
+
+  item.stage = nextStage;
+
+  if (nextStage === 'Photograph' && !item.lotNumber) {
+    const lot = nextLotNumber(items, new Date());
+    item.lotNumber = lot;
+    item.photographedAt = new Date().toISOString();
+    item.lotAssignedAt = new Date().toISOString();
+    item.lotAssignedBy = employee;
+
+    addLog(item, {
+      employee,
+      action: 'lot assigned',
+      note: `Assigned lot ${lot}`
+    });
+  }
+
+  addLog(item, {
+    employee,
+    action: 'handoff accepted',
+    fromStage,
+    toStage: nextStage
+  });
+
+  addNotification(
+    `${employee} accepted ${item.code}-${item.number} into ${nextStage}`,
+    item.id,
+    item.code,
+    'handoff-accepted'
+  );
+
+  item.pendingHandoff = null;
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
+});
+
+app.post('/items/:id/reject-handoff', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  if (!item.pendingHandoff) {
+    return res.status(400).json({ success: false, message: 'No pending handoff' });
+  }
+
+  const employee = req.body.employee || 'system';
+  const rejectReason = req.body.reason || 'Rejected';
+
+  addLog(item, {
+    employee,
+    action: 'handoff rejected',
+    fromStage: item.stage,
+    toStage: item.pendingHandoff.requestedStage,
+    reason: rejectReason
+  });
+
+  addNotification(
+    `${employee} rejected handoff for ${item.code}-${item.number}: ${rejectReason}`,
+    item.id,
+    item.code,
+    'handoff-rejected'
+  );
+
+  item.pendingHandoff = null;
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({
+    success: true,
+    item
+  });
+});
+
+app.get('/handoffs/pending', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const pending = items.filter(i => i.pendingHandoff);
+  res.json(pending);
+});
+
+// =========================
+// NOTIFICATIONS
+// =========================
+app.get('/notifications', (req, res) => {
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+  res.json(notifications);
+});
+
+app.post('/notifications/:id/read', (req, res) => {
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+  const notification = notifications.find(n => String(n.id) === String(req.params.id));
+
+  if (!notification) {
+    return res.status(404).json({ success: false, message: 'Notification not found' });
+  }
+
+  notification.read = true;
+  writeJSON(NOTIFICATIONS_FILE, notifications);
+
+  res.json({ success: true, notification });
+});
+
+app.post('/notifications/mark-all-read', (req, res) => {
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+
+  for (const notification of notifications) {
+    notification.read = true;
+  }
+
+  writeJSON(NOTIFICATIONS_FILE, notifications);
+  res.json({ success: true });
+});
+
+app.post('/notifications/clear', (req, res) => {
+  writeJSON(NOTIFICATIONS_FILE, []);
+  res.json({ success: true });
+});
+
+// =========================
+// PERFORMANCE
+// =========================
+app.get('/performance', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const stats = {};
+
+  for (const item of items) {
+    const logs = Array.isArray(item.logs) ? item.logs : [];
+
+    for (const log of logs) {
+      const employee = log.employee || 'system';
+
+      if (!stats[employee]) {
+        stats[employee] = {
+          employee,
+          created: 0,
+          handoffRequested: 0,
+          handoffAccepted: 0,
+          handoffRejected: 0,
+          stageChanges: 0,
+          lotsAssigned: 0,
+          locationUpdates: 0
+        };
+      }
+
+      if (log.action === 'item created') stats[employee].created += 1;
+      if (log.action === 'handoff requested') stats[employee].handoffRequested += 1;
+      if (log.action === 'handoff accepted') stats[employee].handoffAccepted += 1;
+      if (log.action === 'handoff rejected') stats[employee].handoffRejected += 1;
+      if (log.action === 'stage changed') stats[employee].stageChanges += 1;
+      if (log.action === 'lot assigned') stats[employee].lotsAssigned += 1;
+      if (log.action === 'location updated') stats[employee].locationUpdates += 1;
+    }
+  }
+
+  res.json(Object.values(stats));
+});
+
+// =========================
+// DAILY REPORTS
+// =========================
+app.post('/closeout', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const reports = readJSON(REPORTS_FILE);
+  const today = new Date().toDateString();
+
+  const todaysItems = items
+    .filter(i => i.photographedAt && new Date(i.photographedAt).toDateString() === today)
+    .sort((a, b) => new Date(a.photographedAt) - new Date(b.photographedAt));
+
+  const report = {
+    id: Date.now(),
+    date: today,
+    createdAt: new Date().toISOString(),
+    items: todaysItems.map(i => ({
+      id: i.id,
+      lotNumber: i.lotNumber,
+      name: i.name
+    }))
+  };
+
+  reports.push(report);
+  writeJSON(REPORTS_FILE, reports);
+
+  res.json({
+    success: true,
+    report
+  });
+});
+
+app.get('/reports', (req, res) => {
+  const reports = readJSON(REPORTS_FILE);
+  res.json(reports);
+});
+
+// =========================
+// INTAKE REPORTS
 // =========================
 app.post('/intake', (req, res) => {
   const intake = readJSON(INTAKE_FILE);
@@ -235,7 +645,7 @@ app.post('/intake', (req, res) => {
     id: Date.now(),
     code: req.body.code,
     consigner: req.body.consigner,
-    items: req.body.items,
+    items: Array.isArray(req.body.items) ? req.body.items : [],
     createdAt: new Date().toISOString()
   };
 
@@ -248,6 +658,17 @@ app.post('/intake', (req, res) => {
 app.get('/intake', (req, res) => {
   const intake = readJSON(INTAKE_FILE);
   res.json(intake);
+});
+
+// =========================
+// ERROR HANDLER
+// =========================
+app.use((err, req, res, next) => {
+  console.error('SERVER ERROR:', err);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Server error'
+  });
 });
 
 // =========================
