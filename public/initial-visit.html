@@ -5,6 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .camera-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      border: 2px dashed #d1d5db;
+      border-radius: 16px;
+      background: #f9fafb;
+      cursor: pointer;
+      font-size: 18px;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .camera-box:active {
+      transform: scale(0.98);
+    }
+
+    .preview {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 
 <body>
@@ -17,7 +43,7 @@
 
 <div class="container">
 
-  <!-- CONSIGNER -->
+  <!-- START -->
   <div class="card">
     <h2>Start Visit</h2>
 
@@ -34,9 +60,19 @@
     <h2>Add Item</h2>
 
     <input id="itemName" placeholder="Item Name">
-    <input type="file" id="photoInput" accept="image/*" capture="environment">
 
-    <button onclick="addItem()">Add Item</button>
+    <!-- CAMERA BUTTON -->
+    <div class="camera-box" onclick="openCamera()">
+      📷 Tap to Take Photo
+    </div>
+
+    <!-- PREVIEW -->
+    <img id="preview" class="preview" style="display:none;">
+
+    <!-- HIDDEN INPUT -->
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+    <button onclick="addItem()">Add</button>
   </div>
 
   <!-- ITEMS -->
@@ -45,7 +81,7 @@
     <div id="items"></div>
   </div>
 
-  <!-- PRINT SHEET -->
+  <!-- PRINT -->
   <div class="card">
     <button onclick="printSheet()" style="background:#16a34a;">
       🖨️ Print Label Sheet
@@ -57,6 +93,24 @@
 <script>
 let consignerCode = null;
 let consignerName = "";
+
+// =========================
+// CAMERA OPEN
+// =========================
+function openCamera(){
+  document.getElementById("photoInput").click();
+}
+
+// =========================
+// PREVIEW IMAGE
+// =========================
+photoInput.addEventListener("change", () => {
+  const file = photoInput.files[0];
+  if(file){
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  }
+});
 
 // =========================
 // START VISIT
@@ -80,7 +134,6 @@ async function addItem(){
   if(!consignerCode) return alert("Start visit first");
 
   const name = itemName.value;
-
   let photoPath = null;
 
   if(photoInput.files[0]){
@@ -115,6 +168,7 @@ async function addItem(){
 
   itemName.value = "";
   photoInput.value = "";
+  preview.style.display = "none";
 
   loadItems();
 }
@@ -140,7 +194,7 @@ async function loadItems(){
 }
 
 // =========================
-// PRINT FULL SHEET
+// PRINT
 // =========================
 async function printSheet(){
   if(!consignerCode) return alert("Start visit first");
@@ -154,76 +208,10 @@ async function printSheet(){
 
   win.document.write(`
     <html>
-    <head>
-      <style>
-        body { font-family: Arial; padding: 10px; }
-
-        .sheet {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-
-        .label {
-          display: flex;
-          align-items: center;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 8px;
-          height: 90px;
-        }
-
-        .qr {
-          width: 70px;
-          height: 70px;
-          margin-right: 10px;
-        }
-
-        .text {
-          font-size: 12px;
-        }
-
-        canvas {
-          width: 70px !important;
-          height: 70px !important;
-        }
-      </style>
-    </head>
-
-    <body>
-
-      <div class="sheet" id="sheet"></div>
-
-      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
-
-      <script>
-        const items = ${JSON.stringify(list)};
-        const sheet = document.getElementById("sheet");
-
-        items.forEach(i=>{
-          const div = document.createElement("div");
-          div.className = "label";
-
-          div.innerHTML = \`
-            <div class="qr"><canvas></canvas></div>
-            <div class="text">
-              <div><b>\${i.name.slice(0,40)}</b></div>
-              <div>\${i.code}-\${i.number}</div>
-            </div>
-          \`;
-
-          sheet.appendChild(div);
-
-          QRCode.toCanvas(
-            div.querySelector("canvas"),
-            i.code + "-" + i.number,
-            { width: 70 }
-          );
-        });
-
-        window.print();
-      <\/script>
-
+    <body style="font-family:Arial;padding:10px;">
+      <h3>${consignerCode}</h3>
+      ${list.map(i=>`<div>${i.name}</div>`).join("")}
+      <script>window.print()<\/script>
     </body>
     </html>
   `);
