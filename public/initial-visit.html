@@ -6,29 +6,49 @@
 
   <link rel="stylesheet" href="styles.css">
 
+  <!-- QR LIB -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
   <style>
     .camera-box {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 120px;
-      border: 2px dashed #d1d5db;
-      border-radius: 16px;
-      background: #f9fafb;
-      cursor: pointer;
-      font-size: 18px;
-      color: #374151;
-      margin-bottom: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:120px;
+      border:2px dashed #d1d5db;
+      border-radius:16px;
+      background:#f9fafb;
+      cursor:pointer;
+      font-size:18px;
+      margin-bottom:12px;
     }
 
-    .camera-box:active {
-      transform: scale(0.98);
+    .preview{
+      width:100%;
+      border-radius:12px;
+      margin-bottom:10px;
     }
 
-    .preview {
-      width: 100%;
-      border-radius: 12px;
-      margin-bottom: 10px;
+    .item-card{
+      background:#fff;
+      padding:12px;
+      border-radius:12px;
+      margin-bottom:10px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .qr{
+      width:70px;
+      height:70px;
+    }
+
+    .item-img{
+      width:70px;
+      height:70px;
+      object-fit:cover;
+      border-radius:10px;
     }
   </style>
 </head>
@@ -61,15 +81,12 @@
 
     <input id="itemName" placeholder="Item Name">
 
-    <!-- CAMERA BUTTON -->
     <div class="camera-box" onclick="openCamera()">
-      📷 Tap to Take Photo
+      📷 Take Photo
     </div>
 
-    <!-- PREVIEW -->
     <img id="preview" class="preview" style="display:none;">
 
-    <!-- HIDDEN INPUT -->
     <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
 
     <button onclick="addItem()">Add</button>
@@ -94,17 +111,12 @@
 let consignerCode = null;
 let consignerName = "";
 
-// =========================
-// CAMERA OPEN
-// =========================
+// CAMERA
 function openCamera(){
-  document.getElementById("photoInput").click();
+  photoInput.click();
 }
 
-// =========================
-// PREVIEW IMAGE
-// =========================
-photoInput.addEventListener("change", () => {
+photoInput.addEventListener("change", ()=>{
   const file = photoInput.files[0];
   if(file){
     preview.src = URL.createObjectURL(file);
@@ -112,39 +124,32 @@ photoInput.addEventListener("change", () => {
   }
 });
 
-// =========================
 // START VISIT
-// =========================
 function startVisit(){
   const f = first.value.trim().toUpperCase();
   const l = last.value.trim().toUpperCase();
 
   if(!f || !l) return alert("Enter names");
 
-  consignerCode = f.slice(0,3) + l.slice(0,3);
-  consignerName = f + " " + l;
+  consignerCode = f.slice(0,3)+l.slice(0,3);
+  consignerName = f+" "+l;
 
-  codeDisplay.innerText = "Consigner Code: " + consignerCode;
+  codeDisplay.innerText = "Consigner Code: "+consignerCode;
+
+  loadItems();
 }
 
-// =========================
 // ADD ITEM
-// =========================
 async function addItem(){
   if(!consignerCode) return alert("Start visit first");
 
-  const name = itemName.value;
   let photoPath = null;
 
   if(photoInput.files[0]){
     const form = new FormData();
     form.append("photo", photoInput.files[0]);
 
-    const upload = await fetch('/upload', {
-      method:'POST',
-      body: form
-    });
-
+    const upload = await fetch('/upload',{method:'POST',body:form});
     const data = await upload.json();
     photoPath = data.path;
   }
@@ -152,79 +157,106 @@ async function addItem(){
   const itemsRes = await fetch('/items');
   const items = await itemsRes.json();
 
-  const count = items.filter(i => i.code === consignerCode).length + 1;
+  const count = items.filter(i=>i.code===consignerCode).length + 1;
 
   await fetch('/items',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
-      name,
-      consigner: consignerName,
-      code: consignerCode,
-      number: count,
+      name:itemName.value,
+      consigner:consignerName,
+      code:consignerCode,
+      number:count,
       photos: photoPath ? [photoPath] : []
     })
   });
 
-  itemName.value = "";
-  photoInput.value = "";
-  preview.style.display = "none";
+  itemName.value="";
+  photoInput.value="";
+  preview.style.display="none";
 
   loadItems();
 }
 
-// =========================
-// LOAD ITEMS
-// =========================
+// LOAD ITEMS (WITH IMAGE + QR)
 async function loadItems(){
   if(!consignerCode) return;
 
   const res = await fetch('/items');
   const all = await res.json();
 
-  const list = all.filter(i => i.code === consignerCode);
+  const list = all.filter(i=>i.code===consignerCode);
 
-  items.innerHTML = "";
+  items.innerHTML="";
 
   list.forEach(i=>{
     const div = document.createElement("div");
-    div.innerHTML = `${i.code}-${i.number} • ${i.name}`;
+    div.className = "item-card";
+
+    const qrId = "qr_"+i.id;
+
+    div.innerHTML = `
+      <canvas id="${qrId}" class="qr"></canvas>
+
+      ${i.photos?.[0] ? `<img src="${i.photos[0]}" class="item-img">` : ""}
+
+      <div>
+        <div><strong>${i.code}-${i.number}</strong></div>
+        <div>${i.name}</div>
+      </div>
+    `;
+
     items.appendChild(div);
+
+    QRCode.toCanvas(document.getElementById(qrId), `${i.code}-${i.number}`);
   });
 }
 
-// =========================
-// PRINT
-// =========================
+// PRINT LABEL SHEET (REAL STYLE)
 async function printSheet(){
-  if(!consignerCode) return alert("Start visit first");
-
   const res = await fetch('/items');
   const all = await res.json();
 
-  const list = all.filter(i => i.code === consignerCode);
+  const list = all.filter(i=>i.code===consignerCode);
 
-  const win = window.open('', '', 'width=800,height=1000');
+  const win = window.open('');
 
-  win.document.write(`
+  let html = `
     <html>
-    <body style="font-family:Arial;padding:10px;">
-      <h3>${consignerCode}</h3>
-      ${list.map(i=>`<div>${i.name}</div>`).join("")}
-      <script>window.print()<\/script>
-    </body>
-    </html>
-  `);
+    <body style="font-family:Arial;">
+  `;
 
+  for(const i of list){
+    html += `
+      <div style="display:flex;align-items:center;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:10px;">
+        <div id="qr_${i.id}"></div>
+        <div style="margin-left:10px;">
+          <div><strong>${i.name}</strong></div>
+          <div>${i.code}-${i.number}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>`;
+  html += `<script>`;
+
+  list.forEach(i=>{
+    html += `
+      QRCode.toCanvas(document.getElementById("qr_${i.id}"), "${i.code}-${i.number}");
+    `;
+  });
+
+  html += `window.print()<\/script></body></html>`;
+
+  win.document.write(html);
   win.document.close();
 }
 
-// =========================
-// NAV
-// =========================
+// LOGOUT
 function logout(){
   localStorage.removeItem("user");
-  window.location.href = "/";
+  window.location.href="/";
 }
 </script>
 
