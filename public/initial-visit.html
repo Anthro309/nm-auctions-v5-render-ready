@@ -1,166 +1,262 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Initial Visit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>  <style>
+    .camera-box {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:120px;
+      border:2px dashed #d1d5db;
+      border-radius:16px;
+      background:#f9fafb;
+      cursor:pointer;
+      font-size:18px;
+      color:#374151;
+      margin-bottom:12px;
+    }
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    .preview {
+      width:100%;
+      border-radius:12px;
+      margin-bottom:10px;
+      display:none;
+    }
 
-  <style>
-    /* KEEPING YOUR EXACT STYLES */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    body { background: #f3f4f6; color: #111827; padding: 20px; }
-    .page { max-width: 1100px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .btn { border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; }
-    .btn-primary { background: #111827; color: white; }
-    .btn-danger { background: #dc2626; color: white; }
-    .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
-    .card { background: white; border-radius: 18px; padding: 20px; }
-    input, textarea, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #ccc; }
-    .item-card { border: 1px solid #ddd; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
-    img { width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; }
-  </style>
-</head>
+    .item-card {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      background:#fff;
+      padding:12px;
+      border-radius:12px;
+      margin-bottom:10px;
+    }
 
-<body>
-<div class="page">
-  <div class="header">
-    <h1>Initial Visit</h1>
-  </div>
+    .item-img {
+      width:70px;
+      height:70px;
+      object-fit:cover;
+      border-radius:10px;
+      background:#e5e7eb;
+    }
 
-  <div class="grid">
-    <div class="card">
-      <input id="first" placeholder="First Name">
-      <input id="last" placeholder="Last Name">
-      <input id="name" placeholder="Item Name">
+    .item-qr {
+      width:70px;
+      height:70px;
+    }
+  </style></head><body><div class="container">  <div class="card">
+    <h2>Start Visit</h2>
+    <input id="first" placeholder="First Name">
+    <input id="last" placeholder="Last Name">
+    <button onclick="startVisit()">Start</button>
+    <div id="codeDisplay"></div>
+  </div>  <div class="card">
+    <h2>Add Item</h2><input id="itemName" placeholder="Item Name">
 
-      <input type="file" id="photo">
-
-      <button class="btn btn-primary" onclick="addItem()">Add Item</button>
-    </div>
-
-    <div class="card">
-      <div id="items"></div>
-    </div>
-  </div>
+<div class="camera-box" onclick="openCamera()">
+  📷 Take Photo
 </div>
 
-<script>
-let items = [];
-let uploadedPhoto = null;
+<img id="preview" class="preview">
 
-// =====================
-// CONSIGNER CODE
-// =====================
-function codeFromName(first, last) {
-  function clean(v) {
-    return (v || '').replace(/[^a-z]/gi, '').toUpperCase().slice(0,3).padEnd(3,'-');
-  }
-  return clean(first) + clean(last);
+<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+<button onclick="addItem()">Add Item</button>
+
+  </div>  <div class="card">
+    <h2>Items</h2>
+    <div id="items"></div>
+  </div>  <div class="card">
+    <button onclick="printLabels()">🖨️ Print Labels</button>
+    <button onclick="endVisit()">✅ End Visit</button>
+  </div></div><script>
+
+let consignerCode = null;
+let consignerName = "";
+
+const photoInput = document.getElementById("photoInput");
+const preview = document.getElementById("preview");
+
+function openCamera(){
+  photoInput.value = ""; // FIX
+  photoInput.click();
 }
 
-// =====================
-// IMAGE UPLOAD (SERVER)
-// =====================
-document.getElementById('photo').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append('photo', file);
-
-  const res = await fetch('/upload', {
-    method: 'POST',
-    body: formData
-  });
-
-  const data = await res.json();
-
-  if (data.success) {
-    uploadedPhoto = data.path;
-  } else {
-    alert('Upload failed');
+photoInput.addEventListener("change", () => {
+  const file = photoInput.files[0];
+  if(file){
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
   }
 });
 
-// =====================
-// LOAD ITEMS FROM SERVER
-// =====================
-async function loadItems() {
-  const res = await fetch('/items');
-  items = await res.json();
-  render();
+function startVisit(){
+  const f = first.value.trim().toUpperCase();
+  const l = last.value.trim().toUpperCase();
+
+  if(!f || !l) return alert("Enter names");
+
+  consignerCode = f.slice(0,3) + l.slice(0,3);
+  consignerName = f + " " + l;
+
+  codeDisplay.innerText = "Consigner Code: " + consignerCode;
+
+  loadItems();
 }
 
-// =====================
-// ADD ITEM (SERVER)
-// =====================
-async function addItem() {
-  const first = document.getElementById('first').value.trim();
-  const last = document.getElementById('last').value.trim();
-  const name = document.getElementById('name').value.trim();
+// =========================
+// 🔥 FULL FIXED ADD ITEM
+// =========================
+async function addItem(){
 
-  if (!first || !last || !name) {
-    alert('Fill all fields');
-    return;
+  if(!consignerCode) return alert("Start visit first");
+
+  const name = itemName.value.trim();
+  if(!name) return alert("Enter item name");
+
+  let photoPath = null;
+
+  // =========================
+  // UPLOAD
+  // =========================
+  if(photoInput.files.length > 0){
+
+    const form = new FormData();
+    form.append("photo", photoInput.files[0]);
+
+    try {
+
+      const uploadRes = await fetch('/upload', {
+        method:'POST',
+        body: form
+      });
+
+      const data = await uploadRes.json();
+
+      alert("UPLOAD RESPONSE: " + JSON.stringify(data)); // 🔥 DEBUG
+
+      if(!data.success || !data.path){
+        return alert("UPLOAD FAILED");
+      }
+
+      photoPath = data.path;
+
+      alert("PHOTO PATH: " + photoPath); // 🔥 DEBUG
+
+    } catch(err){
+      alert("UPLOAD ERROR");
+      console.error(err);
+      return;
+    }
   }
 
-  const code = codeFromName(first, last);
+  // =========================
+  // CREATE ITEM
+  // =========================
+  const itemsRes = await fetch('/items');
+  const items = await itemsRes.json();
 
-  const existing = await fetch('/items').then(r => r.json());
-  const number = existing.filter(i => i.code === code).length + 1;
+  const count = items.filter(i => i.code === consignerCode).length + 1;
 
-  const res = await fetch('/items', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+  await fetch('/items',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
       name,
-      consigner: first + " " + last,
-      code,
-      number,
-      photos: uploadedPhoto ? [uploadedPhoto] : [],
-      employee: "Fabian"
+      consigner: consignerName,
+      code: consignerCode,
+      number: count,
+      photos: photoPath ? [photoPath] : []
     })
   });
 
-  const data = await res.json();
+  itemName.value = "";
+  photoInput.value = "";
+  preview.style.display = "none";
 
-  if (data.success) {
-    uploadedPhoto = null;
-    document.getElementById('name').value = '';
-    document.getElementById('photo').value = '';
-    loadItems();
-  }
+  loadItems();
 }
 
-// =====================
-// RENDER
-// =====================
-function render() {
-  const el = document.getElementById('items');
-  el.innerHTML = '';
+// =========================
+// LOAD ITEMS
+// =========================
+async function loadItems(){
 
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'item-card';
+  const res = await fetch('/items');
+  const all = await res.json();
+
+  const list = all.filter(i => i.code === consignerCode);
+
+  items.innerHTML = "";
+
+  list.forEach(i => {
+
+    const div = document.createElement("div");
+    div.className = "item-card";
+
+    const qrId = "qr_" + i.id;
 
     div.innerHTML = `
-      <b>${item.code}-${item.number}</b><br>
-      ${item.name}<br>
-      ${item.consigner}<br>
-      ${item.photos?.[0] ? `<img src="${item.photos[0]}">` : ''}
+      <canvas id="${qrId}" class="item-qr"></canvas>
+
+      ${i.photos && i.photos[0]
+        ? `<img src="${i.photos[0]}" class="item-img">`
+        : `<div class="item-img">No Image</div>`}
+
+      <div>
+        <div><b>${i.code}-${i.number}</b></div>
+        <div>${i.name}</div>
+      </div>
     `;
 
-    el.appendChild(div);
+    items.appendChild(div);
+
+    QRCode.toCanvas(document.getElementById(qrId), `${i.code}-${i.number}`);
   });
 }
 
-loadItems();
-</script>
+// =========================
+// PRINT
+// =========================
+async function printLabels(){
 
-</body>
+  const res = await fetch('/items');
+  const all = await res.json();
+
+  const list = all.filter(i => i.code === consignerCode);
+
+  const win = window.open("");
+
+  win.document.write(`
+    <html>
+    <body>
+      ${list.map(i => `
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <canvas id="qr_${i.id}"></canvas>
+          <div>${i.name}</div>
+        </div>
+      `).join("")}
+      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+      <script>
+        const items = ${JSON.stringify(list)};
+        items.forEach(i=>{
+          QRCode.toCanvas(document.getElementById("qr_"+i.id), i.code+"-"+i.number);
+        });
+        setTimeout(()=>window.print(),500);
+      <\/script>
+    </body>
+    </html>
+  `);
+}
+
+// =========================
+// END VISIT
+// =========================
+function endVisit(){
+  alert("Visit Complete");
+}
+
+</script></body>
 </html>
