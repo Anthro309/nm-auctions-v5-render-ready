@@ -16,25 +16,15 @@ app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
-// FILE PATHS
+// FILES
 // =========================
-const USERS_FILE = 'users.json';
 const ITEMS_FILE = 'items.json';
-const REPORTS_FILE = 'reports.json';
-const NOTIFICATIONS_FILE = 'notifications.json';
-const INTAKE_FILE = 'intake.json';
 
-// =========================
-// HELPERS
-// =========================
 function readJSON(file) {
   try {
     if (!fs.existsSync(file)) return [];
-    const raw = fs.readFileSync(file, 'utf8');
-    if (!raw.trim()) return [];
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('READ ERROR:', file, err);
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
     return [];
   }
 }
@@ -43,100 +33,13 @@ function writeJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
-function ensureArrayFile(file) {
-  if (!fs.existsSync(file)) {
-    writeJSON(file, []);
-  }
-}
-
-function ensureUsersExist() {
-  const users = readJSON(USERS_FILE);
-
-  if (!users.length) {
-    const defaultUsers = [
-      { name: 'Fabian', pin: '1234', isAdmin: true },
-      { name: 'James', pin: '1234', isAdmin: true },
-      { name: 'Steven', pin: '1234', isAdmin: true },
-      { name: 'Mike', pin: '1234', isAdmin: false },
-      { name: 'Gio', pin: '1234', isAdmin: false },
-      { name: 'Michelle', pin: '1234', isAdmin: false },
-      { name: 'Sara', pin: '1234', isAdmin: false }
-    ];
-
-    writeJSON(USERS_FILE, defaultUsers);
-    console.log('🔥 Users seeded');
-  }
-}
-
-function monthLetterForDate(date = new Date()) {
-  return 'ABCDEFGHIJKL'[date.getMonth()];
-}
-
-function addLog(item, entry) {
-  if (!Array.isArray(item.logs)) item.logs = [];
-
-  item.logs.push({
-    timestamp: new Date().toISOString(),
-    employee: entry.employee || 'system',
-    action: entry.action || '',
-    fromStage: entry.fromStage || null,
-    toStage: entry.toStage || null,
-    reason: entry.reason || null,
-    note: entry.note || null
-  });
-}
-
-function validStage(stage) {
-  return [
-    'Initial Visit',
-    'Received at Studio',
-    'Missing at Drop Off',
-    'Review & Cleaning',
-    'Photograph',
-    'Prep for Pickup',
-    'Picked Up'
-  ].includes(stage);
-}
-
-function cleanAIText(value, fallback = '') {
-  return String(value || fallback).trim();
-}
-
-function safeJsonParse(text, fallback = null) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return fallback;
-  }
-}
-
 // =========================
-// ENSURE FILES
+// ENSURE UPLOAD FOLDER
 // =========================
-ensureArrayFile(ITEMS_FILE);
-ensureArrayFile(REPORTS_FILE);
-ensureArrayFile(NOTIFICATIONS_FILE);
-ensureArrayFile(INTAKE_FILE);
-ensureUsersExist();
-
-// Ensure uploads folder exists and is actually a folder
 const uploadsPath = path.join(__dirname, 'public/uploads');
 
-try {
-  if (fs.existsSync(uploadsPath)) {
-    const stat = fs.statSync(uploadsPath);
-
-    if (!stat.isDirectory()) {
-      fs.unlinkSync(uploadsPath);
-      fs.mkdirSync(uploadsPath, { recursive: true });
-      console.log('⚠️ uploads was file → fixed to folder');
-    }
-  } else {
-    fs.mkdirSync(uploadsPath, { recursive: true });
-    console.log('📁 uploads folder created');
-  }
-} catch (err) {
-  console.error('UPLOAD DIR ERROR:', err);
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
 // =========================
@@ -152,137 +55,67 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image uploads are allowed'));
-    }
-    cb(null, true);
-  }
-});
+const upload = multer({ storage });
 
 // =========================
-// LOGIN
+// UPLOAD
 // =========================
-app.post('/login', (req, res) => {
-  const { name, pin } = req.body;
-  const users = readJSON(USERS_FILE);
-
-  const user = users.find(
-    u =>
-      u.name.toLowerCase().trim() === String(name || '').toLowerCase().trim() &&
-      u.pin === String(pin || '')
-  );
-
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid login' });
+app.post('/upload', upload.single('photo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false });
   }
 
   res.json({
     success: true,
-    user: {
-      name: user.name,
-      isAdmin: user.isAdmin
-    }
+    path: `/uploads/${req.file.filename}`
   });
 });
 
 // =========================
-// NEXT LOT CODE
+// NEXT LOT
 // =========================
 app.get('/next-lot-code', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const month = req.query.month || monthLetterForDate(new Date());
 
-  const usedNumbers = items
+  const month = 'ABCDEFGHIJKL'[new Date().getMonth()];
+
+  const nums = items
     .map(i => i.lotNumber)
     .filter(Boolean)
     .filter(l => l.startsWith(month))
-    .map(l => parseInt(l.slice(1), 10))
+    .map(l => parseInt(l.slice(1)))
     .filter(n => !isNaN(n));
 
-  const next = usedNumbers.length ? Math.max(...usedNumbers) + 1 : 1;
-  const lotCode = `${month}${String(next).padStart(3, '0')}`;
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
 
-  res.json({ success: true, lotCode });
+  res.json({
+    success: true,
+    lotCode: `${month}${String(next).padStart(3, '0')}`
+  });
 });
 
 // =========================
-// ADD ITEMS (INTAKE)
+// ADD ITEMS
 // =========================
 app.post('/addItems', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const incoming = Array.isArray(req.body.items) ? req.body.items : [];
+  const incoming = req.body.items || [];
 
-  if (!incoming.length) {
-    return res.status(400).json({ success: false, message: 'No items provided' });
-  }
-
-  const existingCodes = new Set(items.map(i => i.lotNumber).filter(Boolean));
-  const newItems = [];
-
-  for (const i of incoming) {
-    if (!i.lotCode) {
-      return res.status(400).json({ success: false, message: 'Missing lotCode' });
-    }
-
-    if (existingCodes.has(i.lotCode)) {
-      return res.status(400).json({
-        success: false,
-        message: `Duplicate lot code: ${i.lotCode}`
-      });
-    }
-
-    const item = {
-      id: Date.now() + Math.floor(Math.random() * 1000) + Math.floor(Math.random() * 1000),
-      name: i.title || '',
-      description: i.description || '',
-      category: i.category || '',
-      condition: i.condition || '',
-      consigner: `${i.consignerFirstName || ''} ${i.consignerLastName || ''}`.trim(),
-      code: i.consignerCode || '',
-      number: i.itemNumber || 1,
-      part: i.partCount || 1,
-      photos: i.photo ? [i.photo] : [],
-      stage: 'Received at Studio',
-      location: null,
-      lotNumber: i.lotCode,
-      photographedAt: null,
-      lotAssignedAt: new Date().toISOString(),
-      lotAssignedBy: i.createdBy || 'system',
-      pendingHandoff: {
-        requestedStage: 'Review & Cleaning',
-        fromStage: 'Received at Studio',
-        requestedBy: i.createdBy || 'system',
-        requestedAt: new Date().toISOString(),
-        reason: 'Initial Visit intake'
-      },
-      createdAt: i.createdAt || new Date().toISOString(),
-      logs: []
-    };
-
-    addLog(item, {
-      employee: i.createdBy || 'system',
-      action: 'item received',
-      toStage: 'Received at Studio'
-    });
-
-    addLog(item, {
-      employee: i.createdBy || 'system',
-      action: 'handoff requested',
-      fromStage: 'Received at Studio',
-      toStage: 'Review & Cleaning',
-      reason: 'Initial Visit intake'
-    });
-
-    newItems.push(item);
-  }
+  const newItems = incoming.map(i => ({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    name: i.title || '',
+    description: i.description || '',
+    category: i.category || '',
+    condition: i.condition || '',
+    consigner: `${i.consignerFirstName} ${i.consignerLastName}`,
+    code: i.consignerCode,
+    lotNumber: i.lotCode,
+    photos: i.photo ? [i.photo] : []
+  }));
 
   writeJSON(ITEMS_FILE, [...items, ...newItems]);
 
-  res.json({ success: true, count: newItems.length });
+  res.json({ success: true });
 });
 
 // =========================
@@ -293,86 +126,18 @@ app.get('/items', (req, res) => {
 });
 
 // =========================
-// GET ITEM BY LOT (SCANNER)
-// =========================
-app.get('/items/by-lot/:lot', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => i.lotNumber === req.params.lot);
-
-  if (!item) return res.json(null);
-  res.json(item);
-});
-
-// =========================
-// UPDATE STAGE
-// =========================
-app.post('/items/:id/stage', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
-  const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
-
-  const newStage = req.body.stage;
-  const employee = req.body.employee || 'system';
-
-  if (!validStage(newStage)) {
-    return res.status(400).json({ success: false, message: 'Invalid stage' });
-  }
-
-  const fromStage = item.stage;
-  item.stage = newStage;
-
-  addLog(item, {
-    employee,
-    action: 'stage changed',
-    fromStage,
-    toStage: newStage
-  });
-
-  writeJSON(ITEMS_FILE, items);
-
-  res.json({ success: true, item });
-});
-
-// =========================
-// UPLOAD
-// =========================
-app.post('/upload', upload.single('photo'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
-  }
-
-  res.json({
-    success: true,
-    path: `/uploads/${req.file.filename}`
-  });
-});
-
-// =========================
-// AI IMAGE ANALYSIS
+// AI ANALYSIS (FIXED)
 // =========================
 app.post('/analyze-image', async (req, res) => {
   try {
     const { imageUrl } = req.body;
 
     if (!imageUrl) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing imageUrl'
-      });
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: 'OPENAI_API_KEY is not set'
-      });
+      return res.status(400).json({ success: false });
     }
 
     const response = await client.responses.create({
-      model: 'gpt-5.4',
+      model: 'gpt-4.1-mini',
       input: [
         {
           role: 'user',
@@ -380,15 +145,7 @@ app.post('/analyze-image', async (req, res) => {
             {
               type: 'input_text',
               text:
-                'Look at this item photo from an estate-sale intake workflow. Respond with valid JSON only. Use this exact shape: ' +
-                '{"title":"","description":"","category":"","condition":""}. ' +
-                'Rules: ' +
-                '1) title should be short and auction-friendly, 4 to 10 words. ' +
-                '2) description should be one sentence, plain and useful. ' +
-                '3) category should be a short category like furniture, decor, kitchenware, tools, art, electronics, jewelry, collectibles, glassware, clothing, books, toys, outdoor, or misc. ' +
-                '4) condition should be one short phrase like good, fair, worn, vintage wear, or unknown. ' +
-                '5) Do not mention uncertainty unless necessary. ' +
-                '6) Return JSON only, no markdown.'
+                'Identify this item and respond ONLY JSON: {"title":"","description":"","category":"","condition":""}'
             },
             {
               type: 'input_image',
@@ -399,29 +156,35 @@ app.post('/analyze-image', async (req, res) => {
       ]
     });
 
-    const raw = response.output_text || '';
-    const parsed = safeJsonParse(raw, null);
+    const raw = response.output?.[0]?.content?.[0]?.text || '';
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
 
     if (!parsed) {
-      return res.status(200).json({
+      return res.json({
         success: true,
         title: 'Estate item',
-        description: cleanAIText(raw, 'Estate sale item from intake photo.'),
+        description: raw,
         category: 'misc',
-        condition: 'unknown',
-        raw
+        condition: 'unknown'
       });
     }
 
     res.json({
       success: true,
-      title: cleanAIText(parsed.title, 'Estate item'),
-      description: cleanAIText(parsed.description, 'Estate sale item from intake photo.'),
-      category: cleanAIText(parsed.category, 'misc'),
-      condition: cleanAIText(parsed.condition, 'unknown')
+      title: parsed.title || '',
+      description: parsed.description || '',
+      category: parsed.category || '',
+      condition: parsed.condition || ''
     });
+
   } catch (err) {
-    console.error('AI ERROR:', err);
+    console.error(err);
     res.status(500).json({
       success: false,
       message: 'AI image analysis failed'
@@ -429,20 +192,6 @@ app.post('/analyze-image', async (req, res) => {
   }
 });
 
-// =========================
-// ERROR HANDLER
-// =========================
-app.use((err, req, res, next) => {
-  console.error('SERVER ERROR:', err);
-  res.status(500).json({
-    success: false,
-    message: err.message || 'Server error'
-  });
-});
-
-// =========================
-// START
-// =========================
 app.listen(PORT, () => {
   console.log(`🔥 Server running on ${PORT}`);
 });
