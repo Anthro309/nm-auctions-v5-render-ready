@@ -1,306 +1,378 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Item Detail</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <link rel="stylesheet" href="styles.css">
-
-  <!-- QR -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-
-  <style>
-    .image-box {
-      width: 100%;
-      height: 220px;
-      border-radius: 16px;
-      overflow: hidden;
-      background: #111827;
-      margin-bottom: 16px;
-    }
-
-    .image-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .qr-box {
-      text-align: center;
-      background: #111827;
-      padding: 16px;
-      border-radius: 12px;
-      margin-top: 12px;
-    }
-
-    .qr-label {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-top: 6px;
-    }
-
-    .print-btn {
-      margin-top: 12px;
-      width: 100%;
-      padding: 14px;
-      background: #16a34a;
-      border-radius: 12px;
-      border: none;
-      color: white;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item Detail</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<style>
+.image-box {
+  width: 100%;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e5e7eb;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+.image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label { color: #6b7280; font-weight: 500; }
+.detail-value { font-weight: 600; text-align: right; max-width: 60%; }
+.qr-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.qr-code-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.btn-green {
+  width: 100%;
+  background: #16a34a;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-blue {
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+select, input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  font-size: 14px;
+  margin-top: 10px;
+}
+.success-msg {
+  background: #ecfdf5;
+  color: #047857;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  display: none;
+}
+</style>
 </head>
-
 <body>
 
 <div class="navbar">
-  <div class="nav-left">☰</div>
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-title">Auction Legacy</div>
+  <a href="/dashboard.html">Dashboard</a>
+  <a href="/initial-visit.html">Initial Visit</a>
+  <a href="/scanner.html">Scanner</a>
+  <a href="/items.html">Item Library</a>
+  <a href="/reports.html">Reports</a>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
 <div class="container">
 
-  <!-- IMAGE -->
-  <div id="imageBox" class="image-box"></div>
+  <!-- PHOTO -->
+  <div id="imageBox" class="image-box">No Image</div>
 
-  <!-- INFO -->
-  <div class="card">
-    <h2 id="title"></h2>
-    <div id="code"></div>
-    <div id="stage"></div>
+  <!-- DETAILS -->
+  <div class="card" style="margin-top:16px;">
+    <h2 id="itemTitle" style="margin-bottom:12px;"></h2>
+    <div class="detail-row">
+      <span class="detail-label">Lot</span>
+      <span class="detail-value" id="detailLot"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Consigner</span>
+      <span class="detail-value" id="detailConsigner"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Category</span>
+      <span class="detail-value" id="detailCategory"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Condition</span>
+      <span class="detail-value" id="detailCondition"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Stage</span>
+      <span class="detail-value" id="detailStage"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Location</span>
+      <span class="detail-value" id="detailLocation">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Description</span>
+      <span class="detail-value" id="detailDescription"></span>
+    </div>
   </div>
 
-  <!-- QR + PRINT -->
-  <div class="card qr-box">
-    <canvas id="qr"></canvas>
-    <div id="qrText" class="qr-label"></div>
-
-    <button class="print-btn" onclick="printLabels()">
-      🖨️ Print Labels
-    </button>
+  <!-- QR CODE -->
+  <div class="card">
+    <div class="qr-center">
+      <canvas id="qrCanvas"></canvas>
+      <div class="qr-code-label" id="qrLabel"></div>
+    </div>
+    <button class="btn-green" onclick="printLabel()">🖨️ Print Label</button>
   </div>
 
-  <!-- LOCATION -->
+  <!-- SAVE LOCATION -->
   <div class="card">
-    <h3>Location</h3>
-    <input id="locationInput" placeholder="Rack A1">
-    <button onclick="saveLocation()">Save Location</button>
+    <h3 style="margin-bottom:4px;">Location</h3>
+    <input id="locationInput" placeholder="e.g. Rack A1, Shelf 3">
+    <button class="btn-blue" onclick="saveLocation()">Save Location</button>
+    <div id="locationMsg" class="success-msg">✅ Location saved</div>
   </div>
 
-  <!-- HANDOFF -->
+  <!-- REQUEST HANDOFF -->
   <div class="card">
-    <h3>Request Handoff</h3>
-
+    <h3 style="margin-bottom:4px;">Request Handoff</h3>
     <select id="stageSelect">
       <option>Received at Studio</option>
       <option>Review & Cleaning</option>
       <option>Photograph</option>
       <option>Prep for Pickup</option>
+      <option>Picked Up</option>
     </select>
-
-    <input id="reason" placeholder="Reason (optional)">
-    <button onclick="requestHandoff()">Send Handoff Request</button>
+    <input id="reasonInput" placeholder="Reason (optional)">
+    <button class="btn-blue" onclick="requestHandoff()">Send Handoff Request</button>
+    <div id="handoffMsg" class="success-msg">✅ Handoff request sent</div>
   </div>
 
 </div>
 
+<!-- PRINT SHEET (hidden) -->
+<div id="printSheet" style="display:none;"></div>
+
 <script>
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user) window.location.href = "/";
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
 
 const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
-
+const id = params.get('id');
 let item = null;
 
-// =========================
-// LOAD
-// =========================
-async function load(){
-  const res = await fetch('/items/' + id);
-  item = await res.json();
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
 
-  title.innerText = item.name;
-  code.innerText = item.code + "-" + item.number;
-  stage.innerText = "Stage: " + item.stage;
-
-  renderImage();
-  generateQR();
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = '/';
 }
 
 // =========================
-// IMAGE FIX
+// LOAD ITEM
 // =========================
-function renderImage(){
-  if(item.photos && item.photos.length){
-    imageBox.innerHTML = `<img src="${item.photos[0]}">`;
-  } else {
-    imageBox.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9ca3af;">
-        No Image
-      </div>
-    `;
+async function load() {
+  if (!id) {
+    window.location.href = '/items.html';
+    return;
+  }
+  try {
+    const res = await fetch('/items/' + id);
+    if (!res.ok) throw new Error('Item not found');
+    item = await res.json();
+    if (!item) throw new Error('Item not found');
+    render();
+  } catch (err) {
+    document.querySelector('.container').innerHTML = `
+      <div class="card">
+        <p style="color:#b91c1c;">Could not load item. <a href="/items.html">Go back</a></p>
+      </div>`;
+  }
+}
+
+function render() {
+  document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
+  document.getElementById('detailLot').innerText = item.lotNumber || '—';
+  document.getElementById('detailConsigner').innerText = item.consigner || '—';
+  document.getElementById('detailCategory').innerText = item.category || '—';
+  document.getElementById('detailCondition').innerText = item.condition || '—';
+  document.getElementById('detailStage').innerText = item.stage || '—';
+  document.getElementById('detailLocation').innerText = item.location || '—';
+  document.getElementById('detailDescription').innerText = item.description || '—';
+
+  if (item.location) {
+    document.getElementById('locationInput').value = item.location;
+  }
+
+  // Photo
+  const imageBox = document.getElementById('imageBox');
+  if (item.photos && item.photos.length) {
+    imageBox.innerHTML = `<img src="${item.photos[0]}" alt="${item.name}">`;
+  }
+
+  // QR
+  const qrValue = item.lotNumber || (item.code + '-' + item.number);
+  QRCode.toCanvas(document.getElementById('qrCanvas'), qrValue, { width: 180 });
+  document.getElementById('qrLabel').innerText = qrValue;
+}
+
+// =========================
+// SAVE LOCATION
+// =========================
+async function saveLocation() {
+  const location = document.getElementById('locationInput').value.trim();
+  try {
+    const res = await fetch(`/items/${item.id}/location`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      document.getElementById('detailLocation').innerText = location || '—';
+      const msg = document.getElementById('locationMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    }
+  } catch (err) {
+    alert('Failed to save location');
   }
 }
 
 // =========================
-// QR
+// REQUEST HANDOFF
 // =========================
-function generateQR(){
-  const value = item.code + "-" + item.number;
-
-  QRCode.toCanvas(
-    document.getElementById("qr"),
-    value,
-    { width: 200 }
-  );
-
-  qrText.innerText = value;
+async function requestHandoff() {
+  const stage = document.getElementById('stageSelect').value;
+  const reason = document.getElementById('reasonInput').value.trim();
+  try {
+    const res = await fetch(`/items/${item.id}/request-handoff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage, reason, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      const msg = document.getElementById('handoffMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    }
+  } catch (err) {
+    alert('Failed to send handoff request');
+  }
 }
 
 // =========================
-// PRINT MULTI LABEL SHEET
+// PRINT LABEL (Avery 1" x 2-5/8")
 // =========================
-function printLabels(){
-  const win = window.open('', '', 'width=800,height=1000');
-
+async function printLabel() {
+  const sheet = document.getElementById('printSheet');
+  const qrValue = item.lotNumber || (item.code + '-' + item.number);
   const name = (item.name || '').slice(0, 50);
-  const code = item.code + "-" + item.number;
   const date = new Date().toLocaleDateString();
+  const code = item.code || '';
 
-  win.document.write(`
-    <html>
-    <head>
-      <style>
-        body {
-          font-family: Arial;
-          padding: 10px;
-        }
+  sheet.innerHTML = `
+    <style>
+      @media print {
+        @page { size: letter; margin: 0.5in 0.19in; }
+        body * { visibility: hidden; }
+        #printSheet, #printSheet * { visibility: visible; }
+        #printSheet { display: block !important; position: absolute; top: 0; left: 0; }
+      }
+      .avery-sheet {
+        display: grid;
+        grid-template-columns: repeat(3, 2.625in);
+        grid-auto-rows: 1in;
+        column-gap: 0.125in;
+        width: 8.125in;
+      }
+      .avery-label {
+        width: 2.625in;
+        height: 1in;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 5px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .avery-name {
+        font-size: 8pt;
+        font-weight: bold;
+        color: black;
+        line-height: 1.2;
+      }
+      .avery-details {
+        font-size: 7pt;
+        color: #333;
+        white-space: nowrap;
+      }
+    </style>
+    <div class="avery-sheet" id="labelGrid"></div>
+  `;
 
-        .sheet {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
+  const grid = document.getElementById('labelGrid');
+  for (let i = 0; i < 30; i++) {
+    const div = document.createElement('div');
+    div.className = 'avery-label';
+    div.innerHTML = `
+      <canvas id="plc${i}" style="width:0.78in;height:0.78in;flex-shrink:0;"></canvas>
+      <div>
+        <div class="avery-name">${escapeHtml(name)}</div>
+        <div class="avery-details">Lot ${escapeHtml(qrValue)} · ${date} · ${escapeHtml(code)}</div>
+      </div>
+    `;
+    grid.appendChild(div);
+    await QRCode.toCanvas(document.getElementById(`plc${i}`), qrValue, { width: 75 });
+  }
 
-        .label {
-          display: flex;
-          align-items: center;
-          border: 1px solid #ddd;
-          border-radius: 10px;
-          padding: 8px;
-          height: 90px;
-        }
-
-        .qr {
-          width: 70px;
-          height: 70px;
-          margin-right: 10px;
-        }
-
-        .text {
-          font-size: 12px;
-          line-height: 1.2;
-        }
-
-        .name {
-          font-weight: bold;
-        }
-
-        canvas {
-          width: 70px !important;
-          height: 70px !important;
-        }
-      </style>
-    </head>
-
-    <body>
-
-      <div class="sheet" id="sheet"></div>
-
-      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
-
-      <script>
-        const sheet = document.getElementById("sheet");
-
-        function createLabel(){
-          const div = document.createElement("div");
-          div.className = "label";
-
-          div.innerHTML = \`
-            <div class="qr"><canvas></canvas></div>
-            <div class="text">
-              <div class="name">${name}</div>
-              <div>Lot: ${item.lotNumber || "-"}</div>
-              <div>${date} • ${item.code}</div>
-            </div>
-          \`;
-
-          sheet.appendChild(div);
-
-          QRCode.toCanvas(
-            div.querySelector("canvas"),
-            "${code}",
-            { width: 70 }
-          );
-        }
-
-        // PRINT 8 LABELS (adjust if needed)
-        for(let i = 0; i < 8; i++){
-          createLabel();
-        }
-
-        window.print();
-      <\/script>
-
-    </body>
-    </html>
-  `);
-
-  win.document.close();
+  setTimeout(() => { window.print(); }, 600);
 }
 
-// =========================
-// LOCATION
-// =========================
-async function saveLocation(){
-  await fetch(`/items/${item.id}/location`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      location: locationInput.value,
-      employee: user.name
-    })
-  });
-
-  alert("Saved");
-}
-
-// =========================
-// HANDOFF
-// =========================
-async function requestHandoff(){
-  await fetch(`/items/${item.id}/request-handoff`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      stage: stageSelect.value,
-      employee: user.name,
-      reason: reason.value
-    })
-  });
-
-  alert("Handoff sent");
-}
-
-// =========================
-// NAV
-// =========================
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
+function escapeHtml(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 load();
