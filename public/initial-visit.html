@@ -23,11 +23,6 @@ body {
   margin-bottom:20px;
 }
 
-.header h1 {
-  font-size:20px;
-  cursor:pointer;
-}
-
 .card {
   background:#13283b;
   padding:15px;
@@ -58,19 +53,48 @@ button {
   display:none;
 }
 
+/* LABEL STYLE (REAL VERSION) */
+.label-sheet {
+  display:none;
+}
+
 .label {
   background:white;
   color:black;
-  padding:10px;
-  border-radius:10px;
+  border-radius:16px;
   display:flex;
-  gap:10px;
-  margin-top:10px;
+  align-items:center;
+  padding:12px;
+  gap:12px;
+  margin-bottom:10px;
 }
 
 .qr {
-  width:80px;
-  height:80px;
+  width:90px;
+  height:90px;
+}
+
+.label-text {
+  font-size:13px;
+  line-height:1.3;
+}
+
+@media print {
+  body * {
+    visibility:hidden;
+  }
+
+  .label-sheet, .label-sheet * {
+    visibility:visible;
+  }
+
+  .label-sheet {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    display:block;
+  }
 }
 </style>
 </head>
@@ -82,7 +106,7 @@ button {
   <div onclick="logout()">Logout</div>
 </div>
 
-<!-- START VISIT -->
+<!-- START -->
 <div class="card">
   <h2>Initial Visit</h2>
   <input id="first" placeholder="First Name">
@@ -90,16 +114,21 @@ button {
   <button onclick="startVisit()">Start Visit</button>
 </div>
 
-<!-- ADD ITEM -->
+<!-- ADD ITEMS -->
 <div id="itemSection" class="card hidden">
   <h2>Add Item</h2>
   <input id="itemName" placeholder="Item Name">
   <input type="file" id="photo">
-  <button onclick="addItem()">Add Item + Print Label</button>
+  <button onclick="addItem()">Add Item</button>
+
+  <button style="background:#16a34a;" onclick="endVisit()">End Visit</button>
 </div>
 
-<!-- LABELS -->
+<!-- PREVIEW -->
 <div id="labels"></div>
+
+<!-- PRINT SHEET -->
+<div id="printSheet" class="label-sheet"></div>
 
 <script>
 
@@ -127,17 +156,14 @@ function startVisit(){
   session = {
     first,
     last,
-    code: (first.slice(0,3)+last.slice(0,3)).toUpperCase()
+    code: (first.slice(0,3)+last.slice(0,3)).toUpperCase(),
+    date: new Date().toLocaleDateString()
   };
 
   document.getElementById("itemSection").classList.remove("hidden");
 }
 
 async function addItem(){
-  if(!session){
-    alert("Start visit first");
-    return;
-  }
 
   const name = document.getElementById("itemName").value;
   const file = document.getElementById("photo").files[0];
@@ -149,35 +175,22 @@ async function addItem(){
 
   let photoPath = null;
 
-  // UPLOAD IMAGE
   if(file){
-    const formData = new FormData();
-    formData.append("photo", file);
+    const fd = new FormData();
+    fd.append("photo", file);
 
-    const uploadRes = await fetch("/upload", {
-      method:"POST",
-      body:formData
-    });
-
-    const uploadData = await uploadRes.json();
-
-    if(!uploadData.success){
-      alert("Upload failed");
-      return;
-    }
-
-    photoPath = uploadData.path;
+    const res = await fetch("/upload", { method:"POST", body:fd });
+    const data = await res.json();
+    photoPath = data.path;
   }
 
-  // GET LOT CODE
   const month = "ABCDEFGHIJKL"[new Date().getMonth()];
   const lotRes = await fetch(`/next-lot-code?month=${month}`);
   const lotData = await lotRes.json();
 
   const lotCode = lotData.lotCode;
 
-  // SAVE ITEM
-  const res = await fetch("/addItems", {
+  await fetch("/addItems", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
@@ -193,35 +206,54 @@ async function addItem(){
     })
   });
 
-  const data = await res.json();
+  items.push({name, lotCode});
 
-  if(!data.success){
-    alert(data.message || "Something broke");
+  renderPreview();
+}
+
+function renderPreview(){
+  const container = document.getElementById("labels");
+
+  container.innerHTML = items.map(i=>`
+    <div style="background:#fff;color:#000;padding:10px;border-radius:10px;margin-top:10px;">
+      ${i.name} - ${i.lotCode}
+    </div>
+  `).join("");
+}
+
+function endVisit(){
+  if(!items.length){
+    alert("No items added");
     return;
   }
 
-  items.push({name, lotCode});
+  const confirmPrint = confirm("Print labels now?");
+  if(!confirmPrint) return;
 
-  renderLabels();
+  buildPrintSheet();
+  window.print();
 }
 
-function renderLabels(){
-  const container = document.getElementById("labels");
+function buildPrintSheet(){
+  const sheet = document.getElementById("printSheet");
 
-  container.innerHTML = items.map(item=>`
+  sheet.innerHTML = items.map(i=>`
     <div class="label">
-      <canvas id="qr-${item.lotCode}" class="qr"></canvas>
-      <div>
-        <strong>${item.name}</strong><br>
-        Lot ${item.lotCode}
+      <canvas id="qr-${i.lotCode}" class="qr"></canvas>
+      <div class="label-text">
+        <strong>${i.name}</strong><br>
+        Lot ${i.lotCode}<br>
+        Receiving ${session.date}<br>
+        ${session.code}
       </div>
     </div>
   `).join("");
 
-  items.forEach(item=>{
+  items.forEach(i=>{
     QRCode.toCanvas(
-      document.getElementById(`qr-${item.lotCode}`),
-      item.lotCode
+      document.getElementById(`qr-${i.lotCode}`),
+      i.lotCode,
+      { width:90 }
     );
   });
 }
