@@ -3,213 +3,395 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Initial Visit</title>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 body {
-  margin:0;
-  font-family: Arial;
-  background:#0b1b2b;
-  color:white;
-  padding:15px;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b1b2b;
+  color: white;
 }
 
+/* NAVBAR */
+.navbar {
+  height: 70px;
+  background: #0b1b2b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+}
+
+.nav-left { font-size: 26px; cursor: pointer; }
+.nav-center { font-size: 20px; font-weight: bold; cursor: pointer; }
+.nav-right { cursor: pointer; }
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: -260px;
+  top: 0;
+  width: 250px;
+  height: 100%;
+  background: #13283b;
+  padding: 20px;
+  transition: 0.25s ease;
+  z-index: 1000;
+}
+
+.sidebar.open { left: 0; }
+
+.sidebar a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  margin: 15px 0;
+}
+
+/* OVERLAY */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  z-index: 999;
+}
+
+.overlay.show { display: block; }
+
+/* CONTENT */
+.container { padding: 15px; }
+
 .card {
-  background:#13283b;
-  padding:15px;
-  border-radius:15px;
-  margin-bottom:15px;
+  background: #13283b;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 15px;
 }
 
 input, textarea {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:10px;
-  border:none;
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
 }
 
 button {
-  margin-top:10px;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  width:100%;
-  font-weight:bold;
-  background:#2563eb;
-  color:white;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+  width: 100%;
 }
 
-.green {
-  background:#16a34a;
+button.secondary { background: #16a34a; }
+
+.hidden { display: none; }
+
+.status {
+  background: #081421;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
-.hidden {
-  display:none;
-}
-
+/* LABEL PREVIEW */
 .label {
-  background:white;
-  color:black;
-  padding:10px;
-  border-radius:10px;
-  display:flex;
-  gap:10px;
-  margin-top:10px;
+  background: white;
+  color: black;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .qr {
-  width:80px;
-  height:80px;
+  width: 80px;
+  height: 80px;
+}
+
+/* PRINT (AVERY 5160) */
+#printSheet { display:none; }
+
+@media print {
+  body * { visibility:hidden; }
+
+  #printSheet, #printSheet * { visibility:visible; }
+
+  #printSheet {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+  }
+
+  .sheet {
+    display:grid;
+    grid-template-columns: repeat(3, 2.625in);
+    grid-auto-rows: 1in;
+    width:8.5in;
+  }
+
+  .print-label {
+    display:flex;
+    gap:5px;
+    padding:4px;
+    align-items:center;
+  }
+
+  .print-qr {
+    width:0.7in;
+    height:0.7in;
+  }
+
+  .print-text {
+    font-size:10px;
+    color:black;
+    line-height:1.1;
+  }
 }
 </style>
 </head>
 
 <body>
 
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="goHome()">Auction Legacy</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <h3>Menu</h3>
+  <a href="/dashboard.html">Dashboard</a>
+  <a href="/initial-visit.html">Initial Visit</a>
+  <a href="/scanner.html">Scanner</a>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+<div id="status" class="status">Ready.</div>
+
 <div class="card">
   <h2>Initial Visit</h2>
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
   <button onclick="startVisit()">Start Visit</button>
+  <div id="codeDisplay"></div>
 </div>
 
 <div id="itemSection" class="card hidden">
   <h2>Add Item</h2>
 
   <input id="itemName" placeholder="Item Name">
-  <textarea id="desc" placeholder="Description"></textarea>
+  <textarea id="itemDescription" placeholder="Description"></textarea>
+  <input id="itemCategory" placeholder="Category">
+  <input id="itemCondition" placeholder="Condition">
 
-  <!-- CAMERA FIX -->
+  <!-- CAMERA ENABLED -->
   <input type="file" id="photo" accept="image/*" capture="environment">
 
-  <button onclick="analyze()">Analyze Photo</button>
+  <button onclick="analyzePhoto()">Analyze Photo with AI</button>
   <button onclick="addItem()">Add Item</button>
-  <button class="green" onclick="endVisit()">End Visit & Print</button>
+  <button class="secondary" onclick="endVisit()">End Visit & Print Labels</button>
 </div>
 
 <div id="labels"></div>
+<div id="printSheet"></div>
+
+</div>
 
 <script>
 let session = null;
 let items = [];
-let currentPhoto = null;
+let currentPhotoPath = null;
+
+function setStatus(msg){ document.getElementById("status").innerText = msg; }
+
+function goHome(){ window.location.href="/dashboard.html"; }
+function logout(){ localStorage.removeItem("user"); window.location.href="/"; }
+
+function toggleMenu(){
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
+}
 
 function startVisit(){
-  const f = first.value.trim();
-  const l = last.value.trim();
+  const first = firstInput.value.trim();
+  const last = lastInput.value.trim();
 
-  if(!f || !l){
+  if(!first || !last){
     alert("Enter name");
     return;
   }
 
   session = {
-    first:f,
-    last:l,
-    code:(f.slice(0,3)+l.slice(0,3)).toUpperCase()
+    first,
+    last,
+    code:(first.slice(0,3)+last.slice(0,3)).toUpperCase(),
+    date:new Date().toLocaleDateString()
   };
 
+  codeDisplay.innerText = "Code: "+session.code;
   itemSection.classList.remove("hidden");
+  setStatus("Visit started");
 }
 
-async function upload(){
+async function uploadPhoto(){
   const file = photo.files[0];
   if(!file) return null;
 
   const form = new FormData();
   form.append("photo", file);
 
-  const res = await fetch("/upload", { method:"POST", body:form });
+  const res = await fetch("/upload",{method:"POST",body:form});
   const data = await res.json();
+
+  if(!data.success) throw new Error("Upload failed");
 
   return data.path;
 }
 
-async function analyze(){
-  if(!session){
-    alert("Start visit first");
-    return;
-  }
+async function analyzePhoto(){
+  if(!session) return alert("Start visit first");
 
-  const path = await upload();
+  try{
+    currentPhotoPath = await uploadPhoto();
 
-  const res = await fetch("/analyze-image", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      imageUrl: window.location.origin + path
-    })
-  });
+    const res = await fetch("/analyze-image",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        imageUrl:window.location.origin+currentPhotoPath
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if(data.success){
+    if(!data.success) throw new Error(data.message);
+
     itemName.value = data.title;
-    desc.value = data.description;
-  } else {
+    itemDescription.value = data.description;
+    itemCategory.value = data.category;
+    itemCondition.value = data.condition;
+
+    setStatus("AI filled item details");
+  }catch(err){
     alert("AI failed");
   }
 }
 
 async function addItem(){
-  const name = itemName.value;
+  if(!session) return alert("Start visit first");
 
-  const path = await upload();
+  const name = itemName.value.trim();
+  if(!name) return alert("Enter item name");
 
-  const lot = await fetch("/next-lot-code");
-  const lotData = await lot.json();
+  if(!currentPhotoPath){
+    currentPhotoPath = await uploadPhoto();
+  }
 
-  await fetch("/addItems", {
+  const month = "ABCDEFGHIJKL"[new Date().getMonth()];
+  const lotRes = await fetch(`/next-lot-code?month=${month}`);
+  const lotData = await lotRes.json();
+
+  const lotCode = lotData.lotCode;
+
+  await fetch("/addItems",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
       items:[{
         title:name,
-        description:desc.value,
+        description:itemDescription.value,
+        category:itemCategory.value,
+        condition:itemCondition.value,
         consignerFirstName:session.first,
         consignerLastName:session.last,
         consignerCode:session.code,
-        lotCode:lotData.lotCode,
-        photo:path
+        lotCode,
+        photo:currentPhotoPath,
+        createdBy:"Fabian"
       }]
     })
   });
 
-  items.push({
-    name,
-    lotCode: lotData.lotCode
-  });
+  items.push({name,lotCode});
 
-  render();
+  renderLabels();
+
+  itemName.value="";
+  itemDescription.value="";
+  itemCategory.value="";
+  itemCondition.value="";
+  photo.value="";
+  currentPhotoPath=null;
 }
 
-function render(){
+function renderLabels(){
   labels.innerHTML = items.map(i=>`
     <div class="label">
       <canvas id="qr-${i.lotCode}" class="qr"></canvas>
       <div>
-        <b>${i.name}</b><br>
-        Lot ${i.lotCode}
+        <strong>${i.name}</strong><br>
+        ${i.lotCode}<br>
+        ${session.code}
       </div>
     </div>
   `).join("");
 
   items.forEach(i=>{
     QRCode.toCanvas(
-      document.getElementById("qr-"+i.lotCode),
+      document.getElementById(`qr-${i.lotCode}`),
       i.lotCode
     );
   });
 }
 
 function endVisit(){
+  if(!items.length) return alert("No items");
+
   if(confirm("Print labels?")){
+    buildPrint();
     window.print();
   }
+
+  location.reload();
+}
+
+function buildPrint(){
+  printSheet.innerHTML = `
+    <div class="sheet">
+      ${items.map(i=>`
+        <div class="print-label">
+          <canvas id="pqr-${i.lotCode}" class="print-qr"></canvas>
+          <div class="print-text">
+            <strong>${i.name}</strong>
+            ${i.lotCode}<br>
+            ${session.code}<br>
+            ${session.date}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  items.forEach(i=>{
+    QRCode.toCanvas(
+      document.getElementById(`pqr-${i.lotCode}`),
+      i.lotCode
+    );
+  });
 }
 </script>
 
