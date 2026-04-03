@@ -1,47 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Initial Visit</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: #0b1b2b;
   color: white;
-}
-
-.header {
-  background: #0f2a3d;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title {
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.logout {
-  font-size: 14px;
-  color: #ccc;
-  cursor: pointer;
-}
-
-.container {
   padding: 16px;
 }
 
 .card {
   background: #132a3a;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   margin-bottom: 16px;
 }
 
@@ -63,6 +39,15 @@ button {
   display: none;
 }
 
+.status {
+  background: black;
+  color: lime;
+  padding: 10px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
 .label {
   background: white;
   color: black;
@@ -70,62 +55,41 @@ button {
   padding: 10px;
   border-radius: 12px;
   margin-top: 10px;
-  align-items: center;
-}
-
-.label-text {
-  padding-left: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="title" onclick="goHome()">Auction Legacy</div>
-  <div class="logout" onclick="logout()">Logout</div>
+<h2 onclick="goHome()">Auction Legacy</h2>
+
+<div id="status" class="status">Ready...</div>
+
+<div class="card">
+  <input id="first" placeholder="First Name">
+  <input id="last" placeholder="Last Name">
+  <button type="button" onclick="startSession()">Start</button>
+  <p id="code"></p>
 </div>
 
-<div class="container">
-
-  <!-- STEP 1: CONSIGNER -->
-  <div class="card">
-    <h2>Initial Visit</h2>
-
-    <input id="first" placeholder="First Name">
-    <input id="last" placeholder="Last Name">
-
-    <button type="button" onclick="startSession()">Start</button>
-
-    <p id="code"></p>
-  </div>
-
-  <!-- STEP 2: ITEMS -->
-  <div id="itemSection" class="card hidden">
-    <h3>Add Item</h3>
-
-    <input id="title" placeholder="Item Name">
-    <input type="file" id="photo">
-
-    <button type="button" onclick="addItem()">Add Item + Print Label</button>
-  </div>
-
-  <div id="labels"></div>
-
+<div id="itemSection" class="card hidden">
+  <input id="title" placeholder="Item Name">
+  <input type="file" id="photo">
+  <button type="button" onclick="addItem()">Add Item</button>
 </div>
+
+<div id="labels"></div>
 
 <script>
 let consignerCode = "";
 let sessionStarted = false;
-let user = JSON.parse(localStorage.getItem("user") || "{}");
+
+function log(msg) {
+  document.getElementById("status").innerText = msg;
+}
 
 function goHome() {
   window.location.href = "/dashboard.html";
-}
-
-function logout() {
-  localStorage.removeItem("user");
-  window.location.href = "/";
 }
 
 function startSession() {
@@ -133,7 +97,7 @@ function startSession() {
   const last = document.getElementById("last").value.trim();
 
   if (!first || !last) {
-    alert("Enter consigner name");
+    log("❌ Missing name");
     return;
   }
 
@@ -145,12 +109,14 @@ function startSession() {
   document.getElementById("itemSection").classList.remove("hidden");
 
   sessionStarted = true;
+
+  log("✅ Session started");
 }
 
 async function addItem() {
 
   if (!sessionStarted) {
-    alert("Start session first");
+    log("❌ Start session first");
     return;
   }
 
@@ -158,14 +124,17 @@ async function addItem() {
   const file = document.getElementById("photo").files[0];
 
   if (!title) {
-    alert("Enter item name");
+    log("❌ Missing item title");
     return;
   }
+
+  log("📸 Uploading image...");
 
   let photoPath = null;
 
   try {
-    // UPLOAD PHOTO
+
+    // UPLOAD
     if (file) {
       const formData = new FormData();
       formData.append("photo", file);
@@ -178,20 +147,30 @@ async function addItem() {
       const uploadData = await uploadRes.json();
 
       if (!uploadData.success) {
-        alert("Upload failed");
+        log("❌ Upload failed");
         return;
       }
 
       photoPath = uploadData.path;
+      log("✅ Upload success");
     }
 
-    // GET LOT CODE
+    // LOT CODE
+    log("🔢 Getting lot code...");
+
     const lotRes = await fetch("/next-lot-code");
     const lotData = await lotRes.json();
 
+    if (!lotData.lotCode) {
+      log("❌ Lot code failed");
+      return;
+    }
+
     const lotCode = lotData.lotCode;
 
-    // SAVE ITEM
+    log("💾 Saving item...");
+
+    // SAVE
     const res = await fetch("/addItems", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -202,7 +181,7 @@ async function addItem() {
           lotCode,
           itemNumber: 1,
           partCount: 1,
-          createdBy: user.name || "system",
+          createdBy: "mobile",
           createdAt: new Date().toISOString(),
           photo: photoPath
         }]
@@ -212,20 +191,16 @@ async function addItem() {
     const data = await res.json();
 
     if (!data.success) {
-      alert(data.message || "Failed to save");
+      log("❌ Save failed: " + data.message);
       return;
     }
 
+    log("✅ Item saved");
+
     renderLabel(title, lotCode);
 
-    document.getElementById("title").value = "";
-    document.getElementById("photo").value = "";
-
-    setTimeout(() => window.print(), 300);
-
   } catch (err) {
-    console.error(err);
-    alert("Something broke");
+    log("❌ ERROR: " + err.message);
   }
 }
 
@@ -235,18 +210,15 @@ function renderLabel(title, lotCode) {
   document.getElementById("labels").innerHTML += `
     <div class="label">
       <canvas id="qr-${id}"></canvas>
-      <div class="label-text">
+      <div>
         <strong>${title}</strong><br>
-        Lot ${lotCode}<br>
+        ${lotCode}<br>
         ${consignerCode}
       </div>
     </div>
   `;
 
-  QRCode.toCanvas(
-    document.getElementById(`qr-${id}`),
-    lotCode
-  );
+  QRCode.toCanvas(document.getElementById(`qr-${id}`), lotCode);
 }
 </script>
 
