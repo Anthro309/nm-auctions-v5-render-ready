@@ -413,18 +413,39 @@ async function addItem() {
 function renderLabels() {
   const container = document.getElementById('labels');
   container.innerHTML = items.map(i => `
-    <div class="label-preview">
+    <div class="label-preview" id="label-${i.lotCode}">
       <canvas id="qr-${i.lotCode}"></canvas>
-      <div class="label-preview-text">
+      <div class="label-preview-text" style="flex:1;">
         <div class="label-preview-name">${escapeHtml(truncate(i.name, 40))}</div>
         <div class="label-preview-details">Lot ${escapeHtml(i.lotCode)} · ${escapeHtml(session.date)} · ${escapeHtml(session.code)}</div>
       </div>
+      <button onclick="deleteItem('${escapeHtml(i.lotCode)}')" style="background:#dc2626;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
   `).join('');
 
   items.forEach(i => {
     QRCode.toCanvas(document.getElementById(`qr-${i.lotCode}`), i.lotCode, { width: 70 });
   });
+}
+
+async function deleteItem(lotCode) {
+  const idx = items.findIndex(i => i.lotCode === lotCode);
+  if (idx === -1) return;
+  const name = items[idx].name;
+  if (!confirm('Remove "' + name + '" from this visit?')) return;
+
+  // Find item id from server to delete
+  try {
+    const res = await fetch('/items/by-lot/' + lotCode);
+    const serverItem = await res.json();
+    if (serverItem && serverItem.id) {
+      await fetch('/items/' + serverItem.id, { method: 'DELETE' });
+    }
+  } catch (err) { /* best effort */ }
+
+  items.splice(idx, 1);
+  renderLabels();
+  setStatus('Item removed. ' + items.length + ' item(s) remaining.');
 }
 
 async function endVisit() {

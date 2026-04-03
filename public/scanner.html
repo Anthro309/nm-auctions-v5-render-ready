@@ -28,21 +28,21 @@
   border-radius: 999px;
   margin-bottom: 14px;
 }
-.btn-advance {
+.scan-recorded {
   width: 100%;
   background: #16a34a;
   color: white;
-  padding: 16px;
-  border: none;
+  padding: 14px;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.12s;
+  text-align: center;
+  display: none;
 }
-.btn-advance:hover {
-  background: #15803d;
-  transform: translateY(-1px);
+.item-last-handled {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 6px;
 }
 .scan-input {
   font-size: 18px;
@@ -129,21 +129,21 @@
     <div class="item-name" id="itemName"></div>
     <div class="item-lot" id="lotDisplay"></div>
     <div class="item-stage" id="stageDisplay"></div>
-    <button class="btn-advance" onclick="advanceStage()">Move to Next Stage →</button>
+    <div class="item-last-handled" id="lastHandledDisplay"></div>
+    <div class="scan-recorded" id="scanRecorded">✓ Scan Recorded</div>
   </div>
 
 </div>
 
 <script>
-const stages = [
-  "Received at Studio",
-  "Review & Cleaning",
-  "Photograph",
-  "Prep for Pickup",
-  "Picked Up"
-];
-
 let currentItem = null;
+
+function getEmployee() {
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || 'null');
+    return (u && u.name) ? u.name : 'unknown';
+  } catch { return 'unknown'; }
+}
 
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -238,48 +238,45 @@ async function loadItem(lotCode) {
     document.getElementById('stageDisplay').innerText = item.stage;
     document.getElementById('lotDisplay').innerText = 'Lot: ' + item.lotNumber;
 
+    const lastEl = document.getElementById('lastHandledDisplay');
+    if (item.lastHandledBy) {
+      lastEl.innerText = 'Last handled by: ' + item.lastHandledBy;
+    } else {
+      lastEl.innerText = '';
+    }
+
+    document.getElementById('scanRecorded').style.display = 'none';
     log('Loaded: ' + (item.name || item.lotNumber));
+
+    // Auto-record this employee's scan
+    recordScan(item.id);
 
   } catch (err) {
     log('Error loading item');
   }
 }
 
-async function advanceStage() {
-  if (!currentItem) { log('No item loaded'); return; }
-
-  const currentIndex = stages.indexOf(currentItem.stage);
-  if (currentIndex === -1 || currentIndex === stages.length - 1) {
-    log('Already at final stage');
-    return;
-  }
-
-  const nextStage = stages[currentIndex + 1];
-  log('Moving to ' + nextStage + '...');
-
+async function recordScan(itemId) {
   try {
-    const res = await fetch(`/items/${currentItem.id}/stage`, {
+    const res = await fetch(`/items/${itemId}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage: nextStage, employee: 'scanner' })
+      body: JSON.stringify({ employee: getEmployee() })
     });
-
     const data = await res.json();
-    if (!data.success) { log('Failed to advance stage'); return; }
-
-    currentItem = data.item;
-    document.getElementById('stageDisplay').innerText = currentItem.stage;
-    log('Moved to ' + nextStage);
-
-    setTimeout(() => {
-      document.getElementById('scanInput').value = '';
-      document.getElementById('itemBox').style.display = 'none';
-      currentItem = null;
-      log('Ready to scan...');
-    }, 1500);
-
+    if (data.success) {
+      document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
+      document.getElementById('scanRecorded').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('scanInput').value = '';
+        document.getElementById('itemBox').style.display = 'none';
+        document.getElementById('scanRecorded').style.display = 'none';
+        currentItem = null;
+        log('Ready to scan...');
+      }, 1800);
+    }
   } catch (err) {
-    log('Error advancing stage');
+    log('Error recording scan');
   }
 }
 </script>

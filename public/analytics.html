@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.analytics-section {
+  margin-bottom: 28px;
+}
+.analytics-section h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 14px;
+}
+.chart-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+.chart-wrap-doughnut {
+  max-width: 320px;
+  margin: 0 auto;
+}
+.btn-refresh {
+  background: #0b1b2b;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 22px;
+}
+.btn-refresh:hover { background: #1a3a5c; }
+.page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 6px;
+}
+.page-sub {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">
+    <div class="nav-logo">AL</div>
+    <span class="nav-title">Auction Legacy</span>
+  </div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;">
+    <div id="navAvatar" class="nav-avatar"></div>
+  </div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+    <a href="/analytics.html"><span class="sidebar-icon">📈</span> Analytics</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-title">Analytics</div>
+  <div class="page-sub">Overview of studio performance</div>
+
+  <button class="btn-refresh" onclick="loadData()">↻ Refresh</button>
+
+  <div class="analytics-section">
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-tile">
+        <div class="stat-number" id="statTotalItems">—</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" id="statTotalSold">—</div>
+        <div class="stat-label">Total Sold</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" id="statRevenue">—</div>
+        <div class="stat-label">Total Revenue</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" id="statPayout">—</div>
+        <div class="stat-label">Total Payout</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analytics-section">
+    <h2>Stage Distribution</h2>
+    <div class="chart-card">
+      <div class="chart-wrap chart-wrap-doughnut">
+        <canvas id="stageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="analytics-section">
+    <h2>Category Breakdown</h2>
+    <div class="chart-card">
+      <div class="chart-wrap">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Admin guard
+(function() {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
+})();
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+const STAGE_COLORS = {
+  'Received at Studio':  '#3b82f6',
+  'Review & Cleaning':   '#8b5cf6',
+  'Photograph':          '#f97316',
+  'Prep for Pickup':     '#eab308',
+  'Picked Up':           '#22c55e',
+  'Missing at Drop Off': '#ef4444'
+};
+
+let stageChartInstance = null;
+let categoryChartInstance = null;
+
+function fmt$(n) {
+  return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/analytics/overview');
+    const data = await res.json();
+
+    // Stat tiles
+    document.getElementById('statTotalItems').innerText = (data.totalItems || 0).toLocaleString();
+    document.getElementById('statTotalSold').innerText  = (data.totalSold  || 0).toLocaleString();
+    document.getElementById('statRevenue').innerText    = fmt$(data.totalRevenue);
+    document.getElementById('statPayout').innerText     = fmt$(data.totalPayout);
+
+    // Stage doughnut
+    const stageLabels = Object.keys(data.stageCounts || {});
+    const stageValues = stageLabels.map(l => data.stageCounts[l]);
+    const stageBg     = stageLabels.map(l => STAGE_COLORS[l] || '#94a3b8');
+
+    if (stageChartInstance) stageChartInstance.destroy();
+    stageChartInstance = new Chart(document.getElementById('stageChart'), {
+      type: 'doughnut',
+      data: {
+        labels: stageLabels,
+        datasets: [{
+          data: stageValues,
+          backgroundColor: stageBg,
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 13 }, padding: 16 }
+          }
+        }
+      }
+    });
+
+    // Category bar — top 8
+    const allCats = Object.entries(data.categoryCounts || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+    const catLabels = allCats.map(c => c[0]);
+    const catValues = allCats.map(c => c[1]);
+
+    if (categoryChartInstance) categoryChartInstance.destroy();
+    categoryChartInstance = new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: {
+        labels: catLabels,
+        datasets: [{
+          label: 'Items',
+          data: catValues,
+          backgroundColor: '#3b82f6',
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          },
+          y: {
+            ticks: { font: { size: 13 } }
+          }
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error('Failed to load analytics:', err);
+  }
+}
+
+loadData();
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>
