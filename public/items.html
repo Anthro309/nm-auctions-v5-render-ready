@@ -31,6 +31,13 @@
     <input id="search" placeholder="Search by name, code, or consigner" oninput="render()">
     <div id="list" style="margin-top:15px;"></div>
   </div>
+
+  <div class="card">
+    <h2>Auction Listing Export</h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pickup</strong> stage — ready to list.</p>
+    <button onclick="exportAuctionCSV()" style="width:100%;">📤 Export Auction Listings CSV</button>
+    <div id="exportMsg" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
+  </div>
 </div>
 
 <script>
@@ -86,6 +93,52 @@ function render() {
     div.onclick = () => { window.location.href = '/consigner.html?code=' + code; };
     list.appendChild(div);
   });
+}
+
+function exportAuctionCSV() {
+  const ready = allItems.filter(i =>
+    i.stage === 'Photograph' || i.stage === 'Prep for Pickup'
+  );
+
+  const msgEl = document.getElementById('exportMsg');
+
+  if (!ready.length) {
+    msgEl.style.background = '#fef2f2';
+    msgEl.style.color = '#b91c1c';
+    msgEl.innerText = 'No items in Photograph or Prep for Pickup stage.';
+    msgEl.style.display = 'block';
+    setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+    return;
+  }
+
+  const headers = ['Lot Number', 'Item Name', 'Category', 'Condition', 'Description', 'Consigner', 'Stage'];
+  const rows = ready.map(i => [
+    i.lotNumber || '',
+    i.name || '',
+    i.category || '',
+    i.condition || '',
+    (i.description || '').replace(/"/g, '""').replace(/\n/g, ' '),
+    i.consigner || '',
+    i.stage || ''
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(v => `"${v}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `auction-listings-${new Date().toLocaleDateString('en-US').replace(/\//g, '-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  msgEl.style.background = '#ecfdf5';
+  msgEl.style.color = '#047857';
+  msgEl.innerText = `✅ Exported ${ready.length} item${ready.length !== 1 ? 's' : ''}`;
+  msgEl.style.display = 'block';
+  setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
 }
 
 load();

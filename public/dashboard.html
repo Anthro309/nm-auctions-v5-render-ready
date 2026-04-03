@@ -94,6 +94,21 @@
     <div class="welcome-sub">Welcome back</div>
   </div>
 
+  <div class="stat-grid" id="statsRow" style="display:none;">
+    <div class="stat-tile">
+      <div class="stat-number" id="statInStudio">—</div>
+      <div class="stat-label">In Studio</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number" id="statReady">—</div>
+      <div class="stat-label">Ready for Pickup</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number" id="statToday">—</div>
+      <div class="stat-label">Added Today</div>
+    </div>
+  </div>
+
   <div class="dash-grid">
 
     <div class="dash-card" onclick="window.location.href='/initial-visit.html'">
@@ -138,10 +153,28 @@
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
   if (user && user.name) {
-    const card = document.getElementById('welcomeCard');
     document.getElementById('welcomeName').innerText = user.name;
-    card.style.display = 'block';
+    document.getElementById('welcomeCard').style.display = 'block';
   }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/items');
+      const items = await res.json();
+      const today = new Date().toLocaleDateString();
+      const inStudio    = items.filter(i => i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off');
+      const readyPickup = items.filter(i => i.stage === 'Prep for Pickup');
+      const addedToday  = items.filter(i => new Date(i.createdAt).toLocaleDateString() === today);
+      document.getElementById('statInStudio').innerText = inStudio.length;
+      document.getElementById('statReady').innerText    = readyPickup.length;
+      document.getElementById('statToday').innerText    = addedToday.length;
+      document.getElementById('statsRow').style.display = 'grid';
+    } catch (err) {
+      console.warn('Stats failed to load');
+    }
+  }
+
+  loadStats();
 </script>
 
 </body>

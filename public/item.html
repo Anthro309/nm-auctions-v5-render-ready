@@ -93,6 +93,40 @@ select, input {
   margin-top: 10px;
   display: none;
 }
+.btn-red {
+  width: 100%;
+  background: #dc2626;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-red:hover { background: #b91c1c; }
+.log-entry {
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.log-entry:last-child { border-bottom: none; }
+.log-action {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: capitalize;
+}
+.log-stage {
+  font-size: 13px;
+  color: #2563eb;
+  margin-top: 2px;
+}
+.log-meta {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
 </style>
 </head>
 <body>
@@ -184,6 +218,19 @@ select, input {
     <div id="handoffMsg" class="success-msg">✅ Handoff request sent</div>
   </div>
 
+  <!-- FLAG AS MISSING -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Flag Item</h3>
+    <button class="btn-red" onclick="flagMissing()">⚠️ Mark as Missing at Drop Off</button>
+    <div id="flagMsg" class="success-msg" style="background:#fef2f2;color:#b91c1c;">⚠️ Item flagged as missing</div>
+  </div>
+
+  <!-- STAGE HISTORY -->
+  <div class="card" id="historyCard" style="display:none;">
+    <h3 style="margin-bottom:4px;">Stage History</h3>
+    <div id="historyList"></div>
+  </div>
+
 </div>
 
 <!-- PRINT SHEET (hidden) -->
@@ -253,6 +300,9 @@ function render() {
   const qrValue = item.lotNumber || (item.code + '-' + item.number);
   QRCode.toCanvas(document.getElementById('qrCanvas'), qrValue, { width: 180 });
   document.getElementById('qrLabel').innerText = qrValue;
+
+  // History
+  renderHistory();
 }
 
 // =========================
@@ -369,6 +419,54 @@ async function printLabel() {
   }
 
   setTimeout(() => { window.print(); }, 600);
+}
+
+// =========================
+// FLAG AS MISSING
+// =========================
+async function flagMissing() {
+  if (!item) return;
+  if (!confirm('Mark this item as Missing at Drop Off?')) return;
+  try {
+    const res = await fetch(`/items/${item.id}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: 'Missing at Drop Off', employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      document.getElementById('detailStage').innerText = item.stage;
+      const msg = document.getElementById('flagMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+      renderHistory();
+    }
+  } catch (err) {
+    alert('Failed to flag item');
+  }
+}
+
+// =========================
+// STAGE HISTORY
+// =========================
+function renderHistory() {
+  const logs = item.logs;
+  if (!logs || !logs.length) return;
+  const card = document.getElementById('historyCard');
+  const list = document.getElementById('historyList');
+  list.innerHTML = logs.slice().reverse().map(l => {
+    const stageText = l.fromStage && l.toStage
+      ? `${l.fromStage} → ${l.toStage}`
+      : (l.toStage || l.note || '');
+    return `
+      <div class="log-entry">
+        <div class="log-action">${escapeHtml(l.action || 'update')}</div>
+        ${stageText ? `<div class="log-stage">${escapeHtml(stageText)}</div>` : ''}
+        <div class="log-meta">${escapeHtml(l.employee)} · ${new Date(l.timestamp).toLocaleString()}</div>
+      </div>`;
+  }).join('');
+  card.style.display = 'block';
 }
 
 function escapeHtml(v) {
