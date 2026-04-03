@@ -37,9 +37,7 @@ input, textarea {
   cursor:pointer;
 }
 
-.iv-btn.green {
-  background:#16a34a;
-}
+.iv-btn.green { background:#16a34a; }
 
 .loader {
   margin-top:10px;
@@ -64,62 +62,127 @@ input, textarea {
 }
 
 .status {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #081421;
-  color: #dbeafe;
-  font-size: 14px;
-}
-
-.label {
-  background:white;
-  color:black;
-  border-radius:14px;
-  padding:12px;
-  display:flex;
-  gap:12px;
   margin-top:12px;
-  align-items:center;
+  padding:12px;
+  border-radius:12px;
+  background:#081421;
+  color:#dbeafe;
+  font-size:14px;
 }
 
-.qr {
-  width:85px;
-  height:85px;
-  flex-shrink:0;
+/* ── ON-SCREEN LABEL PREVIEW ── */
+.label-preview {
+  background: white;
+  color: black;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
 }
 
-#printSheet { display:none; }
+.label-preview canvas {
+  width: 70px !important;
+  height: 70px !important;
+  flex-shrink: 0;
+}
+
+.label-preview-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.label-preview-name {
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.label-preview-details {
+  font-size: 11px;
+  color: #555;
+}
+
+/* ── PRINT SHEET (hidden on screen) ── */
+#printSheet { display: none; }
 
 @media print {
-  body * { visibility:hidden; }
-  #printSheet, #printSheet * { visibility:visible; }
-  #printSheet {
-    position:absolute;
-    top:0; left:0;
-    width:100%;
-    display:block;
+  @page {
+    size: letter;
+    margin: 0.5in 0.19in;
   }
-  .sheet {
-    display:grid;
+
+  body * { visibility: hidden; }
+
+  #printSheet,
+  #printSheet * { visibility: visible; }
+
+  #printSheet {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .avery-sheet {
+    display: grid;
     grid-template-columns: repeat(3, 2.625in);
     grid-auto-rows: 1in;
-    width:8.5in;
+    column-gap: 0.125in;
+    row-gap: 0in;
+    width: 8.125in;
   }
-  .print-label {
-    display:flex;
-    gap:6px;
-    padding:4px;
-    align-items:center;
+
+  .avery-label {
+    width: 2.625in;
+    height: 1in;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 5px;
+    box-sizing: border-box;
+    overflow: hidden;
   }
-  .print-qr {
-    width:0.7in;
-    height:0.7in;
+
+  .avery-qr {
+    width: 0.78in !important;
+    height: 0.78in !important;
+    flex-shrink: 0;
   }
-  .print-text {
-    font-size:10px;
-    color:black;
-    line-height:1.1;
+
+  .avery-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    gap: 1px;
+  }
+
+  .avery-name {
+    font-size: 8pt;
+    font-weight: bold;
+    color: black;
+    line-height: 1.2;
+    max-height: 2.4em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .avery-details {
+    font-size: 7pt;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 </style>
@@ -146,33 +209,36 @@ input, textarea {
 
 <div class="container">
 
-<div class="iv-card">
-  <h2>Initial Visit</h2>
-  <input id="firstInput" placeholder="First Name">
-  <input id="lastInput" placeholder="Last Name">
-  <button class="iv-btn" onclick="startVisit()">Start Visit</button>
-  <div id="codeDisplay" class="status" style="display:none;"></div>
-</div>
-
-<div id="itemSection" class="iv-card" style="display:none;">
-  <h2>Add Item</h2>
-  <input id="itemName" placeholder="Item Name">
-  <textarea id="itemDescription" placeholder="Description" rows="3"></textarea>
-  <input id="itemCategory" placeholder="Category">
-  <input id="itemCondition" placeholder="Condition">
-  <input type="file" id="photo" accept="image/*" capture="environment" style="margin-top:12px;">
-  <div class="loader" id="loader">
-    <div class="loader-bar"></div>
+  <div class="iv-card">
+    <h2>Initial Visit</h2>
+    <input id="firstInput" placeholder="First Name">
+    <input id="lastInput" placeholder="Last Name">
+    <button class="iv-btn" onclick="startVisit()">Start Visit</button>
+    <div id="codeDisplay" class="status" style="display:none;"></div>
   </div>
-  <button class="iv-btn" onclick="analyzePhoto()">📷 Analyze Photo with AI</button>
-  <button class="iv-btn" onclick="addItem()">Add Item</button>
-  <button class="iv-btn green" onclick="endVisit()">🖨️ End Visit & Print Labels</button>
-  <div id="statusBox" class="status">Ready.</div>
-</div>
+
+  <div id="itemSection" class="iv-card" style="display:none;">
+    <h2>Add Item</h2>
+    <input id="itemName" placeholder="Item Name">
+    <textarea id="itemDescription" placeholder="Description" rows="3"></textarea>
+    <input id="itemCategory" placeholder="Category">
+    <input id="itemCondition" placeholder="Condition">
+    <input type="file" id="photo" accept="image/*" capture="environment" style="margin-top:12px;">
+    <div class="loader" id="loader">
+      <div class="loader-bar"></div>
+    </div>
+    <button class="iv-btn" onclick="analyzePhoto()">📷 Analyze Photo with AI</button>
+    <button class="iv-btn" onclick="addItem()">Add Item</button>
+    <button class="iv-btn green" onclick="endVisit()">🖨️ End Visit & Print Labels</button>
+    <div id="statusBox" class="status">Ready.</div>
+  </div>
+
+  <!-- ON-SCREEN LABEL PREVIEWS -->
+  <div id="labels"></div>
 
 </div>
 
-<div id="labels" style="padding:0 16px;"></div>
+<!-- PRINT-ONLY SHEET -->
 <div id="printSheet"></div>
 
 <script>
@@ -190,50 +256,42 @@ function logout() {
   window.location.href = '/';
 }
 
-function setStatus(message) {
+function setStatus(msg) {
   const box = document.getElementById('statusBox');
-  if (box) box.innerText = message;
+  if (box) box.innerText = msg;
 }
 
-function showLoader() {
-  document.getElementById('loader').style.display = 'block';
-}
-
-function hideLoader() {
-  document.getElementById('loader').style.display = 'none';
-}
+function showLoader() { document.getElementById('loader').style.display = 'block'; }
+function hideLoader() { document.getElementById('loader').style.display = 'none'; }
 
 function safeFilenameRequired() {
-  const file = document.getElementById('photo').files[0];
-  return !!file;
+  return !!document.getElementById('photo').files[0];
 }
 
 async function safeJson(res) {
   const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error('Server returned invalid response');
-  }
+  try { return JSON.parse(text); }
+  catch { throw new Error('Server returned invalid response'); }
+}
+
+function truncate(str, max) {
+  return str && str.length > max ? str.slice(0, max) + '..' : str || '';
 }
 
 function startVisit() {
   const first = document.getElementById('firstInput').value.trim();
   const last = document.getElementById('lastInput').value.trim();
-  if (!first || !last) { alert('Enter name'); return; }
-
+  if (!first || !last) { alert('Enter first and last name'); return; }
   session = {
-    first,
-    last,
-    code: (first.slice(0, 3) + last.slice(0, 3)).toUpperCase(),
+    first, last,
+    code: (first.slice(0,3) + last.slice(0,3)).toUpperCase(),
     date: new Date().toLocaleDateString()
   };
-
-  const codeDisplay = document.getElementById('codeDisplay');
-  codeDisplay.style.display = 'block';
-  codeDisplay.innerText = 'Code: ' + session.code;
+  const cd = document.getElementById('codeDisplay');
+  cd.style.display = 'block';
+  cd.innerText = 'Code: ' + session.code;
   document.getElementById('itemSection').style.display = 'block';
-  setStatus('Visit started.');
+  setStatus('Visit started. Add items below.');
 }
 
 async function uploadPhoto() {
@@ -254,7 +312,7 @@ async function analyzePhoto() {
     showLoader();
     setStatus('Uploading photo...');
     currentPhotoPath = await uploadPhoto();
-    setStatus('Analyzing photo...');
+    setStatus('Analyzing with AI...');
     const res = await fetch('/analyze-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -266,10 +324,9 @@ async function analyzePhoto() {
     document.getElementById('itemDescription').value = data.description || '';
     document.getElementById('itemCategory').value = data.category || '';
     document.getElementById('itemCondition').value = data.condition || '';
-    setStatus('AI filled item details.');
+    setStatus('AI filled in the details. Review and click Add Item.');
   } catch (err) {
     setStatus('AI failed: ' + err.message);
-    alert('AI failed: ' + err.message);
   } finally {
     hideLoader();
   }
@@ -288,7 +345,7 @@ async function addItem() {
 
   try {
     showLoader();
-    setStatus('Preparing item...');
+    setStatus('Saving item...');
     if (!currentPhotoPath && safeFilenameRequired()) {
       currentPhotoPath = await uploadPhoto();
     }
@@ -303,10 +360,7 @@ async function addItem() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         items: [{
-          title: name,
-          description,
-          category,
-          condition,
+          title: name, description, category, condition,
           consignerFirstName: session.first,
           consignerLastName: session.last,
           consignerCode: session.code,
@@ -316,7 +370,6 @@ async function addItem() {
         }]
       })
     });
-
     const result = await safeJson(res);
     if (!result.success) throw new Error(result.message || 'Save failed');
 
@@ -329,9 +382,9 @@ async function addItem() {
     document.getElementById('itemCondition').value = '';
     document.getElementById('photo').value = '';
     currentPhotoPath = null;
-    setStatus('Item added. Add another or end visit.');
+    setStatus('✅ Item added (' + items.length + ' total). Add another or print.');
   } catch (err) {
-    setStatus('Add item failed: ' + err.message);
+    setStatus('Failed: ' + err.message);
     alert('Add item failed: ' + err.message);
   } finally {
     hideLoader();
@@ -341,17 +394,17 @@ async function addItem() {
 function renderLabels() {
   const container = document.getElementById('labels');
   container.innerHTML = items.map(i => `
-    <div class="label">
-      <canvas id="qr-${i.lotCode}" class="qr"></canvas>
-      <div>
-        <strong>${escapeHtml(i.name)}</strong><br>
-        ${escapeHtml(i.lotCode)}<br>
-        ${escapeHtml(session.code)}
+    <div class="label-preview">
+      <canvas id="qr-${i.lotCode}"></canvas>
+      <div class="label-preview-text">
+        <div class="label-preview-name">${escapeHtml(truncate(i.name, 40))}</div>
+        <div class="label-preview-details">Lot ${escapeHtml(i.lotCode)} · ${escapeHtml(session.date)} · ${escapeHtml(session.code)}</div>
       </div>
     </div>
   `).join('');
+
   items.forEach(i => {
-    QRCode.toCanvas(document.getElementById(`qr-${i.lotCode}`), i.lotCode);
+    QRCode.toCanvas(document.getElementById(`qr-${i.lotCode}`), i.lotCode, { width: 70 });
   });
 }
 
@@ -359,31 +412,33 @@ async function endVisit() {
   if (!items.length) { alert('No items added yet'); return; }
   if (confirm('Print labels for ' + items.length + ' item(s)?')) {
     await buildPrint();
-    setTimeout(() => { window.print(); }, 700);
+    setTimeout(() => { window.print(); }, 800);
   }
 }
 
 async function buildPrint() {
   const sheet = document.getElementById('printSheet');
   sheet.innerHTML = `
-    <div class="sheet">
+    <div class="avery-sheet">
       ${items.map(i => `
-        <div class="print-label">
-          <canvas id="pqr-${i.lotCode}" class="print-qr"></canvas>
-          <div class="print-text">
-            <strong>${escapeHtml(i.name)}</strong><br>
-            ${escapeHtml(i.lotCode)}<br>
-            ${escapeHtml(session.code)}<br>
-            ${escapeHtml(session.date)}
+        <div class="avery-label">
+          <canvas id="pqr-${i.lotCode}" class="avery-qr"></canvas>
+          <div class="avery-text">
+            <div class="avery-name">${escapeHtml(truncate(i.name, 50))}</div>
+            <div class="avery-details">Lot ${escapeHtml(i.lotCode)} · ${escapeHtml(session.date)} · ${escapeHtml(session.code)}</div>
           </div>
         </div>
       `).join('')}
     </div>
   `;
   for (const i of items) {
-    await QRCode.toCanvas(document.getElementById(`pqr-${i.lotCode}`), i.lotCode);
+    await QRCode.toCanvas(
+      document.getElementById(`pqr-${i.lotCode}`),
+      i.lotCode,
+      { width: 75 }
+    );
   }
-  setStatus('Labels ready to print.');
+  setStatus('Labels ready — printing...');
 }
 
 function escapeHtml(value) {
