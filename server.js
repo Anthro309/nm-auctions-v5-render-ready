@@ -57,7 +57,6 @@ function ensureUsersExist() {
       { name: 'Michelle', pin: '1234', isAdmin: false },
       { name: 'Sara', pin: '1234', isAdmin: false }
     ];
-
     writeJSON(USERS_FILE, defaultUsers);
     console.log('🔥 Users seeded');
   }
@@ -149,7 +148,16 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image uploads are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 // =========================
 // LOGIN
@@ -202,60 +210,124 @@ app.get('/next-lot-code', (req, res) => {
 // =========================
 app.post('/addItems', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const incoming = req.body.items || [];
+  const incoming = Array.isArray(req.body.items) ? req.body.items : [];
 
-  const existingCodes = new Set(items.map(i => i.lotNumber));
+  if (!incoming.length) {
+    return res.status(400).json({ success: false, message: 'No items provided' });
+  }
 
-  for (let i of incoming) {
+  const existingCodes = new Set(items.map(i => i.lotNumber).filter(Boolean));
+
+  const newItems = [];
+
+  for (const i of incoming) {
+    if (!i.lotCode) {
+      return res.status(400).json({ success: false, message: 'Missing lotCode' });
+    }
+
     if (existingCodes.has(i.lotCode)) {
       return res.status(400).json({
         success: false,
         message: `Duplicate lot code: ${i.lotCode}`
       });
     }
-  }
 
-  const newItems = incoming.map(i => {
     const item = {
       id: Date.now() + Math.floor(Math.random() * 1000),
-      name: i.title,
-      consigner: `${i.consignerFirstName} ${i.consignerLastName}`,
-      code: i.consignerCode,
-      number: i.itemNumber,
-      part: i.partCount,
-      photos: [],
+      name: i.title || '',
+      consigner: `${i.consignerFirstName || ''} ${i.consignerLastName || ''}`.trim(),
+      code: i.consignerCode || '',
+      number: i.itemNumber || 1,
+      part: i.partCount || 1,
+      photos: i.photo ? [i.photo] : [],
       stage: 'Received at Studio',
+      location: null,
       lotNumber: i.lotCode,
-      createdAt: i.createdAt,
+      photographedAt: null,
+      lotAssignedAt: new Date().toISOString(),
+      lotAssignedBy: i.createdBy || 'system',
+      pendingHandoff: {
+        requestedStage: 'Review & Cleaning',
+        fromStage: 'Received at Studio',
+        requestedBy: i.createdBy || 'system',
+        requestedAt: new Date().toISOString(),
+        reason: 'Initial Visit intake'
+      },
+      createdAt: i.createdAt || new Date().toISOString(),
       logs: []
     };
 
     addLog(item, {
-      employee: i.createdBy,
+      employee: i.createdBy || 'system',
       action: 'item received',
       toStage: 'Received at Studio'
     });
 
     addLog(item, {
-      employee: i.createdBy,
+      employee: i.createdBy || 'system',
       action: 'handoff requested',
       fromStage: 'Received at Studio',
-      toStage: 'Review & Cleaning'
+      toStage: 'Review & Cleaning',
+      reason: 'Initial Visit intake'
     });
 
-    return item;
-  });
+    newItems.push(item);
+  }
 
   writeJSON(ITEMS_FILE, [...items, ...newItems]);
 
-  res.json({ success: true });
+  res.json({ success: true, count: newItems.length });
 });
 
 // =========================
-// ITEMS
+// GET ITEMS
 // =========================
 app.get('/items', (req, res) => {
   res.json(readJSON(ITEMS_FILE));
+});
+
+// =========================
+// GET ITEM BY LOT (SCANNER)
+// =========================
+app.get('/items/by-lot/:lot', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => i.lotNumber === req.params.lot);
+
+  if (!item) return res.json(null);
+  res.json(item);
+});
+
+// =========================
+// UPDATE STAGE
+// =========================
+app.post('/items/:id/stage', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Item not found' });
+  }
+
+  const newStage = req.body.stage;
+  const employee = req.body.employee || 'system';
+
+  if (!validStage(newStage)) {
+    return res.status(400).json({ success: false, message: 'Invalid stage' });
+  }
+
+  const fromStage = item.stage;
+  item.stage = newStage;
+
+  addLog(item, {
+    employee,
+    action: 'stage changed',
+    fromStage,
+    toStage: newStage
+  });
+
+  writeJSON(ITEMS_FILE, items);
+
+  res.json({ success: true, item });
 });
 
 // =========================
@@ -263,7 +335,7 @@ app.get('/items', (req, res) => {
 // =========================
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ success: false });
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
 
   res.json({
