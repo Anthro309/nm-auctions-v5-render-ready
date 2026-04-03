@@ -9,16 +9,16 @@
 <style>
 .image-box {
   width: 100%;
-  height: 240px;
+  height: 260px;
   border-radius: 16px;
   overflow: hidden;
-  background: #e5e7eb;
-  margin-bottom: 0;
+  background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #9ca3af;
   font-size: 14px;
+  font-weight: 600;
 }
 .image-box img {
   width: 100%;
@@ -26,17 +26,6 @@
   object-fit: cover;
   display: block;
 }
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 14px;
-}
-.detail-row:last-child { border-bottom: none; }
-.detail-label { color: #6b7280; font-weight: 500; }
-.detail-value { font-weight: 600; text-align: right; max-width: 60%; }
 .qr-center {
   display: flex;
   flex-direction: column;
@@ -47,85 +36,73 @@
 .qr-code-label {
   font-size: 13px;
   color: #6b7280;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .btn-green {
   width: 100%;
   background: #16a34a;
   color: white;
-  padding: 14px;
+  padding: 15px;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 12px;
+  transition: background 0.15s, transform 0.12s;
 }
+.btn-green:hover { background: #15803d; transform: translateY(-1px); }
 .btn-blue {
   width: 100%;
   background: #2563eb;
   color: white;
-  padding: 14px;
+  padding: 15px;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 12px;
+  transition: background 0.15s, transform 0.12s;
 }
-select, input {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-sizing: border-box;
-  font-size: 14px;
-  margin-top: 10px;
-}
-.success-msg {
-  background: #ecfdf5;
-  color: #047857;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 10px;
-  display: none;
-}
+.btn-blue:hover { background: #1d4ed8; transform: translateY(-1px); }
 .btn-red {
   width: 100%;
   background: #dc2626;
   color: white;
-  padding: 14px;
+  padding: 15px;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 12px;
+  transition: background 0.15s, transform 0.12s;
 }
-.btn-red:hover { background: #b91c1c; }
-.log-entry {
-  padding: 10px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-.log-entry:last-child { border-bottom: none; }
-.log-action {
+.btn-red:hover { background: #b91c1c; transform: translateY(-1px); }
+.success-msg {
+  background: #ecfdf5;
+  color: #047857;
+  border-radius: 12px;
+  padding: 12px 16px;
   font-size: 13px;
-  font-weight: 700;
-  color: #111827;
-  text-transform: capitalize;
+  font-weight: 600;
+  margin-top: 12px;
+  display: none;
+  border: 1px solid #a7f3d0;
 }
-.log-stage {
-  font-size: 13px;
-  color: #2563eb;
-  margin-top: 2px;
-}
-.log-meta {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-top: 2px;
+
+/* Tablet: photo + info side by side */
+@media (min-width: 600px) {
+  .item-top-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .image-box { height: 320px; border-radius: 18px; }
 }
 </style>
 </head>
@@ -150,11 +127,13 @@ select, input {
 
 <div class="container">
 
+  <div class="item-top-row">
+
   <!-- PHOTO -->
   <div id="imageBox" class="image-box">No Image</div>
 
   <!-- DETAILS -->
-  <div class="card" style="margin-top:16px;">
+  <div class="card" style="margin-top:0;">
     <h2 id="itemTitle" style="margin-bottom:12px;"></h2>
     <div class="detail-row">
       <span class="detail-label">Lot</span>
@@ -185,6 +164,8 @@ select, input {
       <span class="detail-value" id="detailDescription"></span>
     </div>
   </div>
+
+  </div><!-- end item-top-row -->
 
   <!-- QR CODE -->
   <div class="card">
