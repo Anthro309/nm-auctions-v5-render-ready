@@ -1,234 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NM Auctions | Dashboard</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1b2b;
+      color: white;
+    }
+
+    .header {
+      background: #0f2a3d;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .logout {
+      font-size: 14px;
+      cursor: pointer;
+      color: #ccc;
+    }
+
+    .container {
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: #132a3a;
+      padding: 20px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .card:hover {
+      background: #173a52;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .card-sub {
+      margin-top: 6px;
+      color: #a8b7c7;
+      font-size: 14px;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="navbar">
-  <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center">Auction Legacy</div>
-  <div class="nav-right" onclick="logout()">Logout</div>
-</div>
+  <div class="header">
+    <div class="title" onclick="goHome()">Auction Legacy</div>
+    <div class="logout" onclick="logout()">Logout</div>
+  </div>
 
-<div id="sidebar" class="sidebar">
-  <div class="sidebar-title">Auction Legacy</div>
-  <a href="/dashboard.html">Dashboard</a>
-  <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/dropoff.html">Received at Studio</a>
-  <a href="/items.html">Item Library</a>
-  <a href="/reports.html">Reports</a>
-  <a href="/scan.html">Scan Item</a> <!-- ✅ ADDED -->
-</div>
+  <div class="container">
 
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
-
-<div class="container">
-
-  <div class="grid" style="margin-bottom:18px;">
-
-    <!-- ✅ NEW SCAN CARD (PRIMARY ACTION) -->
-    <div class="button-card" onclick="go('/scan.html')" style="background:#1e40af;">
-      <div class="button-title">Scan Item</div>
-      <div class="button-sub">Open item instantly with camera</div>
+    <div class="card" onclick="goInitialVisit()">
+      <div class="card-title">Initial Visit</div>
+      <div class="card-sub">Capture consignments and print labels</div>
     </div>
 
-    <div class="button-card" onclick="go('/initial-visit.html')">
-      <div class="button-title">Initial Visit</div>
-      <div class="button-sub">Capture consignments on-site</div>
+    <div class="card" onclick="goScanner()">
+      <div class="card-title">Scanner</div>
+      <div class="card-sub">Scan items and move through workflow</div>
     </div>
 
-    <div class="button-card" onclick="go('/dropoff.html')">
-      <div class="button-title">Received at Studio</div>
-      <div class="button-sub">Scan and confirm intake</div>
+    <div class="card" onclick="goItems()">
+      <div class="card-title">Item Library</div>
+      <div class="card-sub">Browse all items</div>
     </div>
 
-    <div class="button-card" onclick="go('/items.html')">
-      <div class="button-title">Item Library</div>
-      <div class="button-sub">Browse consigners and items</div>
-    </div>
-
-    <div class="button-card" onclick="go('/reports.html')">
-      <div class="button-title">Daily Reports</div>
-      <div class="button-sub">Close out and print</div>
+    <div class="card" onclick="goReports()">
+      <div class="card-title">Reports</div>
+      <div class="card-sub">View daily reports</div>
     </div>
 
   </div>
 
-  <div class="card">
-    <h2>Pending Handoffs</h2>
-    <div id="handoffs" class="notification-panel"></div>
-  </div>
+  <script>
+    function goHome() {
+      window.location.href = "/dashboard.html";
+    }
 
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h2 style="margin-bottom:0;">Notifications</h2>
-      <button onclick="markAllNotificationsRead()">Mark All Read</button>
-    </div>
-    <div id="notifications" class="notification-panel" style="margin-top:14px;"></div>
-  </div>
+    function goInitialVisit() {
+      window.location.href = "/initial-visit.html";
+    }
 
-  <div class="card">
-    <h2>Performance</h2>
-    <div id="performance" class="performance-grid"></div>
-  </div>
+    function goScanner() {
+      window.location.href = "/scanner.html";
+    }
 
-</div>
+    function goItems() {
+      window.location.href = "/items.html";
+    }
 
-<script>
-const user = JSON.parse(localStorage.getItem('user')) || { name: 'system', isAdmin: false };
+    function goReports() {
+      window.location.href = "/reports.html";
+    }
 
-function toggleMenu() {
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
-}
-
-function logout() {
-  localStorage.removeItem('user');
-  window.location.href = '/';
-}
-
-function go(p) {
-  window.location.href = p;
-}
-
-async function loadPendingHandoffs() {
-  const res = await fetch('/handoffs/pending');
-  const items = await res.json();
-  const container = document.getElementById('handoffs');
-
-  if (!items.length) {
-    container.innerHTML = '<div class="label">No pending handoffs</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  items.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'notification-card';
-
-    card.innerHTML = `
-      <div class="notification-message">${item.code}-${item.number} → ${item.pendingHandoff.requestedStage}</div>
-      <div class="notification-meta">Requested by ${item.pendingHandoff.requestedBy}</div>
-      <div class="notification-meta">${new Date(item.pendingHandoff.requestedAt).toLocaleString()}</div>
-      <div class="button-group" style="margin-top:12px;">
-        <button onclick="acceptHandoff(${item.id})">Accept</button>
-        <button onclick="rejectHandoff(${item.id})">Reject</button>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-async function acceptHandoff(id) {
-  await fetch(`/items/${id}/accept-handoff`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      employee: user.name
-    })
-  });
-
-  await loadPendingHandoffs();
-  await loadNotifications();
-  await loadPerformance();
-}
-
-async function rejectHandoff(id) {
-  const reason = prompt('Reason for rejection:') || 'Rejected';
-
-  await fetch(`/items/${id}/reject-handoff`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      employee: user.name,
-      reason
-    })
-  });
-
-  await loadPendingHandoffs();
-  await loadNotifications();
-  await loadPerformance();
-}
-
-async function loadNotifications() {
-  const res = await fetch('/notifications');
-  const notifications = await res.json();
-  const container = document.getElementById('notifications');
-
-  if (!notifications.length) {
-    container.innerHTML = '<div class="label">No notifications</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  notifications.slice(0, 10).forEach(notification => {
-    const card = document.createElement('div');
-    card.className = 'notification-card';
-
-    card.innerHTML = `
-      <div class="notification-message">${notification.message}</div>
-      <div class="notification-meta">${new Date(notification.createdAt).toLocaleString()}</div>
-      <div class="notification-meta">${notification.read ? 'Read' : 'Unread'}</div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-async function markAllNotificationsRead() {
-  await fetch('/notifications/mark-all-read', {
-    method: 'POST'
-  });
-
-  await loadNotifications();
-}
-
-async function loadPerformance() {
-  const res = await fetch('/performance');
-  const stats = await res.json();
-  const container = document.getElementById('performance');
-
-  if (!stats.length) {
-    container.innerHTML = '<div class="label">No performance data yet</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  stats.forEach(row => {
-    const card = document.createElement('div');
-    card.className = 'performance-card';
-
-    card.innerHTML = `
-      <div class="performance-name">${row.employee}</div>
-      <div class="performance-stat">Created: ${row.created}</div>
-      <div class="performance-stat">Handoff Requested: ${row.handoffRequested}</div>
-      <div class="performance-stat">Handoff Accepted: ${row.handoffAccepted}</div>
-      <div class="performance-stat">Handoff Rejected: ${row.handoffRejected}</div>
-      <div class="performance-stat">Stage Changes: ${row.stageChanges}</div>
-      <div class="performance-stat">Lots Assigned: ${row.lotsAssigned}</div>
-      <div class="performance-stat">Location Updates: ${row.locationUpdates}</div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-async function init() {
-  await loadPendingHandoffs();
-  await loadNotifications();
-  await loadPerformance();
-}
-
-init();
-</script>
+    function logout() {
+      localStorage.removeItem("user");
+      window.location.href = "/";
+    }
+  </script>
 
 </body>
 </html>
