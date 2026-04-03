@@ -28,6 +28,19 @@
   border-radius: 999px;
   margin-bottom: 14px;
 }
+.btn-checkin {
+  width: 100%;
+  background: #16a34a;
+  color: white;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-checkin:active { background: #15803d; }
 .scan-recorded {
   width: 100%;
   background: #16a34a;
@@ -130,6 +143,7 @@
     <div class="item-lot" id="lotDisplay"></div>
     <div class="item-stage" id="stageDisplay"></div>
     <div class="item-last-handled" id="lastHandledDisplay"></div>
+    <button class="btn-checkin" id="checkInBtn" style="display:none;" onclick="checkInToStudio()">Check In to Studio →</button>
     <div class="scan-recorded" id="scanRecorded">✓ Scan Recorded</div>
   </div>
 
@@ -246,6 +260,8 @@ async function loadItem(lotCode) {
     }
 
     document.getElementById('scanRecorded').style.display = 'none';
+    document.getElementById('checkInBtn').style.display =
+      item.stage === 'Initial Visit' ? 'block' : 'none';
     log('Loaded: ' + (item.name || item.lotNumber));
 
     // Auto-record this employee's scan
@@ -254,6 +270,40 @@ async function loadItem(lotCode) {
   } catch (err) {
     log('Error loading item');
   }
+}
+
+async function checkInToStudio() {
+  if (!currentItem) return;
+  document.getElementById('checkInBtn').disabled = true;
+  try {
+    const res = await fetch(`/items/${currentItem.id}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: 'Received at Studio', employee: getEmployee() })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentItem = data.item;
+      document.getElementById('stageDisplay').innerText = 'Received at Studio';
+      document.getElementById('checkInBtn').style.display = 'none';
+      document.getElementById('scanRecorded').innerText = '✓ Checked In to Studio';
+      document.getElementById('scanRecorded').style.display = 'block';
+      log('Checked in: ' + (currentItem.name || currentItem.lotNumber));
+      setTimeout(resetScanner, 2000);
+    }
+  } catch (err) {
+    log('Check-in failed');
+    document.getElementById('checkInBtn').disabled = false;
+  }
+}
+
+function resetScanner() {
+  document.getElementById('scanInput').value = '';
+  document.getElementById('itemBox').style.display = 'none';
+  document.getElementById('scanRecorded').style.display = 'none';
+  document.getElementById('scanRecorded').innerText = '✓ Scan Recorded';
+  currentItem = null;
+  log('Ready to scan...');
 }
 
 async function recordScan(itemId) {
@@ -266,14 +316,10 @@ async function recordScan(itemId) {
     const data = await res.json();
     if (data.success) {
       document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
-      document.getElementById('scanRecorded').style.display = 'block';
-      setTimeout(() => {
-        document.getElementById('scanInput').value = '';
-        document.getElementById('itemBox').style.display = 'none';
-        document.getElementById('scanRecorded').style.display = 'none';
-        currentItem = null;
-        log('Ready to scan...');
-      }, 1800);
+      if (!currentItem || currentItem.stage !== 'Initial Visit') {
+        document.getElementById('scanRecorded').style.display = 'block';
+        setTimeout(resetScanner, 1800);
+      }
     }
   } catch (err) {
     log('Error recording scan');

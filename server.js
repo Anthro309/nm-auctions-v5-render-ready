@@ -104,7 +104,8 @@ function validStage(stage) {
     'Missing at Drop Off',
     'Review & Cleaning',
     'Photograph',
-    'Prep for Pickup',
+    'Ready to Prep',
+    'Ready for Pick Up',
     'Picked Up'
   ].includes(stage);
 }
@@ -410,7 +411,7 @@ app.post('/items/:id/sell', (req, res) => {
 // =========================
 app.get('/analytics/overview', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const stageCounts = { 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pickup': 0, 'Picked Up': 0, 'Missing at Drop Off': 0 };
+  const stageCounts = { 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Ready to Prep': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0 };
   const categoryCounts = {};
   items.forEach(i => {
     if (stageCounts.hasOwnProperty(i.stage)) stageCounts[i.stage]++;

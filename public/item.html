@@ -184,6 +184,14 @@
     <div id="locationMsg" class="success-msg">✅ Location saved</div>
   </div>
 
+  <!-- ADVANCE STAGE -->
+  <div class="card" id="stageCard" style="display:none;">
+    <h3 style="margin-bottom:8px;">Move to Next Stage</h3>
+    <div id="nextStageName" style="font-size:15px;color:#6b7280;margin-bottom:12px;"></div>
+    <button class="btn-green" onclick="advanceStage()">Advance Stage →</button>
+    <div id="stageMsg" class="success-msg">✅ Stage updated</div>
+  </div>
+
   <!-- ADMIN: DELETE ITEM -->
   <div class="card" id="deleteCard" style="display:none;">
     <button class="btn-red" onclick="deleteItem()">Delete Item</button>
@@ -282,6 +290,14 @@ function render() {
   if (item.location)   document.getElementById('locationInput').value = item.location;
   if (item.dimensions) document.getElementById('dimInput').value = item.dimensions;
   if (item.condition)  document.getElementById('conditionSelect').value = item.condition;
+
+  // Stage advance
+  const stageOrder = ['Initial Visit','Received at Studio','Review & Cleaning','Photograph','Ready to Prep','Ready for Pick Up','Picked Up'];
+  const idx = stageOrder.indexOf(item.stage);
+  if (idx !== -1 && idx < stageOrder.length - 1) {
+    document.getElementById('nextStageName').innerText = item.stage + '  →  ' + stageOrder[idx + 1];
+    document.getElementById('stageCard').style.display = 'block';
+  }
 
   if (item.auctionDescription) {
     const r = document.getElementById('descResult');
@@ -443,6 +459,42 @@ async function printLabel() {
   }
 
   setTimeout(() => { window.print(); }, 600);
+}
+
+// =========================
+// ADVANCE STAGE
+// =========================
+async function advanceStage() {
+  const stageOrder = ['Initial Visit','Received at Studio','Review & Cleaning','Photograph','Ready to Prep','Ready for Pick Up','Picked Up'];
+  const idx = stageOrder.indexOf(item.stage);
+  if (idx === -1 || idx >= stageOrder.length - 1) return;
+  const nextStage = stageOrder[idx + 1];
+
+  const btn = document.querySelector('[onclick="advanceStage()"]');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/items/${item.id}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: nextStage, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      document.getElementById('detailStage').innerText = item.stage;
+      document.getElementById('nextStageName').innerText = item.stage + '  →  ' + (stageOrder[idx + 2] || '');
+      if (idx + 2 >= stageOrder.length) document.getElementById('stageCard').style.display = 'none';
+      const msg = document.getElementById('stageMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      renderHistory();
+    }
+  } catch (err) {
+    alert('Failed to advance stage');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // =========================
