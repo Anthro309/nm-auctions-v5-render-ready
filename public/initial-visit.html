@@ -100,6 +100,7 @@ button.secondary {
     top:0;
     left:0;
     width:100%;
+    display:block;
   }
 
   .sheet {
@@ -133,8 +134,8 @@ button.secondary {
 
 <div class="card">
   <h2>Initial Visit</h2>
-  <input id="first" placeholder="First Name">
-  <input id="last" placeholder="Last Name">
+  <input id="firstInput" placeholder="First Name">
+  <input id="lastInput" placeholder="Last Name">
   <button onclick="startVisit()">Start Visit</button>
   <div id="codeDisplay"></div>
 </div>
@@ -149,7 +150,6 @@ button.secondary {
 
   <input type="file" id="photo" accept="image/*" capture="environment">
 
-  <!-- LOADER -->
   <div class="loader" id="loader">
     <div class="loader-bar"></div>
   </div>
@@ -168,8 +168,8 @@ let items=[];
 let currentPhotoPath=null;
 
 function startVisit(){
-  const first=firstInput.value.trim();
-  const last=lastInput.value.trim();
+  const first=document.getElementById("firstInput").value.trim();
+  const last=document.getElementById("lastInput").value.trim();
 
   if(!first||!last) return alert("Enter name");
 
@@ -180,20 +180,20 @@ function startVisit(){
     date:new Date().toLocaleDateString()
   };
 
-  codeDisplay.innerText="Code: "+session.code;
-  itemSection.style.display="block";
+  document.getElementById("codeDisplay").innerText="Code: "+session.code;
+  document.getElementById("itemSection").style.display="block";
 }
 
 function showLoader(){
-  loader.style.display="block";
+  document.getElementById("loader").style.display="block";
 }
 
 function hideLoader(){
-  loader.style.display="none";
+  document.getElementById("loader").style.display="none";
 }
 
 async function uploadPhoto(){
-  const file=photo.files[0];
+  const file=document.getElementById("photo").files[0];
   if(!file) return null;
 
   const form=new FormData();
@@ -213,6 +213,9 @@ async function analyzePhoto(){
   try{
     showLoader();
 
+    const file=document.getElementById("photo").files[0];
+    if(!file) throw new Error("No photo selected");
+
     currentPhotoPath=await uploadPhoto();
 
     const res=await fetch("/analyze-image",{
@@ -225,12 +228,10 @@ async function analyzePhoto(){
 
     const data=await res.json();
 
-    if(!data.success) throw new Error(data.message);
-
-    itemName.value=data.title;
-    itemDescription.value=data.description;
-    itemCategory.value=data.category;
-    itemCondition.value=data.condition;
+    document.getElementById("itemName").value=data.title||"";
+    document.getElementById("itemDescription").value=data.description||"";
+    document.getElementById("itemCategory").value=data.category||"";
+    document.getElementById("itemCondition").value=data.condition||"";
 
   }catch(err){
     alert("AI failed: "+err.message);
@@ -242,7 +243,7 @@ async function analyzePhoto(){
 async function addItem(){
   if(!session) return alert("Start visit first");
 
-  let name=itemName.value.trim();
+  let name=document.getElementById("itemName").value.trim();
   if(!name) return alert("Enter name");
 
   if(!currentPhotoPath){
@@ -261,6 +262,9 @@ async function addItem(){
     body:JSON.stringify({
       items:[{
         title:name,
+        description:document.getElementById("itemDescription").value,
+        category:document.getElementById("itemCategory").value,
+        condition:document.getElementById("itemCondition").value,
         consignerFirstName:session.first,
         consignerLastName:session.last,
         consignerCode:session.code,
@@ -274,17 +278,25 @@ async function addItem(){
   const result=await res.json();
   if(!result.success) return alert("Save failed");
 
-  items.push({name,lotCode});
+  items.push({
+    name,
+    lotCode
+  });
 
   renderLabels();
 
-  itemName.value="";
-  photo.value="";
+  document.getElementById("itemName").value="";
+  document.getElementById("itemDescription").value="";
+  document.getElementById("itemCategory").value="";
+  document.getElementById("itemCondition").value="";
+  document.getElementById("photo").value="";
   currentPhotoPath=null;
 }
 
 function renderLabels(){
-  labels.innerHTML=items.map(i=>`
+  const container=document.getElementById("labels");
+
+  container.innerHTML=items.map(i=>`
     <div class="label">
       <canvas id="qr-${i.lotCode}" class="qr"></canvas>
       <div>
@@ -307,12 +319,18 @@ async function endVisit(){
 
   if(confirm("Print labels?")){
     await buildPrint();
-    setTimeout(()=>window.print(),500);
+
+    // 🔥 CRITICAL FIX (ensures QR renders before print)
+    setTimeout(()=>{
+      window.print();
+    },700);
   }
 }
 
 async function buildPrint(){
-  printSheet.innerHTML=`
+  const sheet=document.getElementById("printSheet");
+
+  sheet.innerHTML=`
     <div class="sheet">
       ${items.map(i=>`
         <div class="print-label">
