@@ -186,19 +186,23 @@ select, input {
     <button class="btn-red" onclick="deleteItem()">Delete Item</button>
   </div>
 
-  <!-- REQUEST HANDOFF -->
+  <!-- AUCTION DESCRIPTION GENERATOR -->
   <div class="card">
-    <h3 style="margin-bottom:4px;">Request Handoff</h3>
-    <select id="stageSelect">
-      <option>Received at Studio</option>
-      <option>Review & Cleaning</option>
-      <option>Photograph</option>
-      <option>Prep for Pickup</option>
-      <option>Picked Up</option>
+    <h3 style="margin-bottom:4px;">Auction Description</h3>
+    <input id="dimInput" placeholder='Dimensions (e.g. 24" H × 18" W × 12" D)'>
+    <select id="conditionSelect" style="margin-top:10px;">
+      <option value="">-- Update Condition --</option>
+      <option>Excellent</option>
+      <option>Good</option>
+      <option>Fair</option>
+      <option>Worn</option>
+      <option>Vintage Wear</option>
     </select>
-    <input id="reasonInput" placeholder="Reason (optional)">
-    <button class="btn-blue" onclick="requestHandoff()">Send Handoff Request</button>
-    <div id="handoffMsg" class="success-msg">✅ Handoff request sent</div>
+    <textarea id="notesInput" placeholder="Additional notes (provenance, markings, repairs, etc.)" rows="3" style="margin-top:10px;width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;"></textarea>
+    <button class="btn-blue" onclick="generateDescription()">✨ Generate Auction Description</button>
+    <div id="descMsg" class="success-msg">✅ Description generated</div>
+    <div id="descResult" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:14px;line-height:1.6;color:#111827;"></div>
+    <button id="copyDescBtn" class="btn-green" style="display:none;margin-top:8px;" onclick="copyDescription()">Copy Description</button>
   </div>
 
 </div>
@@ -259,8 +263,15 @@ function render() {
   document.getElementById('detailLocation').innerText = item.location || '—';
   document.getElementById('detailDescription').innerText = item.description || '—';
 
-  if (item.location) {
-    document.getElementById('locationInput').value = item.location;
+  if (item.location)   document.getElementById('locationInput').value = item.location;
+  if (item.dimensions) document.getElementById('dimInput').value = item.dimensions;
+  if (item.condition)  document.getElementById('conditionSelect').value = item.condition;
+
+  if (item.auctionDescription) {
+    const r = document.getElementById('descResult');
+    r.innerText = item.auctionDescription;
+    r.style.display = 'block';
+    document.getElementById('copyDescBtn').style.display = 'block';
   }
 
   // Photo
@@ -300,27 +311,51 @@ async function saveLocation() {
 }
 
 // =========================
-// REQUEST HANDOFF
+// GENERATE AUCTION DESCRIPTION
 // =========================
-async function requestHandoff() {
-  const stage = document.getElementById('stageSelect').value;
-  const reason = document.getElementById('reasonInput').value.trim();
+async function generateDescription() {
+  const dimensions     = document.getElementById('dimInput').value.trim();
+  const condition      = document.getElementById('conditionSelect').value;
+  const additionalNotes = document.getElementById('notesInput').value.trim();
+
+  const btn = document.querySelector('[onclick="generateDescription()"]');
+  btn.disabled = true;
+  btn.innerText = '⏳ Generating...';
+
   try {
-    const res = await fetch(`/items/${item.id}/request-handoff`, {
+    const res = await fetch(`/items/${item.id}/auction-description`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage, reason, employee: user.name })
+      body: JSON.stringify({ dimensions, condition, additionalNotes, employee: user.name })
     });
     const data = await res.json();
     if (data.success) {
-      item = data.item;
-      const msg = document.getElementById('handoffMsg');
+      item.auctionDescription = data.description;
+      const r = document.getElementById('descResult');
+      r.innerText = data.description;
+      r.style.display = 'block';
+      document.getElementById('copyDescBtn').style.display = 'block';
+      const msg = document.getElementById('descMsg');
       msg.style.display = 'block';
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else {
+      alert(data.message || 'Description generation failed');
     }
   } catch (err) {
-    alert('Failed to send handoff request');
+    alert('Failed to generate description');
+  } finally {
+    btn.disabled = false;
+    btn.innerText = '✨ Generate Auction Description';
   }
+}
+
+function copyDescription() {
+  const text = document.getElementById('descResult').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyDescBtn');
+    btn.innerText = '✅ Copied!';
+    setTimeout(() => { btn.innerText = 'Copy Description'; }, 2000);
+  });
 }
 
 // =========================

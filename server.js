@@ -533,6 +533,63 @@ app.post('/analyze-image', async (req, res) => {
 });
 
 // =========================
+// GENERATE AUCTION DESCRIPTION
+// =========================
+app.post('/items/:id/auction-description', async (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  if (!client) {
+    return res.json({ success: false, message: 'AI not configured.' });
+  }
+
+  const { dimensions, condition, additionalNotes, employee } = req.body;
+
+  // Save the extra detail fields back to the item
+  if (dimensions)      item.dimensions = dimensions;
+  if (condition)       item.condition  = condition;
+  if (additionalNotes) item.additionalNotes = additionalNotes;
+
+  const prompt = `You are writing a professional estate auction lot description for an online auction house.
+
+Item details:
+- Name: ${item.name || 'Unknown'}
+- Category: ${item.category || 'Unknown'}
+- Condition: ${condition || item.condition || 'Unknown'}
+- Dimensions: ${dimensions || item.dimensions || 'Not provided'}
+- Base description: ${item.description || 'None'}
+- Additional notes: ${additionalNotes || 'None'}
+
+Write a compelling, professional auction listing description. Include:
+1. A brief evocative opening sentence about the piece
+2. Material, style, and craftsmanship details
+3. Dimensions (if provided)
+4. Honest condition notes
+5. A closing sentence about its appeal or use
+
+Keep it between 80-150 words. Plain prose only — no bullet points, no markdown. Write in third person. Make it sound like a high-end estate auction house.`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const description = (response.choices[0].message.content || '').trim();
+    item.auctionDescription = description;
+    addLog(item, { employee: employee || 'system', action: 'auction description generated' });
+    writeJSON(ITEMS_FILE, items);
+
+    res.json({ success: true, description });
+  } catch (err) {
+    console.error('AI DESC ERROR:', err.message);
+    res.json({ success: false, message: 'AI description failed: ' + err.message });
+  }
+});
+
+// =========================
 // REPORTS — GET ALL
 // =========================
 app.get('/reports', (req, res) => {
