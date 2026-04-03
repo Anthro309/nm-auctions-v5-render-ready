@@ -12,9 +12,7 @@ const PORT = process.env.PORT || 10000;
 // =========================
 let client = null;
 if (process.env.OPENAI_API_KEY) {
-  client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
+  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   console.log('✅ OpenAI initialized');
 } else {
   console.log('⚠️ OPENAI_API_KEY missing - AI disabled');
@@ -53,25 +51,21 @@ function writeJSON(file, data) {
 }
 
 function ensureArrayFile(file) {
-  if (!fs.existsSync(file)) {
-    writeJSON(file, []);
-  }
+  if (!fs.existsSync(file)) writeJSON(file, []);
 }
 
 function ensureUsersExist() {
   const users = readJSON(USERS_FILE);
-
   if (!users.length) {
     const defaultUsers = [
-      { name: 'Fabian', pin: '1234', isAdmin: true },
-      { name: 'James', pin: '1234', isAdmin: true },
-      { name: 'Steven', pin: '1234', isAdmin: true },
-      { name: 'Mike', pin: '1234', isAdmin: false },
-      { name: 'Gio', pin: '1234', isAdmin: false },
+      { name: 'Fabian',   pin: '1234', isAdmin: true  },
+      { name: 'James',    pin: '1234', isAdmin: true  },
+      { name: 'Steven',   pin: '1234', isAdmin: true  },
+      { name: 'Mike',     pin: '1234', isAdmin: false },
+      { name: 'Gio',      pin: '1234', isAdmin: false },
       { name: 'Michelle', pin: '1234', isAdmin: false },
-      { name: 'Sara', pin: '1234', isAdmin: false }
+      { name: 'Sara',     pin: '1234', isAdmin: false }
     ];
-
     writeJSON(USERS_FILE, defaultUsers);
     console.log('🔥 Users seeded');
   }
@@ -83,15 +77,14 @@ function monthLetterForDate(date = new Date()) {
 
 function addLog(item, entry) {
   if (!Array.isArray(item.logs)) item.logs = [];
-
   item.logs.push({
     timestamp: new Date().toISOString(),
-    employee: entry.employee || 'system',
-    action: entry.action || '',
+    employee:  entry.employee  || 'system',
+    action:    entry.action    || '',
     fromStage: entry.fromStage || null,
-    toStage: entry.toStage || null,
-    reason: entry.reason || null,
-    note: entry.note || null
+    toStage:   entry.toStage   || null,
+    reason:    entry.reason    || null,
+    note:      entry.note      || null
   });
 }
 
@@ -113,7 +106,9 @@ function cleanAIText(value, fallback = '') {
 
 function safeJsonParse(text, fallback = null) {
   try {
-    return JSON.parse(text);
+    // strip markdown code fences if model wraps response
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
   } catch {
     return fallback;
   }
@@ -132,7 +127,6 @@ ensureUsersExist();
 // ENSURE UPLOADS FOLDER
 // =========================
 const uploadsPath = path.join(__dirname, 'public/uploads');
-
 try {
   if (fs.existsSync(uploadsPath)) {
     const stat = fs.statSync(uploadsPath);
@@ -153,9 +147,7 @@ try {
 // MULTER
 // =========================
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsPath);
-  },
+  destination: (req, file, cb) => cb(null, uploadsPath),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
     cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
@@ -179,24 +171,12 @@ const upload = multer({
 app.post('/login', (req, res) => {
   const { name, pin } = req.body;
   const users = readJSON(USERS_FILE);
-
   const user = users.find(
-    u =>
-      u.name.toLowerCase().trim() === String(name || '').toLowerCase().trim() &&
-      u.pin === String(pin || '')
+    u => u.name.toLowerCase().trim() === String(name || '').toLowerCase().trim() &&
+         u.pin === String(pin || '')
   );
-
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid login' });
-  }
-
-  res.json({
-    success: true,
-    user: {
-      name: user.name,
-      isAdmin: user.isAdmin
-    }
-  });
+  if (!user) return res.status(401).json({ success: false, message: 'Invalid login' });
+  res.json({ success: true, user: { name: user.name, isAdmin: user.isAdmin } });
 });
 
 // =========================
@@ -205,17 +185,14 @@ app.post('/login', (req, res) => {
 app.get('/next-lot-code', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const month = req.query.month || monthLetterForDate(new Date());
-
   const usedNumbers = items
     .map(i => i.lotNumber)
     .filter(Boolean)
     .filter(l => typeof l === 'string' && l.startsWith(month))
     .map(l => parseInt(l.slice(1), 10))
     .filter(n => !isNaN(n));
-
   const next = usedNumbers.length ? Math.max(...usedNumbers) + 1 : 1;
   const lotCode = `${month}${String(next).padStart(3, '0')}`;
-
   res.json({ success: true, lotCode });
 });
 
@@ -225,24 +202,15 @@ app.get('/next-lot-code', (req, res) => {
 app.post('/addItems', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const incoming = Array.isArray(req.body.items) ? req.body.items : [];
-
-  if (!incoming.length) {
-    return res.status(400).json({ success: false, message: 'No items provided' });
-  }
+  if (!incoming.length) return res.status(400).json({ success: false, message: 'No items provided' });
 
   const existingCodes = new Set(items.map(i => i.lotNumber).filter(Boolean));
   const newItems = [];
 
   for (const i of incoming) {
-    if (!i.lotCode) {
-      return res.status(400).json({ success: false, message: 'Missing lotCode' });
-    }
-
+    if (!i.lotCode) return res.status(400).json({ success: false, message: 'Missing lotCode' });
     if (existingCodes.has(i.lotCode)) {
-      return res.status(400).json({
-        success: false,
-        message: `Duplicate lot code: ${i.lotCode}`
-      });
+      return res.status(400).json({ success: false, message: `Duplicate lot code: ${i.lotCode}` });
     }
 
     const item = {
@@ -273,25 +241,12 @@ app.post('/addItems', (req, res) => {
       logs: []
     };
 
-    addLog(item, {
-      employee: i.createdBy || 'system',
-      action: 'item received',
-      toStage: 'Received at Studio'
-    });
-
-    addLog(item, {
-      employee: i.createdBy || 'system',
-      action: 'handoff requested',
-      fromStage: 'Received at Studio',
-      toStage: 'Review & Cleaning',
-      reason: 'Initial Visit intake'
-    });
-
+    addLog(item, { employee: i.createdBy || 'system', action: 'item received', toStage: 'Received at Studio' });
+    addLog(item, { employee: i.createdBy || 'system', action: 'handoff requested', fromStage: 'Received at Studio', toStage: 'Review & Cleaning', reason: 'Initial Visit intake' });
     newItems.push(item);
   }
 
   writeJSON(ITEMS_FILE, [...items, ...newItems]);
-
   res.json({ success: true, count: newItems.length });
 });
 
@@ -308,7 +263,6 @@ app.get('/items', (req, res) => {
 app.get('/items/by-lot/:lot', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => i.lotNumber === req.params.lot);
-
   if (!item) return res.json(null);
   res.json(item);
 });
@@ -319,30 +273,17 @@ app.get('/items/by-lot/:lot', (req, res) => {
 app.post('/items/:id/stage', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: 'Item not found' });
-  }
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
   const newStage = req.body.stage;
   const employee = req.body.employee || 'system';
 
-  if (!validStage(newStage)) {
-    return res.status(400).json({ success: false, message: 'Invalid stage' });
-  }
+  if (!validStage(newStage)) return res.status(400).json({ success: false, message: 'Invalid stage' });
 
   const fromStage = item.stage;
   item.stage = newStage;
-
-  addLog(item, {
-    employee,
-    action: 'stage changed',
-    fromStage,
-    toStage: newStage
-  });
-
+  addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
   writeJSON(ITEMS_FILE, items);
-
   res.json({ success: true, item });
 });
 
@@ -350,14 +291,8 @@ app.post('/items/:id/stage', (req, res) => {
 // UPLOAD
 // =========================
 app.post('/upload', upload.single('photo'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
-  }
-
-  res.json({
-    success: true,
-    path: `/uploads/${req.file.filename}`
-  });
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  res.json({ success: true, path: `/uploads/${req.file.filename}` });
 });
 
 // =========================
@@ -368,54 +303,51 @@ app.post('/analyze-image', async (req, res) => {
     const { imageUrl } = req.body;
 
     if (!imageUrl) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing imageUrl'
-      });
+      return res.status(400).json({ success: false, message: 'Missing imageUrl' });
     }
 
     if (!client) {
       return res.json({
         success: true,
         title: 'Item',
-        description: 'AI not configured yet.',
+        description: 'AI not configured.',
         category: 'misc',
         condition: 'unknown'
       });
     }
 
-    const response = await client.responses.create({
-      model: 'gpt-4.1-mini',
-      input: [
+    console.log('🤖 Analyzing image:', imageUrl);
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
+      messages: [
         {
           role: 'user',
           content: [
             {
-              type: 'input_text',
-              text:
-                'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: ' +
-                '{"title":"","description":"","category":"","condition":""}. ' +
-                'Make title short and auction-friendly. Make description one plain useful sentence. ' +
-                'Category should be simple like furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, or misc. ' +
-                'Condition should be short like good, fair, worn, vintage wear, or unknown. Return JSON only.'
+              type: 'text',
+              text: 'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: {"title":"","description":"","category":"","condition":""}. Make title short and auction-friendly (max 60 chars). Make description one plain useful sentence. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition must be one of: excellent, good, fair, worn, vintage wear, unknown. Return JSON only, no markdown.'
             },
             {
-              type: 'input_image',
-              image_url: imageUrl
+              type: 'image_url',
+              image_url: { url: imageUrl, detail: 'low' }
             }
           ]
         }
       ]
     });
 
-    const raw = response.output_text || '';
+    const raw = response.choices[0].message.content || '';
+    console.log('🤖 AI raw response:', raw);
     const parsed = safeJsonParse(raw, null);
 
     if (!parsed) {
+      console.log('⚠️ AI response could not be parsed as JSON');
       return res.json({
         success: true,
         title: 'Item',
-        description: cleanAIText(raw, 'Fallback description'),
+        description: cleanAIText(raw, 'No description available'),
         category: 'misc',
         condition: 'unknown'
       });
@@ -423,17 +355,18 @@ app.post('/analyze-image', async (req, res) => {
 
     res.json({
       success: true,
-      title: cleanAIText(parsed.title, 'Item'),
-      description: cleanAIText(parsed.description, 'Fallback description'),
-      category: cleanAIText(parsed.category, 'misc'),
-      condition: cleanAIText(parsed.condition, 'unknown')
+      title:       cleanAIText(parsed.title,       'Item'),
+      description: cleanAIText(parsed.description, 'No description available'),
+      category:    cleanAIText(parsed.category,    'misc'),
+      condition:   cleanAIText(parsed.condition,   'unknown')
     });
+
   } catch (err) {
-    console.error('AI ERROR:', err);
+    console.error('AI ERROR:', err.message);
     res.json({
       success: true,
       title: 'Item',
-      description: 'Fallback description',
+      description: 'AI analysis failed — please fill in manually.',
       category: 'misc',
       condition: 'unknown'
     });
@@ -441,14 +374,44 @@ app.post('/analyze-image', async (req, res) => {
 });
 
 // =========================
+// REPORTS — GET ALL
+// =========================
+app.get('/reports', (req, res) => {
+  res.json(readJSON(REPORTS_FILE));
+});
+
+// =========================
+// REPORTS — GENERATE TODAY
+// =========================
+app.post('/closeout', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const reports = readJSON(REPORTS_FILE);
+
+  const today = new Date().toLocaleDateString();
+  const report = {
+    id: Date.now(),
+    date: today,
+    items: items.map(i => ({
+      lotNumber: i.lotNumber,
+      name: i.name,
+      consigner: i.consigner,
+      stage: i.stage,
+      category: i.category,
+      condition: i.condition
+    }))
+  };
+
+  reports.push(report);
+  writeJSON(REPORTS_FILE, reports);
+  res.json({ success: true, report });
+});
+
+// =========================
 // ERROR HANDLER
 // =========================
 app.use((err, req, res, next) => {
   console.error('SERVER ERROR:', err);
-  res.status(500).json({
-    success: false,
-    message: err.message || 'Server error'
-  });
+  res.status(500).json({ success: false, message: err.message || 'Server error' });
 });
 
 // =========================
