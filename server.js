@@ -11,16 +11,22 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
+// =========================
+// FILE PATHS
+// =========================
 const USERS_FILE = 'users.json';
 const ITEMS_FILE = 'items.json';
 const REPORTS_FILE = 'reports.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
 const INTAKE_FILE = 'intake.json';
 
+// =========================
+// HELPERS
+// =========================
 function readJSON(file) {
   try {
     if (!fs.existsSync(file)) return [];
@@ -47,7 +53,7 @@ function ensureUsersExist() {
   const users = readJSON(USERS_FILE);
 
   if (!users.length) {
-    writeJSON(USERS_FILE, [
+    const defaultUsers = [
       { name: 'Fabian', pin: '1234', isAdmin: true },
       { name: 'James', pin: '1234', isAdmin: true },
       { name: 'Steven', pin: '1234', isAdmin: true },
@@ -55,7 +61,10 @@ function ensureUsersExist() {
       { name: 'Gio', pin: '1234', isAdmin: false },
       { name: 'Michelle', pin: '1234', isAdmin: false },
       { name: 'Sara', pin: '1234', isAdmin: false }
-    ]);
+    ];
+
+    writeJSON(USERS_FILE, defaultUsers);
+    console.log('🔥 Users seeded');
   }
 }
 
@@ -63,37 +72,83 @@ function monthLetterForDate(date = new Date()) {
   return 'ABCDEFGHIJKL'[date.getMonth()];
 }
 
+function addLog(item, entry) {
+  if (!Array.isArray(item.logs)) item.logs = [];
+
+  item.logs.push({
+    timestamp: new Date().toISOString(),
+    employee: entry.employee || 'system',
+    action: entry.action || '',
+    fromStage: entry.fromStage || null,
+    toStage: entry.toStage || null,
+    reason: entry.reason || null,
+    note: entry.note || null
+  });
+}
+
+function validStage(stage) {
+  return [
+    'Initial Visit',
+    'Received at Studio',
+    'Missing at Drop Off',
+    'Review & Cleaning',
+    'Photograph',
+    'Prep for Pickup',
+    'Picked Up'
+  ].includes(stage);
+}
+
+function cleanAIText(value, fallback = '') {
+  return String(value || fallback).trim();
+}
+
+function safeJsonParse(text, fallback = null) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return fallback;
+  }
+}
+
+// =========================
+// ENSURE FILES
+// =========================
 ensureArrayFile(ITEMS_FILE);
 ensureArrayFile(REPORTS_FILE);
 ensureArrayFile(NOTIFICATIONS_FILE);
 ensureArrayFile(INTAKE_FILE);
 ensureUsersExist();
 
-const uploadDir = path.join(__dirname, 'public/uploads');
+// Ensure uploads folder exists and is actually a folder
+const uploadsPath = path.join(__dirname, 'public/uploads');
 
 try {
-  if (fs.existsSync(uploadDir)) {
-    const stat = fs.statSync(uploadDir);
+  if (fs.existsSync(uploadsPath)) {
+    const stat = fs.statSync(uploadsPath);
+
     if (!stat.isDirectory()) {
-      fs.unlinkSync(uploadDir);
-      fs.mkdirSync(uploadDir, { recursive: true });
-      console.log('⚠️ uploads path fixed from file to folder');
+      fs.unlinkSync(uploadsPath);
+      fs.mkdirSync(uploadsPath, { recursive: true });
+      console.log('⚠️ uploads was file → fixed to folder');
     }
   } else {
-    fs.mkdirSync(uploadDir, { recursive: true });
+    fs.mkdirSync(uploadsPath, { recursive: true });
     console.log('📁 uploads folder created');
   }
 } catch (err) {
   console.error('UPLOAD DIR ERROR:', err);
 }
 
+// =========================
+// MULTER
+// =========================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, uploadsPath);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
   }
 });
 
@@ -108,6 +163,9 @@ const upload = multer({
   }
 });
 
+// =========================
+// LOGIN
+// =========================
 app.post('/login', (req, res) => {
   const { name, pin } = req.body;
   const users = readJSON(USERS_FILE);
@@ -131,6 +189,9 @@ app.post('/login', (req, res) => {
   });
 });
 
+// =========================
+// NEXT LOT CODE
+// =========================
 app.get('/next-lot-code', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const month = req.query.month || monthLetterForDate(new Date());
@@ -148,6 +209,9 @@ app.get('/next-lot-code', (req, res) => {
   res.json({ success: true, lotCode });
 });
 
+// =========================
+// ADD ITEMS (INTAKE)
+// =========================
 app.post('/addItems', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const incoming = Array.isArray(req.body.items) ? req.body.items : [];
@@ -156,7 +220,7 @@ app.post('/addItems', (req, res) => {
     return res.status(400).json({ success: false, message: 'No items provided' });
   }
 
-  const existingLots = new Set(items.map(i => i.lotNumber).filter(Boolean));
+  const existingCodes = new Set(items.map(i => i.lotNumber).filter(Boolean));
   const newItems = [];
 
   for (const i of incoming) {
@@ -164,7 +228,7 @@ app.post('/addItems', (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing lotCode' });
     }
 
-    if (existingLots.has(i.lotCode)) {
+    if (existingCodes.has(i.lotCode)) {
       return res.status(400).json({
         success: false,
         message: `Duplicate lot code: ${i.lotCode}`
@@ -172,19 +236,46 @@ app.post('/addItems', (req, res) => {
     }
 
     const item = {
-      id: Date.now() + Math.floor(Math.random() * 100000),
+      id: Date.now() + Math.floor(Math.random() * 1000) + Math.floor(Math.random() * 1000),
       name: i.title || '',
       description: i.description || '',
       category: i.category || '',
       condition: i.condition || '',
       consigner: `${i.consignerFirstName || ''} ${i.consignerLastName || ''}`.trim(),
       code: i.consignerCode || '',
-      lotNumber: i.lotCode,
+      number: i.itemNumber || 1,
+      part: i.partCount || 1,
       photos: i.photo ? [i.photo] : [],
-      stage: 'Initial Visit',
+      stage: 'Received at Studio',
+      location: null,
+      lotNumber: i.lotCode,
+      photographedAt: null,
+      lotAssignedAt: new Date().toISOString(),
+      lotAssignedBy: i.createdBy || 'system',
+      pendingHandoff: {
+        requestedStage: 'Review & Cleaning',
+        fromStage: 'Received at Studio',
+        requestedBy: i.createdBy || 'system',
+        requestedAt: new Date().toISOString(),
+        reason: 'Initial Visit intake'
+      },
       createdAt: i.createdAt || new Date().toISOString(),
-      createdBy: i.createdBy || 'system'
+      logs: []
     };
+
+    addLog(item, {
+      employee: i.createdBy || 'system',
+      action: 'item received',
+      toStage: 'Received at Studio'
+    });
+
+    addLog(item, {
+      employee: i.createdBy || 'system',
+      action: 'handoff requested',
+      fromStage: 'Received at Studio',
+      toStage: 'Review & Cleaning',
+      reason: 'Initial Visit intake'
+    });
 
     newItems.push(item);
   }
@@ -194,21 +285,27 @@ app.post('/addItems', (req, res) => {
   res.json({ success: true, count: newItems.length });
 });
 
+// =========================
+// GET ITEMS
+// =========================
 app.get('/items', (req, res) => {
   res.json(readJSON(ITEMS_FILE));
 });
 
+// =========================
+// GET ITEM BY LOT (SCANNER)
+// =========================
 app.get('/items/by-lot/:lot', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => i.lotNumber === req.params.lot);
 
-  if (!item) {
-    return res.json(null);
-  }
-
+  if (!item) return res.json(null);
   res.json(item);
 });
 
+// =========================
+// UPDATE STAGE
+// =========================
 app.post('/items/:id/stage', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
@@ -217,17 +314,31 @@ app.post('/items/:id/stage', (req, res) => {
     return res.status(404).json({ success: false, message: 'Item not found' });
   }
 
-  const stage = req.body.stage;
-  if (!stage) {
-    return res.status(400).json({ success: false, message: 'Missing stage' });
+  const newStage = req.body.stage;
+  const employee = req.body.employee || 'system';
+
+  if (!validStage(newStage)) {
+    return res.status(400).json({ success: false, message: 'Invalid stage' });
   }
 
-  item.stage = stage;
+  const fromStage = item.stage;
+  item.stage = newStage;
+
+  addLog(item, {
+    employee,
+    action: 'stage changed',
+    fromStage,
+    toStage: newStage
+  });
+
   writeJSON(ITEMS_FILE, items);
 
   res.json({ success: true, item });
 });
 
+// =========================
+// UPLOAD
+// =========================
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
@@ -239,69 +350,99 @@ app.post('/upload', upload.single('photo'), (req, res) => {
   });
 });
 
+// =========================
+// AI IMAGE ANALYSIS
+// =========================
 app.post('/analyze-image', async (req, res) => {
   try {
     const { imageUrl } = req.body;
 
     if (!imageUrl) {
-      return res.status(400).json({ success: false, message: 'Missing imageUrl' });
+      return res.status(400).json({
+        success: false,
+        message: 'Missing imageUrl'
+      });
     }
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You identify estate sale and auction items from photos. Return compact JSON only with keys: title, description, category, condition. Keep title under 10 words. Keep description under 24 words. Category should be simple, like Furniture, Decor, Tool, Electronics, Art, Kitchen, Outdoor, Toy, Jewelry, Collectible, Appliance, Office. Condition should be one of: Excellent, Good, Fair, Poor, Unknown.'
-        },
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'OPENAI_API_KEY is not set'
+      });
+    }
+
+    const response = await client.responses.create({
+      model: 'gpt-5.4',
+      input: [
         {
           role: 'user',
           content: [
             {
-              type: 'text',
-              text: 'Identify the main item in this image and return auction-friendly JSON only.'
+              type: 'input_text',
+              text:
+                'Look at this item photo from an estate-sale intake workflow. Respond with valid JSON only. Use this exact shape: ' +
+                '{"title":"","description":"","category":"","condition":""}. ' +
+                'Rules: ' +
+                '1) title should be short and auction-friendly, 4 to 10 words. ' +
+                '2) description should be one sentence, plain and useful. ' +
+                '3) category should be a short category like furniture, decor, kitchenware, tools, art, electronics, jewelry, collectibles, glassware, clothing, books, toys, outdoor, or misc. ' +
+                '4) condition should be one short phrase like good, fair, worn, vintage wear, or unknown. ' +
+                '5) Do not mention uncertainty unless necessary. ' +
+                '6) Return JSON only, no markdown.'
             },
             {
-              type: 'image_url',
-              image_url: { url: imageUrl }
+              type: 'input_image',
+              image_url: imageUrl
             }
           ]
         }
       ]
     });
 
-    const content = response.choices?.[0]?.message?.content || '{}';
-    let parsed = {};
+    const raw = response.output_text || '';
+    const parsed = safeJsonParse(raw, null);
 
-    try {
-      parsed = JSON.parse(content);
-    } catch (err) {
-      parsed = {
-        title: 'Unidentified Item',
-        description: 'Item photographed for intake.',
-        category: 'Unknown',
-        condition: 'Unknown'
-      };
+    if (!parsed) {
+      return res.status(200).json({
+        success: true,
+        title: 'Estate item',
+        description: cleanAIText(raw, 'Estate sale item from intake photo.'),
+        category: 'misc',
+        condition: 'unknown',
+        raw
+      });
     }
 
     res.json({
       success: true,
-      title: parsed.title || 'Unidentified Item',
-      description: parsed.description || 'Item photographed for intake.',
-      category: parsed.category || 'Unknown',
-      condition: parsed.condition || 'Unknown'
+      title: cleanAIText(parsed.title, 'Estate item'),
+      description: cleanAIText(parsed.description, 'Estate sale item from intake photo.'),
+      category: cleanAIText(parsed.category, 'misc'),
+      condition: cleanAIText(parsed.condition, 'unknown')
     });
   } catch (err) {
     console.error('AI ERROR:', err);
     res.status(500).json({
       success: false,
-      message: 'AI analysis failed'
+      message: 'AI image analysis failed'
     });
   }
 });
 
+// =========================
+// ERROR HANDLER
+// =========================
+app.use((err, req, res, next) => {
+  console.error('SERVER ERROR:', err);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Server error'
+  });
+});
+
+// =========================
+// START
+// =========================
 app.listen(PORT, () => {
   console.log(`🔥 Server running on ${PORT}`);
 });
