@@ -1,128 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Initial Visit</title>
+
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 body {
-  margin: 0;
+  margin:0;
   font-family: Arial;
-  background: #0b1b2b;
-  color: white;
-  padding: 16px;
+  background:#0b1b2b;
+  color:white;
+  padding:15px;
 }
 
 .header {
-  background: #0f2a3d;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  font-weight: bold;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.header h1 {
+  font-size:20px;
+  cursor:pointer;
 }
 
 .card {
-  background: #132a3a;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  background:#13283b;
+  padding:15px;
+  border-radius:15px;
+  margin-bottom:15px;
 }
 
-input, button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: none;
+input {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
 }
 
 button {
-  background: #2563eb;
-  color: white;
-  font-weight: bold;
+  margin-top:10px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#2563eb;
+  color:white;
+  width:100%;
+  font-weight:bold;
 }
 
-.hidden { display:none; }
-
-.status {
-  background: black;
-  color: lime;
-  padding: 10px;
-  font-size: 12px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-}
-
-/* ========================= */
-/* LABEL STYLE */
-/* ========================= */
-
-.label-sheet {
-  background: #fff;
-  padding: 10px;
-  border-radius: 10px;
+.hidden {
+  display:none;
 }
 
 .label {
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  gap: 10px;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 8px;
-  margin-bottom: 6px;
-  align-items: center;
+  background:white;
+  color:black;
+  padding:10px;
+  border-radius:10px;
+  display:flex;
+  gap:10px;
+  margin-top:10px;
 }
 
-.qr canvas {
-  width: 90px !important;
-  height: 90px !important;
-}
-
-.text {
-  overflow: hidden;
-}
-
-.title {
-  font-size: 13px;
-  font-weight: bold;
-  line-height: 1.2;
-  max-height: 32px;
-  overflow: hidden;
-}
-
-.meta {
-  font-size: 11px;
-  color: #333;
-  margin-top: 4px;
-}
-
-/* ========================= */
-/* PRINT MODE */
-/* ========================= */
-
-@media print {
-
-  body {
-    background: white;
-    padding: 0;
-  }
-
-  .header,
-  .card,
-  .status {
-    display: none;
-  }
-
-  .label-sheet {
-    padding: 0;
-  }
-
-  .label {
-    page-break-inside: avoid;
-  }
-
+.qr {
+  width:80px;
+  height:80px;
 }
 </style>
 </head>
@@ -130,37 +78,35 @@ button {
 <body>
 
 <div class="header">
-  <div onclick="goHome()">Auction Legacy</div>
+  <h1 onclick="goDashboard()">Auction Legacy</h1>
   <div onclick="logout()">Logout</div>
 </div>
 
-<div id="status" class="status">Ready...</div>
-
+<!-- START VISIT -->
 <div class="card">
+  <h2>Initial Visit</h2>
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
-  <button onclick="startSession()">Start</button>
-  <p id="code"></p>
+  <button onclick="startVisit()">Start Visit</button>
 </div>
 
+<!-- ADD ITEM -->
 <div id="itemSection" class="card hidden">
-  <input id="titleInput" placeholder="Item Name">
-  <input type="file" id="photoInput">
-  <button onclick="addItem()">Add Item + Label</button>
-  <button onclick="printLabels()">Print Labels</button>
+  <h2>Add Item</h2>
+  <input id="itemName" placeholder="Item Name">
+  <input type="file" id="photo">
+  <button onclick="addItem()">Add Item + Print Label</button>
 </div>
 
-<div class="label-sheet" id="labels"></div>
+<!-- LABELS -->
+<div id="labels"></div>
 
 <script>
-let consignerCode = "";
-let started = false;
 
-function log(msg){
-  document.getElementById("status").innerText = msg;
-}
+let session = null;
+let items = [];
 
-function goHome(){
+function goDashboard(){
   window.location.href = "/dashboard.html";
 }
 
@@ -169,126 +115,117 @@ function logout(){
   window.location.href = "/";
 }
 
-function startSession(){
-  const first = first.value.trim();
-  const last = last.value.trim();
+function startVisit(){
+  const first = document.getElementById("first").value.trim();
+  const last = document.getElementById("last").value.trim();
 
   if(!first || !last){
-    log("❌ Missing name");
+    alert("Enter name");
     return;
   }
 
-  consignerCode = (first.slice(0,3)+last.slice(0,3)).toUpperCase();
+  session = {
+    first,
+    last,
+    code: (first.slice(0,3)+last.slice(0,3)).toUpperCase()
+  };
 
-  code.innerText = "Consigner Code: "+consignerCode;
-  itemSection.classList.remove("hidden");
-
-  started = true;
-
-  log("✅ Session started");
-}
-
-async function safeJSON(res){
-  const text = await res.text();
-  try { return JSON.parse(text); }
-  catch { throw new Error(text.slice(0,100)); }
+  document.getElementById("itemSection").classList.remove("hidden");
 }
 
 async function addItem(){
-
-  if(!started){
-    log("❌ Start session first");
+  if(!session){
+    alert("Start visit first");
     return;
   }
 
-  const title = titleInput.value.trim();
-  const file = photoInput.files[0];
+  const name = document.getElementById("itemName").value;
+  const file = document.getElementById("photo").files[0];
 
-  if(!title){
-    log("❌ Missing title");
+  if(!name){
+    alert("Enter item name");
     return;
   }
 
   let photoPath = null;
 
-  try {
+  // UPLOAD IMAGE
+  if(file){
+    const formData = new FormData();
+    formData.append("photo", file);
 
-    if(file){
-      log("📸 Uploading...");
-      const formData = new FormData();
-      formData.append("photo", file);
-
-      const uploadRes = await fetch("/upload",{method:"POST",body:formData});
-      const uploadData = await safeJSON(uploadRes);
-
-      if(!uploadData.success){
-        log("❌ Upload failed");
-        return;
-      }
-
-      photoPath = uploadData.path;
-      log("✅ Upload OK");
-    }
-
-    log("🔢 Getting lot...");
-    const lotRes = await fetch("/next-lot-code");
-    const lotData = await safeJSON(lotRes);
-
-    const lotCode = lotData.lotCode;
-
-    log("💾 Saving...");
-    const res = await fetch("/addItems",{
+    const uploadRes = await fetch("/upload", {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        items:[{
-          title,
-          consignerCode,
-          lotCode,
-          itemNumber:1,
-          partCount:1,
-          createdBy:"mobile",
-          createdAt:new Date().toISOString(),
-          photo:photoPath
-        }]
-      })
+      body:formData
     });
 
-    const data = await safeJSON(res);
+    const uploadData = await uploadRes.json();
 
-    if(!data.success){
-      log("❌ Save failed");
+    if(!uploadData.success){
+      alert("Upload failed");
       return;
     }
 
-    log("✅ SAVED");
-
-    renderLabel(title, lotCode);
-
-  } catch(err){
-    log("❌ ERROR: "+err.message);
+    photoPath = uploadData.path;
   }
+
+  // GET LOT CODE
+  const month = "ABCDEFGHIJKL"[new Date().getMonth()];
+  const lotRes = await fetch(`/next-lot-code?month=${month}`);
+  const lotData = await lotRes.json();
+
+  const lotCode = lotData.lotCode;
+
+  // SAVE ITEM
+  const res = await fetch("/addItems", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      items:[{
+        title:name,
+        consignerFirstName:session.first,
+        consignerLastName:session.last,
+        consignerCode:session.code,
+        lotCode,
+        photo:photoPath,
+        createdBy:"Fabian"
+      }]
+    })
+  });
+
+  const data = await res.json();
+
+  if(!data.success){
+    alert(data.message || "Something broke");
+    return;
+  }
+
+  items.push({name, lotCode});
+
+  renderLabels();
 }
 
-function renderLabel(title, lotCode){
-  const id = Date.now();
+function renderLabels(){
+  const container = document.getElementById("labels");
 
-  labels.innerHTML += `
+  container.innerHTML = items.map(item=>`
     <div class="label">
-      <div class="qr"><canvas id="qr-${id}"></canvas></div>
-      <div class="text">
-        <div class="title">${title}</div>
-        <div class="meta">Lot ${lotCode} · ${consignerCode}</div>
+      <canvas id="qr-${item.lotCode}" class="qr"></canvas>
+      <div>
+        <strong>${item.name}</strong><br>
+        Lot ${item.lotCode}
       </div>
     </div>
-  `;
+  `).join("");
 
-  QRCode.toCanvas(document.getElementById(`qr-${id}`), lotCode);
+  items.forEach(item=>{
+    QRCode.toCanvas(
+      document.getElementById(`qr-${item.lotCode}`),
+      item.lotCode
+    );
+  });
 }
 
-function printLabels(){
-  window.print();
-}
 </script>
 
 </body>
