@@ -8,94 +8,81 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
-}
-
 body {
   margin: 0;
-  background: #0b1b2b;
-  color: white;
-  padding: 15px;
+  font-family: Arial;
+  background:#0b1b2b;
+  color:white;
+  padding:15px;
 }
 
-/* HEADER */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.header h1 {
-  font-size: 22px;
-  cursor: pointer;
-}
-
-/* CARD */
 .card {
-  background: #13283b;
-  padding: 18px;
-  border-radius: 18px;
-  margin-bottom: 18px;
+  background:#13283b;
+  padding:18px;
+  border-radius:18px;
+  margin-bottom:18px;
 }
 
-/* INPUTS */
 input, textarea {
-  width: 100%;
-  padding: 14px;
-  margin-top: 10px;
-  border-radius: 12px;
-  border: none;
-  font-size: 14px;
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:12px;
+  border:none;
 }
 
-/* BUTTON */
 button {
-  margin-top: 12px;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font-weight: bold;
-  width: 100%;
-  font-size: 15px;
+  margin-top:12px;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  background:#2563eb;
+  color:white;
+  font-weight:bold;
+  width:100%;
 }
 
 button.secondary {
-  background: #16a34a;
+  background:#16a34a;
 }
 
-/* STATUS */
-.status {
-  background: #081421;
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 15px;
-  font-size: 14px;
+/* LOADER */
+.loader {
+  margin-top:10px;
+  height:6px;
+  background:#1e3a5f;
+  border-radius:10px;
+  overflow:hidden;
+  display:none;
 }
 
-/* LABEL PREVIEW */
+.loader-bar {
+  height:100%;
+  width:0%;
+  background:#3b82f6;
+  animation: loading 1s infinite;
+}
+
+@keyframes loading {
+  0% { width:0% }
+  50% { width:80% }
+  100% { width:0% }
+}
+
 .label {
-  background: white;
-  color: black;
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  align-items: center;
+  background:white;
+  color:black;
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  gap:12px;
+  margin-top:12px;
+  align-items:center;
 }
 
 .qr {
-  width: 85px;
-  height: 85px;
-}
-
-.hidden {
-  display: none;
+  width:85px;
+  height:85px;
 }
 
 /* PRINT */
@@ -125,8 +112,8 @@ button.secondary {
   .print-label {
     display:flex;
     gap:6px;
-    align-items:center;
     padding:4px;
+    align-items:center;
   }
 
   .print-qr {
@@ -137,7 +124,6 @@ button.secondary {
   .print-text {
     font-size:10px;
     color:black;
-    line-height:1.1;
   }
 }
 </style>
@@ -145,174 +131,136 @@ button.secondary {
 
 <body>
 
-<div class="header">
-  <h1 onclick="goHome()">Auction Legacy</h1>
-  <div onclick="logout()">Logout</div>
-</div>
-
-<div id="status" class="status">Ready.</div>
-
-<!-- START VISIT -->
 <div class="card">
   <h2>Initial Visit</h2>
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
   <button onclick="startVisit()">Start Visit</button>
-  <div id="codeDisplay" style="margin-top:10px;font-weight:bold;"></div>
+  <div id="codeDisplay"></div>
 </div>
 
-<!-- ADD ITEM -->
-<div id="itemSection" class="card hidden">
+<div id="itemSection" class="card" style="display:none;">
   <h2>Add Item</h2>
 
   <input id="itemName" placeholder="Item Name">
-  <textarea id="itemDescription" placeholder="Quick description"></textarea>
+  <textarea id="itemDescription" placeholder="Description"></textarea>
   <input id="itemCategory" placeholder="Category">
   <input id="itemCondition" placeholder="Condition">
 
-  <!-- CAMERA FIX -->
   <input type="file" id="photo" accept="image/*" capture="environment">
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="loader-bar"></div>
+  </div>
 
   <button onclick="analyzePhoto()">Analyze Photo with AI</button>
   <button onclick="addItem()">Add Item</button>
   <button class="secondary" onclick="endVisit()">End Visit & Print Labels</button>
 </div>
 
-<!-- LABELS -->
 <div id="labels"></div>
-
-<!-- PRINT -->
 <div id="printSheet"></div>
 
 <script>
-let session = null;
-let items = [];
-let currentPhotoPath = null;
-
-function setStatus(msg){
-  document.getElementById("status").innerText = msg;
-}
-
-function goHome(){
-  window.location.href = "/dashboard.html";
-}
-
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
-}
+let session=null;
+let items=[];
+let currentPhotoPath=null;
 
 function startVisit(){
-  const first = document.getElementById("first").value.trim();
-  const last = document.getElementById("last").value.trim();
+  const first=firstInput.value.trim();
+  const last=lastInput.value.trim();
 
-  if(!first || !last){
-    alert("Enter name");
-    return;
-  }
+  if(!first||!last) return alert("Enter name");
 
-  session = {
+  session={
     first,
     last,
     code:(first.slice(0,3)+last.slice(0,3)).toUpperCase(),
     date:new Date().toLocaleDateString()
   };
 
-  document.getElementById("codeDisplay").innerText = "Code: " + session.code;
-  document.getElementById("itemSection").classList.remove("hidden");
+  codeDisplay.innerText="Code: "+session.code;
+  itemSection.style.display="block";
+}
 
-  setStatus("Visit started");
+function showLoader(){
+  loader.style.display="block";
+}
+
+function hideLoader(){
+  loader.style.display="none";
 }
 
 async function uploadPhoto(){
-  const file = document.getElementById("photo").files[0];
+  const file=photo.files[0];
   if(!file) return null;
 
-  const form = new FormData();
-  form.append("photo", file);
+  const form=new FormData();
+  form.append("photo",file);
 
-  const res = await fetch("/upload", {
-    method:"POST",
-    body:form
-  });
+  const res=await fetch("/upload",{method:"POST",body:form});
+  const data=await res.json();
 
-  const data = await res.json();
-
-  if(!data.success){
-    throw new Error("Upload failed");
-  }
+  if(!data.success) throw new Error("Upload failed");
 
   return data.path;
 }
 
 async function analyzePhoto(){
-  if(!session){
-    alert("Start visit first");
-    return;
-  }
+  if(!session) return alert("Start visit first");
 
   try{
-    setStatus("Uploading...");
-    currentPhotoPath = await uploadPhoto();
+    showLoader();
 
-    setStatus("AI thinking...");
+    currentPhotoPath=await uploadPhoto();
 
-    const res = await fetch("/analyze-image",{
+    const res=await fetch("/analyze-image",{
       method:"POST",
-      headers:{ "Content-Type":"application/json" },
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
-        imageUrl: window.location.origin + currentPhotoPath
+        imageUrl:window.location.origin+currentPhotoPath
       })
     });
 
-    const data = await res.json();
+    const data=await res.json();
 
-    if(!data.success){
-      throw new Error(data.message);
-    }
+    if(!data.success) throw new Error(data.message);
 
-    itemName.value = data.title || "";
-    itemDescription.value = data.description || "";
-    itemCategory.value = data.category || "";
-    itemCondition.value = data.condition || "";
+    itemName.value=data.title;
+    itemDescription.value=data.description;
+    itemCategory.value=data.category;
+    itemCondition.value=data.condition;
 
-    setStatus("AI filled fields");
   }catch(err){
-    setStatus("AI failed");
+    alert("AI failed: "+err.message);
+  }finally{
+    hideLoader();
   }
 }
 
 async function addItem(){
-  if(!session){
-    alert("Start visit first");
-    return;
-  }
+  if(!session) return alert("Start visit first");
 
-  let name = itemName.value.trim();
-  if(!name){
-    alert("Enter item name");
-    return;
-  }
+  let name=itemName.value.trim();
+  if(!name) return alert("Enter name");
 
   if(!currentPhotoPath){
-    currentPhotoPath = await uploadPhoto();
+    currentPhotoPath=await uploadPhoto();
   }
 
-  const month = "ABCDEFGHIJKL"[new Date().getMonth()];
-  const lotRes = await fetch(`/next-lot-code?month=${month}`);
-  const lotData = await lotRes.json();
+  const month="ABCDEFGHIJKL"[new Date().getMonth()];
+  const lotRes=await fetch(`/next-lot-code?month=${month}`);
+  const lotData=await lotRes.json();
 
-  const lotCode = lotData.lotCode;
+  const lotCode=lotData.lotCode;
 
-  await fetch("/addItems",{
+  const res=await fetch("/addItems",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       items:[{
         title:name,
-        description:itemDescription.value,
-        category:itemCategory.value,
-        condition:itemCondition.value,
         consignerFirstName:session.first,
         consignerLastName:session.last,
         consignerCode:session.code,
@@ -323,30 +271,25 @@ async function addItem(){
     })
   });
 
-  items.push({ name, lotCode });
+  const result=await res.json();
+  if(!result.success) return alert("Save failed");
+
+  items.push({name,lotCode});
 
   renderLabels();
 
   itemName.value="";
-  itemDescription.value="";
-  itemCategory.value="";
-  itemCondition.value="";
   photo.value="";
   currentPhotoPath=null;
-
-  setStatus("Item added");
 }
 
 function renderLabels(){
-  const container = document.getElementById("labels");
-
-  container.innerHTML = items.map(i=>`
+  labels.innerHTML=items.map(i=>`
     <div class="label">
       <canvas id="qr-${i.lotCode}" class="qr"></canvas>
       <div>
         <strong>${i.name}</strong><br>
-        ${i.lotCode}<br>
-        ${session.code}
+        ${i.lotCode}
       </div>
     </div>
   `).join("");
@@ -359,24 +302,17 @@ function renderLabels(){
   });
 }
 
-function endVisit(){
-  if(!items.length){
-    alert("No items");
-    return;
-  }
+async function endVisit(){
+  if(!items.length) return alert("No items");
 
-  if(confirm("Print labels now?")){
-    buildPrint();
-    window.print();
+  if(confirm("Print labels?")){
+    await buildPrint();
+    setTimeout(()=>window.print(),500);
   }
-
-  location.reload();
 }
 
-function buildPrint(){
-  const sheet = document.getElementById("printSheet");
-
-  sheet.innerHTML = `
+async function buildPrint(){
+  printSheet.innerHTML=`
     <div class="sheet">
       ${items.map(i=>`
         <div class="print-label">
@@ -384,20 +320,19 @@ function buildPrint(){
           <div class="print-text">
             <strong>${i.name}</strong>
             ${i.lotCode}<br>
-            ${session.code}<br>
-            ${session.date}
+            ${session.code}
           </div>
         </div>
       `).join("")}
     </div>
   `;
 
-  items.forEach(i=>{
-    QRCode.toCanvas(
+  for(const i of items){
+    await QRCode.toCanvas(
       document.getElementById(`pqr-${i.lotCode}`),
       i.lotCode
     );
-  });
+  }
 }
 </script>
 
