@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scanner</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0b1b2b;
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+#reader {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+}
+
+.item {
+  margin-top: 20px;
+  background: #132a3a;
+  padding: 15px;
+  border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2 onclick="goHome()" style="cursor:pointer;">Auction Legacy</h2>
+
+<div id="reader"></div>
+
+<div id="result"></div>
+
+<script>
+function goHome() {
+  window.location.href = "/dashboard.html";
+}
+
+function onScanSuccess(decodedText) {
+  loadItem(decodedText);
+}
+
+async function loadItem(lotCode) {
+  const res = await fetch(`/items/by-lot/${lotCode}`);
+  const item = await res.json();
+
+  if (!item) {
+    document.getElementById("result").innerHTML = "Item not found";
+    return;
+  }
+
+  document.getElementById("result").innerHTML = `
+    <div class="item">
+      <h3>${item.name}</h3>
+      <p>Lot: ${item.lotNumber}</p>
+      <p>Stage: ${item.stage}</p>
+
+      <button onclick="moveStage('${item.id}', 'Review & Cleaning')">
+        Send to Review
+      </button>
+    </div>
+  `;
+}
+
+async function moveStage(id, stage) {
+  await fetch(`/items/${id}/stage`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      stage,
+      employee: JSON.parse(localStorage.getItem("user")).name
+    })
+  });
+
+  alert("Moved!");
+}
+
+new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 })
+  .render(onScanSuccess);
+</script>
+
+</body>
+</html>
