@@ -93,6 +93,39 @@
   display: none;
   border: 1px solid #a7f3d0;
 }
+.repair-banner {
+  background: #fff7ed;
+  border: 2px solid #f97316;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: none;
+}
+.repair-banner-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #c2410c;
+  margin-bottom: 4px;
+}
+.repair-banner-note {
+  font-size: 13px;
+  color: #9a3412;
+  line-height: 1.4;
+}
+.btn-orange {
+  width: 100%;
+  background: #f97316;
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background 0.15s;
+}
+.btn-orange:hover { background: #ea6c0a; }
 
 /* Tablet: photo + info side by side */
 @media (min-width: 600px) {
@@ -126,6 +159,12 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
+
+  <!-- REPAIR BANNER -->
+  <div class="repair-banner" id="repairBanner">
+    <div class="repair-banner-title">⚠️ Needs Repair</div>
+    <div class="repair-banner-note" id="repairBannerNote"></div>
+  </div>
 
   <div class="item-top-row">
 
@@ -190,6 +229,14 @@
     <div id="nextStageName" style="font-size:15px;color:#6b7280;margin-bottom:12px;"></div>
     <button class="btn-green" onclick="advanceStage()">Advance Stage →</button>
     <div id="stageMsg" class="success-msg">✅ Stage updated</div>
+  </div>
+
+  <!-- REPAIR FLAG -->
+  <div class="card">
+    <h3 id="repairCardTitle" style="margin-bottom:8px;">Flag for Repair</h3>
+    <textarea id="repairNoteInput" placeholder="Describe what needs to be repaired or addressed..." rows="3" style="width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;margin-top:4px;"></textarea>
+    <button class="btn-orange" id="repairFlagBtn" onclick="toggleRepairFlag()">⚠️ Flag for Repair</button>
+    <div id="repairMsg" class="success-msg">✅ Repair flag updated</div>
   </div>
 
   <!-- ADMIN: DELETE ITEM -->
@@ -290,6 +337,24 @@ function render() {
   if (item.location)   document.getElementById('locationInput').value = item.location;
   if (item.dimensions) document.getElementById('dimInput').value = item.dimensions;
   if (item.condition)  document.getElementById('conditionSelect').value = item.condition;
+
+  // Repair banner
+  const banner = document.getElementById('repairBanner');
+  const repairBtn = document.getElementById('repairFlagBtn');
+  const repairTitle = document.getElementById('repairCardTitle');
+  if (item.needsRepair) {
+    banner.style.display = 'block';
+    document.getElementById('repairBannerNote').innerText = item.repairNote || 'No details provided.';
+    document.getElementById('repairNoteInput').value = item.repairNote || '';
+    repairBtn.style.background = '#6b7280';
+    repairBtn.innerText = 'Clear Repair Flag';
+    repairTitle.innerText = 'Needs Repair';
+  } else {
+    banner.style.display = 'none';
+    repairBtn.innerText = '⚠️ Flag for Repair';
+    repairBtn.style.background = '';
+    repairTitle.innerText = 'Flag for Repair';
+  }
 
   // Stage advance
   const stageOrder = ['Initial Visit','Received at Studio','Review & Cleaning','Photograph','Ready to Prep','Ready for Pick Up','Picked Up'];
@@ -470,6 +535,10 @@ async function advanceStage() {
   if (idx === -1 || idx >= stageOrder.length - 1) return;
   const nextStage = stageOrder[idx + 1];
 
+  if (item.needsRepair) {
+    if (!confirm('⚠️ This item is flagged for repair.\n\n' + (item.repairNote || '') + '\n\nAdvance the stage anyway?')) return;
+  }
+
   const btn = document.querySelector('[onclick="advanceStage()"]');
   btn.disabled = true;
 
@@ -492,6 +561,36 @@ async function advanceStage() {
     }
   } catch (err) {
     alert('Failed to advance stage');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// =========================
+// REPAIR FLAG
+// =========================
+async function toggleRepairFlag() {
+  const flagging = !item.needsRepair;
+  const note = document.getElementById('repairNoteInput').value.trim();
+  const btn = document.getElementById('repairFlagBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/items/${item.id}/repair-flag`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ flagged: flagging, note, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      render();
+      const msg = document.getElementById('repairMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      renderHistory();
+    }
+  } catch (err) {
+    alert('Failed to update repair flag');
   } finally {
     btn.disabled = false;
   }

@@ -496,6 +496,26 @@ app.post('/items/:id/scan', (req, res) => {
 });
 
 // =========================
+// REPAIR FLAG
+// =========================
+app.post('/items/:id/repair-flag', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const { flagged, note, employee } = req.body;
+  item.needsRepair = !!flagged;
+  item.repairNote  = flagged ? (note || '') : '';
+  addLog(item, {
+    employee: employee || 'system',
+    action: flagged ? 'flagged for repair' : 'repair flag cleared',
+    note: item.repairNote || null
+  });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
 // SAVE LOCATION
 // =========================
 app.post('/items/:id/location', (req, res) => {

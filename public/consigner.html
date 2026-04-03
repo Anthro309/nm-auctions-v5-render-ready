@@ -71,12 +71,15 @@ async function load() {
     if (i.stage === 'Missing at Drop Off') badge = `<span class="badge red">Missing</span>`;
     if (i.stage === 'Picked Up')           badge = `<span class="badge gold">Picked Up</span>`;
 
+    const repairBadge = i.needsRepair
+      ? `<span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #f97316;margin-left:6px;">⚠️ Needs Repair</span>`
+      : '';
     div.innerHTML = `
       ${i.photos?.[0] ? `<img src="${i.photos[0]}" alt="${i.name}">` : '<div style="height:160px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px;">No Image</div>'}
       <div style="padding:14px;">
         <div class="title">${i.name || 'Unnamed'}</div>
         <div class="label">${i.lotNumber || (i.code + '-' + i.number)}</div>
-        ${badge}
+        ${badge}${repairBadge}
       </div>
     `;
 
