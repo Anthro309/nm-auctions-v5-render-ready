@@ -3,107 +3,363 @@
 <head>
   <meta charset="UTF-8" />
   <title>Auction Legacy</title>
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1b2b" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body style="background:#0b1b2b;display:flex;justify-content:center;align-items:center;min-height:100vh;">
-  <div style="width:100%;max-width:380px;padding:20px;box-sizing:border-box;">
-    <div style="text-align:center;margin-bottom:24px;color:white;">
-      <div style="font-size:28px;font-weight:800;letter-spacing:0.06em;">Auction Legacy</div>
-      <div style="font-size:13px;opacity:0.75;margin-top:6px;">Studio Operations</div>
-    </div>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <div class="card">
-      <h2 style="margin-bottom:12px;">Sign In</h2>
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      background: #0b1b2b;
+      display: flex;
+      align-items: stretch;
+    }
+
+    /* ── LEFT BRAND PANEL ── */
+    .brand-panel {
+      display: none;
+      flex: 1;
+      background: linear-gradient(155deg, #0b1b2b 0%, #102a48 50%, #0e2040 100%);
+      align-items: center;
+      justify-content: center;
+      padding: 60px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+    }
+
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 70%);
+      bottom: -50px;
+      left: -50px;
+    }
+
+    .brand-content {
+      position: relative;
+      z-index: 1;
+      color: white;
+    }
+
+    .brand-monogram {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: white;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(37,99,235,0.4);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-name {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .brand-tagline {
+      font-size: 16px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.6;
+      max-width: 300px;
+    }
+
+    .brand-dots {
+      display: flex;
+      gap: 8px;
+      margin-top: 48px;
+    }
+
+    .brand-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+    }
+    .brand-dot:first-child { background: #2563eb; width: 22px; border-radius: 3px; }
+
+    @media (min-width: 700px) {
+      .brand-panel { display: flex; }
+    }
+
+    /* ── RIGHT LOGIN PANEL ── */
+    .login-panel {
+      width: 100%;
+      max-width: 100%;
+      background: #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      min-height: 100vh;
+    }
+
+    @media (min-width: 700px) {
+      .login-panel {
+        width: 420px;
+        flex-shrink: 0;
+        max-width: 420px;
+        padding: 48px 40px;
+      }
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    /* Mobile logo (hidden on desktop where side panel shows) */
+    .mobile-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .mobile-logo-mark {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+    }
+
+    .mobile-logo-text {
+      font-size: 22px;
+      font-weight: 900;
+      color: #0b1b2b;
+      letter-spacing: -0.01em;
+    }
+
+    @media (min-width: 700px) {
+      .mobile-logo { display: none; }
+    }
+
+    .login-heading {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0b1b2b;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .login-subheading {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 32px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      margin-top: 18px;
+    }
+
+    .field-label:first-of-type { margin-top: 0; }
+
+    input {
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      font-size: 16px;
+      background: white;
+      color: #111827;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+    }
+
+    input::placeholder { color: #c4cdd8; }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 28px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.01em;
+      transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+    }
+
+    button:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(37,99,235,0.35);
+    }
+
+    button:active { transform: translateY(0); }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #error {
+      color: #b91c1c;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 14px;
+      min-height: 18px;
+      background: #fef2f2;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: none;
+      border: 1px solid #fecaca;
+    }
+
+    .login-footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #9ca3af;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT: Brand panel (tablet/desktop only) -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-monogram">AL</div>
+      <div class="brand-name">Auction<br>Legacy</div>
+      <div class="brand-tagline">Studio operations platform for consignment intake, photography, and workflow.</div>
+      <div class="brand-dots">
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Login panel -->
+  <div class="login-panel">
+    <div class="login-box">
+
+      <div class="mobile-logo">
+        <div class="mobile-logo-mark">AL</div>
+        <div class="mobile-logo-text">Auction Legacy</div>
+      </div>
+
+      <div class="login-heading">Welcome back</div>
+      <div class="login-subheading">Sign in to continue to Studio Operations</div>
 
       <form id="loginForm" novalidate>
-        <input id="name" name="name" placeholder="Name" autocomplete="username" />
-        <input id="pin" name="pin" placeholder="PIN" type="password" inputmode="numeric" autocomplete="current-password" />
-        <button id="loginBtn" type="submit" style="width:100%;">Login</button>
+        <label class="field-label" for="name">Name</label>
+        <input id="name" name="name" placeholder="Your name" autocomplete="username" />
+
+        <label class="field-label" for="pin">PIN</label>
+        <input id="pin" name="pin" placeholder="••••" type="password" inputmode="numeric" autocomplete="current-password" />
+
+        <button id="loginBtn" type="submit">Sign In</button>
       </form>
 
-      <p id="error" style="color:#b91c1c;font-size:12px;margin-top:12px;min-height:16px;"></p>
+      <div id="error"></div>
+
+      <div class="login-footer">Auction Legacy · Studio Operations</div>
     </div>
   </div>
 
   <script>
-    const loginForm = document.getElementById("loginForm");
-    const nameInput = document.getElementById("name");
-    const pinInput = document.getElementById("pin");
-    const loginBtn = document.getElementById("loginBtn");
-    const errorEl = document.getElementById("error");
+    const loginForm = document.getElementById('loginForm');
+    const nameInput = document.getElementById('name');
+    const pinInput  = document.getElementById('pin');
+    const loginBtn  = document.getElementById('loginBtn');
+    const errorEl   = document.getElementById('error');
 
-    function setError(message) {
-      errorEl.textContent = message || "";
+    function setError(msg) {
+      if (msg) {
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+      } else {
+        errorEl.style.display = 'none';
+      }
     }
 
-    function setLoading(isLoading) {
-      loginBtn.disabled = isLoading;
-      loginBtn.textContent = isLoading ? "Signing In..." : "Login";
+    function setLoading(on) {
+      loginBtn.disabled = on;
+      loginBtn.textContent = on ? 'Signing in...' : 'Sign In';
     }
 
     async function login() {
       const name = nameInput.value.trim();
-      const pin = pinInput.value.trim();
-
-      setError("");
-
-      if (!name || !pin) {
-        setError("Enter your name and PIN.");
-        return;
-      }
-
+      const pin  = pinInput.value.trim();
+      setError('');
+      if (!name || !pin) { setError('Enter your name and PIN.'); return; }
       try {
         setLoading(true);
-
-        const res = await fetch("/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+        const res  = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, pin })
         });
-
         let data = null;
-        try {
-          data = await res.json();
-        } catch (jsonErr) {
-          throw new Error("Server returned an invalid response.");
-        }
-
-        if (!res.ok || !data.success) {
-          setError(data?.message || "Invalid login");
-          setLoading(false);
-          return;
-        }
-
-        localStorage.setItem("user", JSON.stringify(data.user));
-        window.location.href = "/dashboard.html";
+        try { data = await res.json(); } catch { throw new Error('Server returned an invalid response.'); }
+        if (!res.ok || !data.success) { setError(data?.message || 'Invalid name or PIN'); setLoading(false); return; }
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/dashboard.html';
       } catch (err) {
-        console.error("Login error:", err);
-        setError(err.message || "Unable to sign in right now.");
+        setError(err.message || 'Unable to sign in right now.');
         setLoading(false);
       }
     }
 
-    loginForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      login();
-    });
+    loginForm.addEventListener('submit', e => { e.preventDefault(); login(); });
 
-    // Optional PWA registration, but safer
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", async () => {
-        try {
-          await navigator.serviceWorker.register("/service-worker.js");
-        } catch (err) {
-          console.warn("Service worker registration failed:", err);
-        }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try { await navigator.serviceWorker.register('/service-worker.js'); } catch {}
       });
     }
   </script>
