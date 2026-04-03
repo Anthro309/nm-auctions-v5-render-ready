@@ -46,7 +46,6 @@ button.secondary {
   background:#16a34a;
 }
 
-/* LOADER */
 .loader {
   margin-top:10px;
   height:6px;
@@ -69,6 +68,15 @@ button.secondary {
   100% { width:0% }
 }
 
+.status {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #081421;
+  color: #dbeafe;
+  font-size: 14px;
+}
+
 .label {
   background:white;
   color:black;
@@ -85,7 +93,6 @@ button.secondary {
   height:85px;
 }
 
-/* PRINT */
 #printSheet { display:none; }
 
 @media print {
@@ -125,6 +132,7 @@ button.secondary {
   .print-text {
     font-size:10px;
     color:black;
+    line-height: 1.1;
   }
 }
 </style>
@@ -137,7 +145,7 @@ button.secondary {
   <input id="firstInput" placeholder="First Name">
   <input id="lastInput" placeholder="Last Name">
   <button onclick="startVisit()">Start Visit</button>
-  <div id="codeDisplay"></div>
+  <div id="codeDisplay" class="status" style="display:none;"></div>
 </div>
 
 <div id="itemSection" class="card" style="display:none;">
@@ -157,156 +165,234 @@ button.secondary {
   <button onclick="analyzePhoto()">Analyze Photo with AI</button>
   <button onclick="addItem()">Add Item</button>
   <button class="secondary" onclick="endVisit()">End Visit & Print Labels</button>
+
+  <div id="statusBox" class="status">Ready.</div>
 </div>
 
 <div id="labels"></div>
 <div id="printSheet"></div>
 
 <script>
-let session=null;
-let items=[];
-let currentPhotoPath=null;
+let session = null;
+let items = [];
+let currentPhotoPath = null;
 
-function startVisit(){
-  const first=document.getElementById("firstInput").value.trim();
-  const last=document.getElementById("lastInput").value.trim();
+function setStatus(message) {
+  const box = document.getElementById('statusBox');
+  if (box) box.innerText = message;
+}
 
-  if(!first||!last) return alert("Enter name");
+function showLoader() {
+  document.getElementById('loader').style.display = 'block';
+}
 
-  session={
+function hideLoader() {
+  document.getElementById('loader').style.display = 'none';
+}
+
+function safeFilenameRequired() {
+  const file = document.getElementById('photo').files[0];
+  return !!file;
+}
+
+async function safeJson(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Server returned invalid response');
+  }
+}
+
+function startVisit() {
+  const first = document.getElementById('firstInput').value.trim();
+  const last = document.getElementById('lastInput').value.trim();
+
+  if (!first || !last) {
+    alert('Enter name');
+    return;
+  }
+
+  session = {
     first,
     last,
-    code:(first.slice(0,3)+last.slice(0,3)).toUpperCase(),
-    date:new Date().toLocaleDateString()
+    code: (first.slice(0, 3) + last.slice(0, 3)).toUpperCase(),
+    date: new Date().toLocaleDateString()
   };
 
-  document.getElementById("codeDisplay").innerText="Code: "+session.code;
-  document.getElementById("itemSection").style.display="block";
+  const codeDisplay = document.getElementById('codeDisplay');
+  codeDisplay.style.display = 'block';
+  codeDisplay.innerText = 'Code: ' + session.code;
+  document.getElementById('itemSection').style.display = 'block';
+  setStatus('Visit started.');
 }
 
-function showLoader(){
-  document.getElementById("loader").style.display="block";
-}
+async function uploadPhoto() {
+  const file = document.getElementById('photo').files[0];
+  if (!file) return null;
 
-function hideLoader(){
-  document.getElementById("loader").style.display="none";
-}
+  const form = new FormData();
+  form.append('photo', file);
 
-async function uploadPhoto(){
-  const file=document.getElementById("photo").files[0];
-  if(!file) return null;
+  const res = await fetch('/upload', {
+    method: 'POST',
+    body: form
+  });
 
-  const form=new FormData();
-  form.append("photo",file);
+  const data = await safeJson(res);
 
-  const res=await fetch("/upload",{method:"POST",body:form});
-  const data=await res.json();
-
-  if(!data.success) throw new Error("Upload failed");
+  if (!data.success) {
+    throw new Error(data.message || 'Upload failed');
+  }
 
   return data.path;
 }
 
-async function analyzePhoto(){
-  if(!session) return alert("Start visit first");
+async function analyzePhoto() {
+  if (!session) {
+    alert('Start visit first');
+    return;
+  }
 
-  try{
+  if (!safeFilenameRequired()) {
+    alert('Choose or take a photo first');
+    return;
+  }
+
+  try {
     showLoader();
+    setStatus('Uploading photo...');
+    currentPhotoPath = await uploadPhoto();
 
-    const file=document.getElementById("photo").files[0];
-    if(!file) throw new Error("No photo selected");
-
-    currentPhotoPath=await uploadPhoto();
-
-    const res=await fetch("/analyze-image",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        imageUrl:window.location.origin+currentPhotoPath
+    setStatus('Analyzing photo...');
+    const res = await fetch('/analyze-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl: window.location.origin + currentPhotoPath
       })
     });
 
-    const data=await res.json();
+    const data = await safeJson(res);
 
-    document.getElementById("itemName").value=data.title||"";
-    document.getElementById("itemDescription").value=data.description||"";
-    document.getElementById("itemCategory").value=data.category||"";
-    document.getElementById("itemCondition").value=data.condition||"";
+    if (!data.success) {
+      throw new Error(data.message || 'AI failed');
+    }
 
-  }catch(err){
-    alert("AI failed: "+err.message);
-  }finally{
+    document.getElementById('itemName').value = data.title || '';
+    document.getElementById('itemDescription').value = data.description || '';
+    document.getElementById('itemCategory').value = data.category || '';
+    document.getElementById('itemCondition').value = data.condition || '';
+
+    setStatus('AI filled item details.');
+  } catch (err) {
+    setStatus('AI failed: ' + err.message);
+    alert('AI failed: ' + err.message);
+  } finally {
     hideLoader();
   }
 }
 
-async function addItem(){
-  if(!session) return alert("Start visit first");
-
-  let name=document.getElementById("itemName").value.trim();
-  if(!name) return alert("Enter name");
-
-  if(!currentPhotoPath){
-    currentPhotoPath=await uploadPhoto();
+async function addItem() {
+  if (!session) {
+    alert('Start visit first');
+    return;
   }
 
-  const month="ABCDEFGHIJKL"[new Date().getMonth()];
-  const lotRes=await fetch(`/next-lot-code?month=${month}`);
-  const lotData=await lotRes.json();
+  const name = document.getElementById('itemName').value.trim();
+  const description = document.getElementById('itemDescription').value.trim();
+  const category = document.getElementById('itemCategory').value.trim();
+  const condition = document.getElementById('itemCondition').value.trim();
 
-  const lotCode=lotData.lotCode;
+  if (!name) {
+    alert('Enter name');
+    return;
+  }
 
-  const res=await fetch("/addItems",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      items:[{
-        title:name,
-        description:document.getElementById("itemDescription").value,
-        category:document.getElementById("itemCategory").value,
-        condition:document.getElementById("itemCondition").value,
-        consignerFirstName:session.first,
-        consignerLastName:session.last,
-        consignerCode:session.code,
-        lotCode,
-        photo:currentPhotoPath,
-        createdBy:"Fabian"
-      }]
-    })
-  });
+  try {
+    showLoader();
+    setStatus('Preparing item...');
 
-  const result=await res.json();
-  if(!result.success) return alert("Save failed");
+    if (!currentPhotoPath && safeFilenameRequired()) {
+      currentPhotoPath = await uploadPhoto();
+    }
 
-  items.push({
-    name,
-    lotCode
-  });
+    const month = 'ABCDEFGHIJKL'[new Date().getMonth()];
+    const lotRes = await fetch(`/next-lot-code?month=${month}`);
+    const lotData = await safeJson(lotRes);
 
-  renderLabels();
+    if (!lotData.success || !lotData.lotCode) {
+      throw new Error('Could not get lot code');
+    }
 
-  document.getElementById("itemName").value="";
-  document.getElementById("itemDescription").value="";
-  document.getElementById("itemCategory").value="";
-  document.getElementById("itemCondition").value="";
-  document.getElementById("photo").value="";
-  currentPhotoPath=null;
+    const lotCode = lotData.lotCode;
+
+    const res = await fetch('/addItems', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{
+          title: name,
+          description,
+          category,
+          condition,
+          consignerFirstName: session.first,
+          consignerLastName: session.last,
+          consignerCode: session.code,
+          lotCode,
+          photo: currentPhotoPath,
+          createdBy: 'Fabian'
+        }]
+      })
+    });
+
+    const result = await safeJson(res);
+
+    if (!result.success) {
+      throw new Error(result.message || 'Save failed');
+    }
+
+    items.push({
+      name,
+      description,
+      category,
+      condition,
+      lotCode
+    });
+
+    renderLabels();
+
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemDescription').value = '';
+    document.getElementById('itemCategory').value = '';
+    document.getElementById('itemCondition').value = '';
+    document.getElementById('photo').value = '';
+    currentPhotoPath = null;
+
+    setStatus('Item added.');
+  } catch (err) {
+    setStatus('Add item failed: ' + err.message);
+    alert('Add item failed: ' + err.message);
+  } finally {
+    hideLoader();
+  }
 }
 
-function renderLabels(){
-  const container=document.getElementById("labels");
+function renderLabels() {
+  const container = document.getElementById('labels');
 
-  container.innerHTML=items.map(i=>`
+  container.innerHTML = items.map(i => `
     <div class="label">
       <canvas id="qr-${i.lotCode}" class="qr"></canvas>
       <div>
-        <strong>${i.name}</strong><br>
-        ${i.lotCode}
+        <strong>${escapeHtml(i.name)}</strong><br>
+        ${escapeHtml(i.lotCode)}<br>
+        ${escapeHtml(session.code)}
       </div>
     </div>
-  `).join("");
+  `).join('');
 
-  items.forEach(i=>{
+  items.forEach(i => {
     QRCode.toCanvas(
       document.getElementById(`qr-${i.lotCode}`),
       i.lotCode
@@ -314,43 +400,56 @@ function renderLabels(){
   });
 }
 
-async function endVisit(){
-  if(!items.length) return alert("No items");
+async function endVisit() {
+  if (!items.length) {
+    alert('No items');
+    return;
+  }
 
-  if(confirm("Print labels?")){
+  if (confirm('Print labels?')) {
     await buildPrint();
-
-    // 🔥 CRITICAL FIX (ensures QR renders before print)
-    setTimeout(()=>{
+    setTimeout(() => {
       window.print();
-    },700);
+    }, 700);
   }
 }
 
-async function buildPrint(){
-  const sheet=document.getElementById("printSheet");
+async function buildPrint() {
+  const sheet = document.getElementById('printSheet');
 
-  sheet.innerHTML=`
+  sheet.innerHTML = `
     <div class="sheet">
-      ${items.map(i=>`
+      ${items.map(i => `
         <div class="print-label">
           <canvas id="pqr-${i.lotCode}" class="print-qr"></canvas>
           <div class="print-text">
-            <strong>${i.name}</strong>
-            ${i.lotCode}<br>
-            ${session.code}
+            <strong>${escapeHtml(i.name)}</strong>
+            ${escapeHtml(i.lotCode)}<br>
+            ${escapeHtml(session.code)}<br>
+            ${escapeHtml(session.date)}
           </div>
         </div>
-      `).join("")}
+      `).join('')}
     </div>
   `;
 
-  for(const i of items){
+  for (const i of items) {
     await QRCode.toCanvas(
       document.getElementById(`pqr-${i.lotCode}`),
       i.lotCode
     );
   }
+
+  setStatus('Labels ready to print.');
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 </script>
 
