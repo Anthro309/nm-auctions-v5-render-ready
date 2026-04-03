@@ -8,123 +8,105 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
   background: #0b1b2b;
   color: white;
+  padding: 15px;
 }
 
-/* NAVBAR */
-.navbar {
-  height: 70px;
-  background: #0b1b2b;
+/* HEADER */
+.header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 15px;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.nav-left { font-size: 26px; cursor: pointer; }
-.nav-center { font-size: 20px; font-weight: bold; cursor: pointer; }
-.nav-right { cursor: pointer; }
-
-/* SIDEBAR */
-.sidebar {
-  position: fixed;
-  left: -260px;
-  top: 0;
-  width: 250px;
-  height: 100%;
-  background: #13283b;
-  padding: 20px;
-  transition: 0.25s ease;
-  z-index: 1000;
+.header h1 {
+  font-size: 22px;
+  cursor: pointer;
 }
 
-.sidebar.open { left: 0; }
-
-.sidebar a {
-  display: block;
-  color: white;
-  text-decoration: none;
-  margin: 15px 0;
-}
-
-/* OVERLAY */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: none;
-  z-index: 999;
-}
-
-.overlay.show { display: block; }
-
-/* CONTENT */
-.container { padding: 15px; }
-
+/* CARD */
 .card {
   background: #13283b;
-  padding: 15px;
-  border-radius: 15px;
-  margin-bottom: 15px;
+  padding: 18px;
+  border-radius: 18px;
+  margin-bottom: 18px;
 }
 
+/* INPUTS */
 input, textarea {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-top: 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
+  font-size: 14px;
 }
 
+/* BUTTON */
 button {
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: 10px;
+  margin-top: 12px;
+  padding: 14px;
   border: none;
+  border-radius: 12px;
   background: #2563eb;
   color: white;
   font-weight: bold;
   width: 100%;
+  font-size: 15px;
 }
 
-button.secondary { background: #16a34a; }
+button.secondary {
+  background: #16a34a;
+}
 
-.hidden { display: none; }
-
+/* STATUS */
 .status {
   background: #081421;
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 
 /* LABEL PREVIEW */
 .label {
   background: white;
   color: black;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 14px;
+  padding: 12px;
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 12px;
+  align-items: center;
 }
 
 .qr {
-  width: 80px;
-  height: 80px;
+  width: 85px;
+  height: 85px;
 }
 
-/* PRINT (AVERY 5160) */
+.hidden {
+  display: none;
+}
+
+/* PRINT */
 #printSheet { display:none; }
 
 @media print {
   body * { visibility:hidden; }
 
-  #printSheet, #printSheet * { visibility:visible; }
+  #printSheet, #printSheet * {
+    visibility:visible;
+  }
 
   #printSheet {
     position:absolute;
@@ -142,9 +124,9 @@ button.secondary { background: #16a34a; }
 
   .print-label {
     display:flex;
-    gap:5px;
-    padding:4px;
+    gap:6px;
     align-items:center;
+    padding:4px;
   }
 
   .print-qr {
@@ -163,42 +145,32 @@ button.secondary { background: #16a34a; }
 
 <body>
 
-<div class="navbar">
-  <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center" onclick="goHome()">Auction Legacy</div>
-  <div class="nav-right" onclick="logout()">Logout</div>
+<div class="header">
+  <h1 onclick="goHome()">Auction Legacy</h1>
+  <div onclick="logout()">Logout</div>
 </div>
-
-<div id="sidebar" class="sidebar">
-  <h3>Menu</h3>
-  <a href="/dashboard.html">Dashboard</a>
-  <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/scanner.html">Scanner</a>
-</div>
-
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
-
-<div class="container">
 
 <div id="status" class="status">Ready.</div>
 
+<!-- START VISIT -->
 <div class="card">
   <h2>Initial Visit</h2>
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
   <button onclick="startVisit()">Start Visit</button>
-  <div id="codeDisplay"></div>
+  <div id="codeDisplay" style="margin-top:10px;font-weight:bold;"></div>
 </div>
 
+<!-- ADD ITEM -->
 <div id="itemSection" class="card hidden">
   <h2>Add Item</h2>
 
   <input id="itemName" placeholder="Item Name">
-  <textarea id="itemDescription" placeholder="Description"></textarea>
+  <textarea id="itemDescription" placeholder="Quick description"></textarea>
   <input id="itemCategory" placeholder="Category">
   <input id="itemCondition" placeholder="Condition">
 
-  <!-- CAMERA ENABLED -->
+  <!-- CAMERA FIX -->
   <input type="file" id="photo" accept="image/*" capture="environment">
 
   <button onclick="analyzePhoto()">Analyze Photo with AI</button>
@@ -206,29 +178,33 @@ button.secondary { background: #16a34a; }
   <button class="secondary" onclick="endVisit()">End Visit & Print Labels</button>
 </div>
 
+<!-- LABELS -->
 <div id="labels"></div>
-<div id="printSheet"></div>
 
-</div>
+<!-- PRINT -->
+<div id="printSheet"></div>
 
 <script>
 let session = null;
 let items = [];
 let currentPhotoPath = null;
 
-function setStatus(msg){ document.getElementById("status").innerText = msg; }
+function setStatus(msg){
+  document.getElementById("status").innerText = msg;
+}
 
-function goHome(){ window.location.href="/dashboard.html"; }
-function logout(){ localStorage.removeItem("user"); window.location.href="/"; }
+function goHome(){
+  window.location.href = "/dashboard.html";
+}
 
-function toggleMenu(){
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
 }
 
 function startVisit(){
-  const first = firstInput.value.trim();
-  const last = lastInput.value.trim();
+  const first = document.getElementById("first").value.trim();
+  const last = document.getElementById("last").value.trim();
 
   if(!first || !last){
     alert("Enter name");
@@ -242,60 +218,81 @@ function startVisit(){
     date:new Date().toLocaleDateString()
   };
 
-  codeDisplay.innerText = "Code: "+session.code;
-  itemSection.classList.remove("hidden");
+  document.getElementById("codeDisplay").innerText = "Code: " + session.code;
+  document.getElementById("itemSection").classList.remove("hidden");
+
   setStatus("Visit started");
 }
 
 async function uploadPhoto(){
-  const file = photo.files[0];
+  const file = document.getElementById("photo").files[0];
   if(!file) return null;
 
   const form = new FormData();
   form.append("photo", file);
 
-  const res = await fetch("/upload",{method:"POST",body:form});
+  const res = await fetch("/upload", {
+    method:"POST",
+    body:form
+  });
+
   const data = await res.json();
 
-  if(!data.success) throw new Error("Upload failed");
+  if(!data.success){
+    throw new Error("Upload failed");
+  }
 
   return data.path;
 }
 
 async function analyzePhoto(){
-  if(!session) return alert("Start visit first");
+  if(!session){
+    alert("Start visit first");
+    return;
+  }
 
   try{
+    setStatus("Uploading...");
     currentPhotoPath = await uploadPhoto();
+
+    setStatus("AI thinking...");
 
     const res = await fetch("/analyze-image",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers:{ "Content-Type":"application/json" },
       body:JSON.stringify({
-        imageUrl:window.location.origin+currentPhotoPath
+        imageUrl: window.location.origin + currentPhotoPath
       })
     });
 
     const data = await res.json();
 
-    if(!data.success) throw new Error(data.message);
+    if(!data.success){
+      throw new Error(data.message);
+    }
 
-    itemName.value = data.title;
-    itemDescription.value = data.description;
-    itemCategory.value = data.category;
-    itemCondition.value = data.condition;
+    itemName.value = data.title || "";
+    itemDescription.value = data.description || "";
+    itemCategory.value = data.category || "";
+    itemCondition.value = data.condition || "";
 
-    setStatus("AI filled item details");
+    setStatus("AI filled fields");
   }catch(err){
-    alert("AI failed");
+    setStatus("AI failed");
   }
 }
 
 async function addItem(){
-  if(!session) return alert("Start visit first");
+  if(!session){
+    alert("Start visit first");
+    return;
+  }
 
-  const name = itemName.value.trim();
-  if(!name) return alert("Enter item name");
+  let name = itemName.value.trim();
+  if(!name){
+    alert("Enter item name");
+    return;
+  }
 
   if(!currentPhotoPath){
     currentPhotoPath = await uploadPhoto();
@@ -309,7 +306,7 @@ async function addItem(){
 
   await fetch("/addItems",{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
       items:[{
         title:name,
@@ -326,7 +323,7 @@ async function addItem(){
     })
   });
 
-  items.push({name,lotCode});
+  items.push({ name, lotCode });
 
   renderLabels();
 
@@ -336,10 +333,14 @@ async function addItem(){
   itemCondition.value="";
   photo.value="";
   currentPhotoPath=null;
+
+  setStatus("Item added");
 }
 
 function renderLabels(){
-  labels.innerHTML = items.map(i=>`
+  const container = document.getElementById("labels");
+
+  container.innerHTML = items.map(i=>`
     <div class="label">
       <canvas id="qr-${i.lotCode}" class="qr"></canvas>
       <div>
@@ -359,9 +360,12 @@ function renderLabels(){
 }
 
 function endVisit(){
-  if(!items.length) return alert("No items");
+  if(!items.length){
+    alert("No items");
+    return;
+  }
 
-  if(confirm("Print labels?")){
+  if(confirm("Print labels now?")){
     buildPrint();
     window.print();
   }
@@ -370,7 +374,9 @@ function endVisit(){
 }
 
 function buildPrint(){
-  printSheet.innerHTML = `
+  const sheet = document.getElementById("printSheet");
+
+  sheet.innerHTML = `
     <div class="sheet">
       ${items.map(i=>`
         <div class="print-label">
