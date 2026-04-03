@@ -25,11 +25,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 // =========================
 // FILE PATHS
 // =========================
-const USERS_FILE = 'users.json';
-const ITEMS_FILE = 'items.json';
-const REPORTS_FILE = 'reports.json';
+const USERS_FILE         = 'users.json';
+const ITEMS_FILE         = 'items.json';
+const REPORTS_FILE       = 'reports.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
-const INTAKE_FILE = 'intake.json';
+const INTAKE_FILE        = 'intake.json';
 
 // =========================
 // HELPERS
@@ -106,7 +106,6 @@ function cleanAIText(value, fallback = '') {
 
 function safeJsonParse(text, fallback = null) {
   try {
-    // strip markdown code fences if model wraps response
     const cleaned = text.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   } catch {
@@ -212,7 +211,6 @@ app.post('/addItems', (req, res) => {
     if (existingCodes.has(i.lotCode)) {
       return res.status(400).json({ success: false, message: `Duplicate lot code: ${i.lotCode}` });
     }
-
     const item = {
       id: Date.now() + Math.floor(Math.random() * 100000),
       name: i.title || '',
@@ -240,7 +238,6 @@ app.post('/addItems', (req, res) => {
       createdAt: i.createdAt || new Date().toISOString(),
       logs: []
     };
-
     addLog(item, { employee: i.createdBy || 'system', action: 'item received', toStage: 'Received at Studio' });
     addLog(item, { employee: i.createdBy || 'system', action: 'handoff requested', fromStage: 'Received at Studio', toStage: 'Review & Cleaning', reason: 'Initial Visit intake' });
     newItems.push(item);
@@ -251,7 +248,7 @@ app.post('/addItems', (req, res) => {
 });
 
 // =========================
-// GET ITEMS
+// GET ALL ITEMS
 // =========================
 app.get('/items', (req, res) => {
   res.json(readJSON(ITEMS_FILE));
@@ -268,6 +265,16 @@ app.get('/items/by-lot/:lot', (req, res) => {
 });
 
 // =========================
+// GET SINGLE ITEM BY ID
+// =========================
+app.get('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json(null);
+  res.json(item);
+});
+
+// =========================
 // UPDATE STAGE
 // =========================
 app.post('/items/:id/stage', (req, res) => {
@@ -277,12 +284,65 @@ app.post('/items/:id/stage', (req, res) => {
 
   const newStage = req.body.stage;
   const employee = req.body.employee || 'system';
-
   if (!validStage(newStage)) return res.status(400).json({ success: false, message: 'Invalid stage' });
 
   const fromStage = item.stage;
   item.stage = newStage;
   addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// SAVE LOCATION
+// =========================
+app.post('/items/:id/location', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  item.location = req.body.location || null;
+  addLog(item, {
+    employee: req.body.employee || 'system',
+    action: 'location saved',
+    note: item.location
+  });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// REQUEST HANDOFF
+// =========================
+app.post('/items/:id/request-handoff', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const requestedStage = req.body.stage;
+  const employee = req.body.employee || 'system';
+  const reason = req.body.reason || '';
+
+  if (!validStage(requestedStage)) {
+    return res.status(400).json({ success: false, message: 'Invalid stage' });
+  }
+
+  item.pendingHandoff = {
+    requestedStage,
+    fromStage: item.stage,
+    requestedBy: employee,
+    requestedAt: new Date().toISOString(),
+    reason
+  };
+
+  addLog(item, {
+    employee,
+    action: 'handoff requested',
+    fromStage: item.stage,
+    toStage: requestedStage,
+    reason
+  });
+
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
 });
@@ -301,19 +361,10 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 app.post('/analyze-image', async (req, res) => {
   try {
     const { imageUrl } = req.body;
-
-    if (!imageUrl) {
-      return res.status(400).json({ success: false, message: 'Missing imageUrl' });
-    }
+    if (!imageUrl) return res.status(400).json({ success: false, message: 'Missing imageUrl' });
 
     if (!client) {
-      return res.json({
-        success: true,
-        title: 'Item',
-        description: 'AI not configured.',
-        category: 'misc',
-        condition: 'unknown'
-      });
+      return res.json({ success: true, title: 'Item', description: 'AI not configured.', category: 'misc', condition: 'unknown' });
     }
 
     console.log('🤖 Analyzing image:', imageUrl);
@@ -321,21 +372,19 @@ app.post('/analyze-image', async (req, res) => {
     const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 300,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: {"title":"","description":"","category":"","condition":""}. Make title short and auction-friendly (max 60 chars). Make description one plain useful sentence. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition must be one of: excellent, good, fair, worn, vintage wear, unknown. Return JSON only, no markdown.'
-            },
-            {
-              type: 'image_url',
-              image_url: { url: imageUrl, detail: 'low' }
-            }
-          ]
-        }
-      ]
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: {"title":"","description":"","category":"","condition":""}. Make title short and auction-friendly (max 60 chars). Make description one plain useful sentence. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition must be one of: excellent, good, fair, worn, vintage wear, unknown. Return JSON only, no markdown.'
+          },
+          {
+            type: 'image_url',
+            image_url: { url: imageUrl, detail: 'low' }
+          }
+        ]
+      }]
     });
 
     const raw = response.choices[0].message.content || '';
@@ -343,14 +392,7 @@ app.post('/analyze-image', async (req, res) => {
     const parsed = safeJsonParse(raw, null);
 
     if (!parsed) {
-      console.log('⚠️ AI response could not be parsed as JSON');
-      return res.json({
-        success: true,
-        title: 'Item',
-        description: cleanAIText(raw, 'No description available'),
-        category: 'misc',
-        condition: 'unknown'
-      });
+      return res.json({ success: true, title: 'Item', description: cleanAIText(raw, 'No description available'), category: 'misc', condition: 'unknown' });
     }
 
     res.json({
@@ -363,13 +405,7 @@ app.post('/analyze-image', async (req, res) => {
 
   } catch (err) {
     console.error('AI ERROR:', err.message);
-    res.json({
-      success: true,
-      title: 'Item',
-      description: 'AI analysis failed — please fill in manually.',
-      category: 'misc',
-      condition: 'unknown'
-    });
+    res.json({ success: true, title: 'Item', description: 'AI analysis failed — please fill in manually.', category: 'misc', condition: 'unknown' });
   }
 });
 
@@ -386,7 +422,6 @@ app.get('/reports', (req, res) => {
 app.post('/closeout', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const reports = readJSON(REPORTS_FILE);
-
   const today = new Date().toLocaleDateString();
   const report = {
     id: Date.now(),
@@ -400,10 +435,16 @@ app.post('/closeout', (req, res) => {
       condition: i.condition
     }))
   };
-
   reports.push(report);
   writeJSON(REPORTS_FILE, reports);
   res.json({ success: true, report });
+});
+
+// =========================
+// INTAKE — GET ALL
+// =========================
+app.get('/intake', (req, res) => {
+  res.json(readJSON(INTAKE_FILE));
 });
 
 // =========================
