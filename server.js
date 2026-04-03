@@ -265,6 +265,101 @@ app.get('/items/by-lot/:lot', (req, res) => {
 });
 
 // =========================
+// EDIT ITEM
+// =========================
+app.put('/items/:id', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  const { name, description, category, condition, employee } = req.body;
+  if (name !== undefined) item.name = name;
+  if (description !== undefined) item.description = description;
+  if (category !== undefined) item.category = category;
+  if (condition !== undefined) item.condition = condition;
+  addLog(item, { employee: employee || 'system', action: 'item edited' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// ADD NOTE
+// =========================
+app.post('/items/:id/note', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  const { note, employee } = req.body;
+  if (!note) return res.status(400).json({ success: false, message: 'Note required' });
+  if (!Array.isArray(item.notes)) item.notes = [];
+  item.notes.push({ text: note, employee: employee || 'system', at: new Date().toISOString() });
+  addLog(item, { employee: employee || 'system', action: 'note added', note });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// RECORD SALE
+// =========================
+app.post('/items/:id/sell', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  const { soldPrice, commission, employee } = req.body;
+  if (!soldPrice || isNaN(soldPrice)) return res.status(400).json({ success: false, message: 'Valid sold price required' });
+  item.soldPrice  = parseFloat(parseFloat(soldPrice).toFixed(2));
+  item.commission = parseFloat(commission) || 30;
+  item.payout     = parseFloat((item.soldPrice * (1 - item.commission / 100)).toFixed(2));
+  item.soldAt     = new Date().toISOString();
+  addLog(item, { employee: employee || 'system', action: 'item sold', note: `$${item.soldPrice} · ${item.commission}% commission · $${item.payout} payout` });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// ANALYTICS OVERVIEW
+// =========================
+app.get('/analytics/overview', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const stageCounts = { 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pickup': 0, 'Picked Up': 0, 'Missing at Drop Off': 0 };
+  const categoryCounts = {};
+  items.forEach(i => {
+    if (stageCounts.hasOwnProperty(i.stage)) stageCounts[i.stage]++;
+    const cat = (i.category || 'uncategorized').toLowerCase().trim();
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+  });
+  const soldItems = items.filter(i => i.soldPrice);
+  res.json({
+    totalItems: items.length,
+    stageCounts,
+    categoryCounts,
+    totalRevenue: soldItems.reduce((s, i) => s + (i.soldPrice || 0), 0).toFixed(2),
+    totalPayout:  soldItems.reduce((s, i) => s + (i.payout   || 0), 0).toFixed(2),
+    totalSold:    soldItems.length
+  });
+});
+
+// =========================
+// CONSIGNER PORTAL
+// =========================
+app.get('/consigner-portal/:code', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const code  = req.params.code.toUpperCase();
+  const list  = items.filter(i => i.code === code);
+  if (!list.length) return res.status(404).json({ success: false, message: 'No items found for this code' });
+  res.json({
+    success: true,
+    consigner: list[0].consigner,
+    code,
+    items: list.map(i => ({
+      id: i.id, name: i.name, lotNumber: i.lotNumber,
+      stage: i.stage, category: i.category, condition: i.condition,
+      photos: i.photos, soldPrice: i.soldPrice || null, payout: i.payout || null,
+      createdAt: i.createdAt
+    }))
+  });
+});
+
+// =========================
 // GET SINGLE ITEM BY ID
 // =========================
 app.get('/items/:id', (req, res) => {
@@ -289,6 +384,22 @@ app.post('/items/:id/stage', (req, res) => {
   const fromStage = item.stage;
   item.stage = newStage;
   addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// RECORD SCAN (employee touch log, no stage change)
+// =========================
+app.post('/items/:id/scan', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const employee = req.body.employee || 'system';
+  item.lastHandledBy = employee;
+  item.lastHandledAt = new Date().toISOString();
+  addLog(item, { employee, action: 'scanned', note: `Handled at ${item.stage}` });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
 });
