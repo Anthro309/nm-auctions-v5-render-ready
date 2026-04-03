@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.employee-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (min-width: 600px) {
+  .employee-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+}
+
+.emp-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
+  position: relative;
+}
+
+.emp-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  font-family: inherit;
+  border: 3px solid #e2e8f0;
+}
+.emp-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.emp-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+.emp-role {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+.emp-role.admin-badge { color: #1d4ed8; }
+
+.emp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-sm {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s;
+  font-family: inherit;
+}
+.btn-sm:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-photo  { background: #f0f4f8; color: #374151; }
+.btn-pin    { background: #eff6ff; color: #1d4ed8; }
+.btn-remove { background: #fef2f2; color: #dc2626; }
+
+/* Modal */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.modal h3 {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 18px;
+  color: #111827;
+}
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">
+    <div class="nav-logo">AL</div>
+    <span class="nav-title">Auction Legacy</span>
+  </div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;" id="navAvatarWrap">
+    <div id="navAvatar" class="nav-avatar"></div>
+  </div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+    <a href="/admin.html"><span class="sidebar-icon">⚙️</span> Admin</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <!-- ADD EMPLOYEE -->
+  <div class="card">
+    <h2>Add Employee</h2>
+    <input id="newName" placeholder="Full name" style="margin-bottom:0;">
+    <input id="newPin" placeholder="PIN (4+ digits)" type="password" inputmode="numeric">
+    <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px;font-weight:600;color:#374151;cursor:pointer;">
+      <input type="checkbox" id="newIsAdmin" style="width:auto;margin-top:0;accent-color:#2563eb;">
+      Grant Admin access
+    </label>
+    <button onclick="addEmployee()" style="width:100%;margin-top:14px;">Add Employee</button>
+    <div id="addMsg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;"></div>
+  </div>
+
+  <!-- EMPLOYEE LIST -->
+  <div class="card">
+    <h2>All Employees</h2>
+    <div id="employeeGrid" class="employee-grid"></div>
+  </div>
+
+</div>
+
+<!-- PIN CHANGE MODAL -->
+<div id="pinModal" class="modal-bg">
+  <div class="modal">
+    <h3 id="pinModalTitle">Change PIN</h3>
+    <input id="newPinInput" placeholder="New PIN (4+ digits)" type="password" inputmode="numeric" style="margin-top:0;">
+    <div class="modal-actions">
+      <button onclick="closePinModal()" style="background:#f0f4f8;color:#374151;">Cancel</button>
+      <button onclick="submitPin()">Save PIN</button>
+    </div>
+    <div id="pinMsg" style="display:none;margin-top:12px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;"></div>
+  </div>
+</div>
+
+<!-- PHOTO UPLOAD MODAL -->
+<div id="photoModal" class="modal-bg">
+  <div class="modal">
+    <h3 id="photoModalTitle">Upload Photo</h3>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="margin-top:0;">
+    <div class="modal-actions">
+      <button onclick="closePhotoModal()" style="background:#f0f4f8;color:#374151;">Cancel</button>
+      <button onclick="submitPhoto()">Upload</button>
+    </div>
+    <div id="photoMsg" style="display:none;margin-top:12px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;"></div>
+  </div>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
+
+// Nav avatar
+const navAvatar = document.getElementById('navAvatar');
+if (user.photo) {
+  navAvatar.innerHTML = `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+} else {
+  navAvatar.textContent = user.name[0].toUpperCase();
+}
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+let targetEmployee = null;
+
+// ── LOAD EMPLOYEES ──
+async function load() {
+  const res = await fetch('/employees');
+  const employees = await res.json();
+  const grid = document.getElementById('employeeGrid');
+
+  grid.innerHTML = employees.map(e => {
+    const initial = e.name[0].toUpperCase();
+    const avatarHtml = e.photo
+      ? `<img src="${e.photo}" alt="${e.name}">`
+      : initial;
+    const roleLabel = e.isAdmin
+      ? `<div class="emp-role admin-badge">Admin</div>`
+      : `<div class="emp-role">Employee</div>`;
+    const removeBtn = !e.isAdmin
+      ? `<button class="btn-sm btn-remove" onclick="removeEmployee('${e.name}')">Remove</button>`
+      : '';
+    return `
+      <div class="emp-card">
+        <div class="emp-avatar">${avatarHtml}</div>
+        <div class="emp-name">${e.name}</div>
+        ${roleLabel}
+        <div class="emp-actions">
+          <button class="btn-sm btn-photo" onclick="openPhotoModal('${e.name}')">📷 Photo</button>
+          <button class="btn-sm btn-pin" onclick="openPinModal('${e.name}')">🔑 Change PIN</button>
+          ${removeBtn}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── ADD EMPLOYEE ──
+async function addEmployee() {
+  const name = document.getElementById('newName').value.trim();
+  const pin  = document.getElementById('newPin').value.trim();
+  const isAdmin = document.getElementById('newIsAdmin').checked;
+  const msg = document.getElementById('addMsg');
+
+  if (!name || !pin) { showMsg(msg, 'Enter name and PIN', false); return; }
+
+  const res = await fetch('/employees', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, pin, isAdmin, requestedBy: user.name })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    showMsg(msg, `✅ ${name} added`, true);
+    document.getElementById('newName').value = '';
+    document.getElementById('newPin').value = '';
+    document.getElementById('newIsAdmin').checked = false;
+    load();
+  } else {
+    showMsg(msg, data.message || 'Failed', false);
+  }
+}
+
+// ── REMOVE EMPLOYEE ──
+async function removeEmployee(name) {
+  if (!confirm(`Remove ${name}? This cannot be undone.`)) return;
+  const res = await fetch(`/employees/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestedBy: user.name })
+  });
+  const data = await res.json();
+  if (data.success) load();
+  else alert(data.message || 'Failed to remove');
+}
+
+// ── PIN MODAL ──
+function openPinModal(name) {
+  targetEmployee = name;
+  document.getElementById('pinModalTitle').innerText = `Change PIN — ${name}`;
+  document.getElementById('newPinInput').value = '';
+  document.getElementById('pinMsg').style.display = 'none';
+  document.getElementById('pinModal').classList.add('open');
+}
+function closePinModal() {
+  document.getElementById('pinModal').classList.remove('open');
+  targetEmployee = null;
+}
+async function submitPin() {
+  const newPin = document.getElementById('newPinInput').value.trim();
+  const msg = document.getElementById('pinMsg');
+  if (!newPin || newPin.length < 4) { showMsg(msg, 'PIN must be 4+ digits', false); return; }
+  const res = await fetch(`/employees/${encodeURIComponent(targetEmployee)}/pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newPin, requestedBy: user.name })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showMsg(msg, '✅ PIN updated', true);
+    setTimeout(closePinModal, 1200);
+  } else {
+    showMsg(msg, data.message || 'Failed', false);
+  }
+}
+
+// ── PHOTO MODAL ──
+function openPhotoModal(name) {
+  targetEmployee = name;
+  document.getElementById('photoModalTitle').innerText = `Upload Photo — ${name}`;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoMsg').style.display = 'none';
+  document.getElementById('photoModal').classList.add('open');
+}
+function closePhotoModal() {
+  document.getElementById('photoModal').classList.remove('open');
+  targetEmployee = null;
+}
+async function submitPhoto() {
+  const file = document.getElementById('photoInput').files[0];
+  const msg = document.getElementById('photoMsg');
+  if (!file) { showMsg(msg, 'Choose a photo first', false); return; }
+  const form = new FormData();
+  form.append('photo', file);
+  const res = await fetch(`/employees/${encodeURIComponent(targetEmployee)}/photo`, {
+    method: 'POST',
+    body: form
+  });
+  const data = await res.json();
+  if (data.success) {
+    // Update localStorage if it's the current user's photo
+    if (targetEmployee === user.name) {
+      user.photo = data.photo;
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+    showMsg(msg, '✅ Photo uploaded', true);
+    setTimeout(() => { closePhotoModal(); load(); }, 1000);
+  } else {
+    showMsg(msg, data.message || 'Upload failed', false);
+  }
+}
+
+// ── HELPER ──
+function showMsg(el, text, success) {
+  el.textContent = text;
+  el.style.background = success ? '#ecfdf5' : '#fef2f2';
+  el.style.color = success ? '#047857' : '#b91c1c';
+  el.style.display = 'block';
+  if (success) setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+load();
+</script>
+</body>
+</html>

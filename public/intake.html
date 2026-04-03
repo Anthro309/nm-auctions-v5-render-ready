@@ -41,7 +41,7 @@
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
   <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
-  <div class="nav-right" onclick="logout()">Logout</div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
 </div>
 
 <div id="sidebar" class="sidebar">
@@ -241,5 +241,6 @@ function logout(){
 load();
 </script>
 
+<script src="/nav.js"></script>
 </body>
 </html>

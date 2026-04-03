@@ -1,47 +1,12 @@
 [
-  {
-    "name": "Fabian",
-    "pin": "1234",
-    "role": "admin"
-  },
-  {
-    "name": "James",
-    "pin": "1234",
-    "role": "admin"
-  },
-  {
-    "name": "Steven",
-    "pin": "1234",
-    "role": "admin"
-  },
-  {
-    "name": "Mike",
-    "pin": "1234",
-    "role": "user"
-  },
-  {
-    "name": "Gio",
-    "pin": "1234",
-    "role": "user"
-  },
-  {
-    "name": "Michelle",
-    "pin": "1234",
-    "role": "user"
-  },
-  {
-    "name": "Sara",
-    "pin": "1234",
-    "role": "user"
-  },
-  {
-    "name": "Alejandro",
-    "pin": "1234",
-    "role": "user"
-  },
-  {
-    "name": "Christian",
-    "pin": "1234",
-    "role": "user"
-  }
+  { "name": "Fabian",    "pin": "1234", "isAdmin": true,  "photo": null },
+  { "name": "James",     "pin": "1234", "isAdmin": true,  "photo": null },
+  { "name": "Steven",    "pin": "1234", "isAdmin": true,  "photo": null },
+  { "name": "Mike",      "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Gio",       "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Michelle",  "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Sara",      "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Alejandro", "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Christian", "pin": "1234", "isAdmin": false, "photo": null },
+  { "name": "Hector",    "pin": "1234", "isAdmin": false, "photo": null }
 ]

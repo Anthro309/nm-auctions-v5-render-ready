@@ -58,17 +58,26 @@ function ensureUsersExist() {
   const users = readJSON(USERS_FILE);
   if (!users.length) {
     const defaultUsers = [
-      { name: 'Fabian',   pin: '1234', isAdmin: true  },
-      { name: 'James',    pin: '1234', isAdmin: true  },
-      { name: 'Steven',   pin: '1234', isAdmin: true  },
-      { name: 'Mike',     pin: '1234', isAdmin: false },
-      { name: 'Gio',      pin: '1234', isAdmin: false },
-      { name: 'Michelle', pin: '1234', isAdmin: false },
-      { name: 'Sara',     pin: '1234', isAdmin: false }
+      { name: 'Fabian',    pin: '1234', isAdmin: true,  photo: null },
+      { name: 'James',     pin: '1234', isAdmin: true,  photo: null },
+      { name: 'Steven',    pin: '1234', isAdmin: true,  photo: null },
+      { name: 'Mike',      pin: '1234', isAdmin: false, photo: null },
+      { name: 'Gio',       pin: '1234', isAdmin: false, photo: null },
+      { name: 'Michelle',  pin: '1234', isAdmin: false, photo: null },
+      { name: 'Sara',      pin: '1234', isAdmin: false, photo: null },
+      { name: 'Alejandro', pin: '1234', isAdmin: false, photo: null },
+      { name: 'Christian', pin: '1234', isAdmin: false, photo: null },
+      { name: 'Hector',    pin: '1234', isAdmin: false, photo: null }
     ];
     writeJSON(USERS_FILE, defaultUsers);
     console.log('🔥 Users seeded');
   }
+}
+
+function requireAdmin(reqBody) {
+  const users = readJSON(USERS_FILE);
+  const u = users.find(u => u.name === reqBody.requestedBy);
+  return u && u.isAdmin;
 }
 
 function monthLetterForDate(date = new Date()) {
@@ -175,7 +184,76 @@ app.post('/login', (req, res) => {
          u.pin === String(pin || '')
   );
   if (!user) return res.status(401).json({ success: false, message: 'Invalid login' });
-  res.json({ success: true, user: { name: user.name, isAdmin: user.isAdmin } });
+  res.json({ success: true, user: { name: user.name, isAdmin: !!user.isAdmin, photo: user.photo || null } });
+});
+
+// =========================
+// EMPLOYEES — LIST
+// =========================
+app.get('/employees', (req, res) => {
+  const users = readJSON(USERS_FILE);
+  res.json(users.map(u => ({ name: u.name, isAdmin: !!u.isAdmin, photo: u.photo || null })));
+});
+
+// =========================
+// EMPLOYEES — ADD
+// =========================
+app.post('/employees', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const { name, pin, isAdmin } = req.body;
+  if (!name || !pin) return res.status(400).json({ success: false, message: 'Name and PIN required' });
+  const users = readJSON(USERS_FILE);
+  if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) {
+    return res.status(400).json({ success: false, message: 'Employee already exists' });
+  }
+  users.push({ name: name.trim(), pin: String(pin), isAdmin: !!isAdmin, photo: null });
+  writeJSON(USERS_FILE, users);
+  res.json({ success: true });
+});
+
+// =========================
+// EMPLOYEES — REMOVE
+// =========================
+app.delete('/employees/:name', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  let users = readJSON(USERS_FILE);
+  const target = users.find(u => u.name === req.params.name);
+  if (!target) return res.status(404).json({ success: false, message: 'Not found' });
+  if (target.isAdmin) return res.status(400).json({ success: false, message: 'Cannot remove an admin' });
+  users = users.filter(u => u.name !== req.params.name);
+  writeJSON(USERS_FILE, users);
+  res.json({ success: true });
+});
+
+// =========================
+// EMPLOYEES — CHANGE PIN
+// =========================
+app.post('/employees/:name/pin', (req, res) => {
+  // Allow if requester is admin OR changing their own PIN
+  const isSelf = req.body.requestedBy === req.params.name;
+  if (!isSelf && !requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const { newPin } = req.body;
+  if (!newPin || String(newPin).length < 4) return res.status(400).json({ success: false, message: 'PIN must be at least 4 digits' });
+  const users = readJSON(USERS_FILE);
+  const user = users.find(u => u.name === req.params.name);
+  if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+  user.pin = String(newPin);
+  writeJSON(USERS_FILE, users);
+  res.json({ success: true });
+});
+
+// =========================
+// EMPLOYEES — UPLOAD PHOTO (self or admin)
+// =========================
+app.post('/employees/:name/photo', upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  // Anyone can upload their own photo; only admin can upload for others
+  const users = readJSON(USERS_FILE);
+  const user = users.find(u => u.name === req.params.name);
+  if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+  user.photo = `/uploads/${req.file.filename}`;
+  writeJSON(USERS_FILE, users);
+  res.json({ success: true, photo: user.photo });
 });
 
 // =========================
