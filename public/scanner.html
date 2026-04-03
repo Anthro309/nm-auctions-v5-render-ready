@@ -1,90 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Scanner</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0b1b2b;
-  color: white;
-  padding: 16px;
+.item-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 6px;
 }
-
-.header {
-  background: #0f2a3d;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  font-weight: bold;
+.item-lot {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 6px;
 }
-
-.card {
-  background: #132a3a;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 16px;
+.item-stage {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
 }
-
-input, button {
+.btn-advance {
   width: 100%;
-  padding: 16px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: none;
-  font-size: 16px;
-}
-
-button {
   background: #16a34a;
   color: white;
-  font-weight: bold;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
 }
-
-.stage {
+.btn-advance:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+.scan-input {
   font-size: 18px;
-  margin-top: 10px;
-  font-weight: bold;
-}
-
-.big {
-  font-size: 22px;
-}
-
-.status {
-  background: black;
-  color: lime;
-  padding: 10px;
-  margin-bottom: 10px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.04em;
+  padding: 18px !important;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div onclick="goHome()">Auction Legacy</div>
-  <div onclick="logout()">Logout</div>
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
+  <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
-<div id="status" class="status">Ready to scan...</div>
-
-<div class="card">
-  <input id="scanInput" placeholder="Scan or enter lot code" autofocus>
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
 </div>
 
-<div id="itemBox" class="card" style="display:none;">
-  <div class="big" id="itemName"></div>
-  <div id="lot"></div>
-  <div class="stage" id="stage"></div>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
-  <button onclick="advanceStage()">Move to Next Stage</button>
+<div class="container">
+
+  <div id="statusBar" class="status-bar">Ready to scan...</div>
+
+  <div class="card">
+    <input id="scanInput" class="scan-input" placeholder="Scan or enter lot code" autofocus>
+  </div>
+
+  <div id="itemBox" class="card" style="display:none;">
+    <div class="item-name" id="itemName"></div>
+    <div class="item-lot" id="lotDisplay"></div>
+    <div class="item-stage" id="stageDisplay"></div>
+    <button class="btn-advance" onclick="advanceStage()">Move to Next Stage →</button>
+  </div>
+
 </div>
 
 <script>
-
 const stages = [
   "Received at Studio",
   "Review & Cleaning",
@@ -95,114 +105,88 @@ const stages = [
 
 let currentItem = null;
 
-function log(msg){
-  document.getElementById("status").innerText = msg;
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
 }
 
-function goHome(){
-  window.location.href = "/dashboard.html";
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = '/';
 }
 
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
+function log(msg) {
+  document.getElementById('statusBar').innerText = msg;
 }
 
-// 🔥 SCAN ENTER
-scanInput.addEventListener("keypress", async function(e){
-  if(e.key === "Enter"){
-    loadItem(scanInput.value.trim());
+document.getElementById('scanInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    loadItem(this.value.trim());
   }
 });
 
-async function loadItem(lot){
+async function loadItem(lotCode) {
+  if (!lotCode) { log('No code entered'); return; }
 
-  if(!lot){
-    log("❌ No code");
-    return;
-  }
-
-  log("🔍 Looking up...");
+  log('Looking up...');
 
   try {
-
-    const res = await fetch(`/items/by-lot/${lot}`);
+    const res = await fetch(`/items/by-lot/${lotCode}`);
     const item = await res.json();
 
-    if(!item){
-      log("❌ Item not found");
-      return;
-    }
+    if (!item) { log('Item not found'); return; }
 
     currentItem = item;
 
-    itemBox.style.display = "block";
-    itemName.innerText = item.name || "No name";
-    stage.innerText = item.stage;
-    document.getElementById("lot").innerText = "Lot: " + item.lotNumber;
+    document.getElementById('itemBox').style.display = 'block';
+    document.getElementById('itemName').innerText = item.name || 'No name';
+    document.getElementById('stageDisplay').innerText = item.stage;
+    document.getElementById('lotDisplay').innerText = 'Lot: ' + item.lotNumber;
 
-    log("✅ Loaded");
+    log('Loaded: ' + (item.name || item.lotNumber));
 
-  } catch(err){
-    log("❌ Error loading");
+  } catch (err) {
+    log('Error loading item');
   }
 }
 
-async function advanceStage(){
-
-  if(!currentItem){
-    log("❌ No item loaded");
-    return;
-  }
+async function advanceStage() {
+  if (!currentItem) { log('No item loaded'); return; }
 
   const currentIndex = stages.indexOf(currentItem.stage);
-
-  if(currentIndex === -1 || currentIndex === stages.length - 1){
-    log("⚠️ Already complete");
+  if (currentIndex === -1 || currentIndex === stages.length - 1) {
+    log('Already at final stage');
     return;
   }
 
   const nextStage = stages[currentIndex + 1];
-
-  log("➡️ Moving to " + nextStage);
+  log('Moving to ' + nextStage + '...');
 
   try {
-
     const res = await fetch(`/items/${currentItem.id}/stage`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        stage: nextStage,
-        employee: "scanner"
-      })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: nextStage, employee: 'scanner' })
     });
 
     const data = await res.json();
-
-    if(!data.success){
-      log("❌ Failed");
-      return;
-    }
+    if (!data.success) { log('Failed to advance stage'); return; }
 
     currentItem = data.item;
+    document.getElementById('stageDisplay').innerText = currentItem.stage;
+    log('Moved to ' + nextStage);
 
-    stage.innerText = currentItem.stage;
-
-    log("✅ Moved to " + nextStage);
-
-    // 🔥 AUTO CLEAR FOR SPEED
-    setTimeout(()=>{
-      scanInput.value = "";
-      itemBox.style.display = "none";
+    setTimeout(() => {
+      document.getElementById('scanInput').value = '';
+      document.getElementById('itemBox').style.display = 'none';
       currentItem = null;
-      log("Ready to scan...");
-    }, 1200);
+      log('Ready to scan...');
+    }, 1500);
 
-  } catch(err){
-    log("❌ Error");
+  } catch (err) {
+    log('Error advancing stage');
   }
 }
-
 </script>
 
 </body>

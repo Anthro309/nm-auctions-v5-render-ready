@@ -9,51 +9,33 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    .card-stat {
-      background: #111827;
-      padding: 16px;
-      border-radius: 12px;
-    }
-
-    .name { font-weight: bold; margin-bottom: 8px; }
-    .small { font-size: 13px; color: #9ca3af; margin: 2px 0; }
-
-    .stage-box {
-      background: #1f2937;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-
-    .slow {
-      border: 2px solid #dc2626;
-    }
-
-    .alert {
-      background: #7f1d1d;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-
-    canvas {
-      margin-top: 10px;
-    }
+    canvas { margin-top: 14px; }
   </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
 
@@ -66,7 +48,7 @@
   <!-- EMPLOYEE STATS -->
   <div class="card">
     <h2>Employee Performance</h2>
-    <div id="employees" class="grid"></div>
+    <div id="employees" class="performance-grid"></div>
     <canvas id="employeeChart"></canvas>
   </div>
 
@@ -113,7 +95,7 @@ function buildAlerts(items){
 
     if(diffHours > 24 && i.stage !== "Picked Up"){
       const div = document.createElement("div");
-      div.className = "alert";
+      div.className = "alert-box";
 
       div.innerHTML = `
         ${i.code}-${i.number} stuck in "${i.stage}" for ${Math.round(diffHours)} hrs
@@ -138,14 +120,14 @@ function buildEmployees(data){
     values.push(e.created);
 
     const div = document.createElement("div");
-    div.className = "card-stat";
+    div.className = "employee-card";
 
     div.innerHTML = `
-      <div class="name">${e.employee}</div>
-      <div class="small">Created: ${e.created}</div>
-      <div class="small">Accepted: ${e.handoffAccepted}</div>
-      <div class="small">Rejected: ${e.handoffRejected}</div>
-      <div class="small">Lots: ${e.lotsAssigned}</div>
+      <div class="employee-name">${e.employee}</div>
+      <div class="employee-stat">Created: ${e.created}</div>
+      <div class="employee-stat">Accepted: ${e.handoffAccepted}</div>
+      <div class="employee-stat">Rejected: ${e.handoffRejected}</div>
+      <div class="employee-stat">Lots: ${e.lotsAssigned}</div>
     `;
 
     employees.appendChild(div);
@@ -209,9 +191,9 @@ function buildStageTimes(items){
     if(avg > 1440) div.classList.add("slow"); // > 24 hrs
 
     div.innerHTML = `
-      <div><b>${stage}</b></div>
-      <div class="small">Avg: ${avg} mins</div>
-      <div class="small">Samples: ${times.length}</div>
+      <div style="font-weight:700;margin-bottom:4px;">${stage}</div>
+      <div class="employee-stat">Avg: ${avg} mins</div>
+      <div class="employee-stat">Samples: ${times.length}</div>
     `;
 
     stages.appendChild(div);
@@ -238,6 +220,11 @@ function stageChartCanvas(){
 // =========================
 // NAV
 // =========================
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
 function logout(){
   localStorage.removeItem("user");
   window.location.href = "/";

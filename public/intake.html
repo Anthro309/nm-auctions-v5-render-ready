@@ -9,75 +9,29 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
-    .report-card {
-      padding: 16px;
-      border-radius: 12px;
-      background: #111827;
-      margin-bottom: 10px;
-      cursor: pointer;
-    }
-
-    .report-title { font-weight: bold; }
-    .report-sub { font-size: 13px; color: #9ca3af; }
-
     .filters {
       display: flex;
       gap: 10px;
-      margin-bottom: 12px;
       flex-wrap: wrap;
     }
-
-    .analytics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    .stat {
-      background: #1f2937;
-      padding: 12px;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #9ca3af;
-    }
-
+    .filters input { margin-top: 0; }
     .print-sheet {
       background: white;
       color: black;
       padding: 20px;
       border-radius: 12px;
-      margin-top: 20px;
+      margin-top: 0;
     }
-
-    .btn {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: #2563eb;
-      color: white;
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
     }
-
+    .action-row button { flex: 1; }
     @media print {
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
-      #printArea {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-      }
+      #printArea { position: absolute; top: 0; left: 0; width: 100%; }
     }
   </style>
 </head>
@@ -86,45 +40,61 @@
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
 
   <!-- ANALYTICS -->
-  <div class="card analytics">
-    <div class="stat">
+  <div class="stat-grid">
+    <div class="stat-tile">
       <div id="totalReports" class="stat-number">0</div>
       <div class="stat-label">Reports</div>
     </div>
-
-    <div class="stat">
+    <div class="stat-tile">
       <div id="totalItems" class="stat-number">0</div>
       <div class="stat-label">Items</div>
     </div>
-
-    <div class="stat">
-      <div id="topConsigner" class="stat-number">-</div>
+    <div class="stat-tile">
+      <div id="topConsigner" class="stat-number" style="font-size:14px;">—</div>
       <div class="stat-label">Top Consigner</div>
     </div>
   </div>
 
   <!-- FILTERS -->
   <div class="card">
+    <h2>Intake Reports</h2>
     <div class="filters">
-      <input id="search" placeholder="Search..." oninput="render()">
-      <input id="dateFilter" type="date" onchange="render()">
+      <input id="search" placeholder="Search consigner or item..." oninput="render()" style="flex:1;margin-top:0;">
+      <input id="dateFilter" type="date" onchange="render()" style="width:auto;flex-shrink:0;margin-top:0;">
     </div>
-
-    <div id="list"></div>
+    <div id="list" style="margin-top:14px;"></div>
   </div>
 
   <!-- REPORT VIEW -->
   <div id="printArea" class="card print-sheet" style="display:none;"></div>
 
-  <button class="btn" onclick="printReport()">🖨️ Print</button>
-  <button class="btn" onclick="exportPDF()">📄 Export PDF</button>
+  <div class="action-row">
+    <button onclick="printReport()">🖨️ Print</button>
+    <button onclick="exportPDF()" style="background:#6b7280;">📄 Export PDF</button>
+  </div>
 
 </div>
 
