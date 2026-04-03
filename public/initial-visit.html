@@ -1,291 +1,170 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
-  <title>Initial Visit</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>  <style>
-    .camera-box {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 120px;
-      border: 2px dashed #d1d5db;
-      border-radius: 16px;
-      background: #f9fafb;
-      cursor: pointer;
-      font-size: 18px;
-      color: #374151;
-      margin-bottom: 12px;
-    }
+<meta charset="UTF-8">
+<title>Initial Visit</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-    .camera-box:active {
-      transform: scale(0.98);
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #0b1b2b;
+  color: white;
+  padding: 20px;
+}
 
-    .preview {
-      width: 100%;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      display: none;
-    }
+.card {
+  background: #132a3a;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
 
-    .item-card {
-      background: #fff;
-      padding: 12px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-    }
+input, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+}
 
-    .item-img {
-      width: 74px;
-      height: 74px;
-      object-fit: cover;
-      border-radius: 10px;
-      background: #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #6b7280;
-    }
+button {
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+}
 
-    .item-qr {
-      width: 74px;
-      height: 74px;
-      background: #fff;
-      border-radius: 10px;
-    }
+.label {
+  background: white;
+  color: black;
+  display: flex;
+  padding: 10px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
 
-    .item-meta {
-      flex: 1;
-    }
+.label-text {
+  padding-left: 10px;
+}
+</style>
+</head>
 
-    .item-code {
-      font-weight: 700;
-      font-size: 14px;
-    }
+<body>
 
-    .item-name {
-      font-size: 14px;
-    }
+<h2 onclick="goHome()" style="cursor:pointer;">Auction Legacy</h2>
 
-    .action-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .end-btn {
-      background: #16a34a;
-    }
-  </style></head><body><div class="container">  <div class="card">
-    <h2>Start Visit</h2>
-    <input id="first" placeholder="First Name">
-    <input id="last" placeholder="Last Name">
-    <button onclick="startVisit()">Start</button>
-    <div id="codeDisplay" style="margin-top:10px;font-weight:700;"></div>
-  </div>  <div class="card">
-    <h2>Add Item</h2><input id="itemName" placeholder="Item Name">
-
-<div class="camera-box" onclick="openCamera()">
-  📷 Take Photo
+<div class="card">
+  <input id="first" placeholder="First Name">
+  <input id="last" placeholder="Last Name">
+  <button type="button" onclick="start()">Start</button>
+  <p id="code"></p>
 </div>
 
-<img id="preview" class="preview">
+<div class="card">
+  <input id="title" placeholder="Item Name">
+  <input type="file" id="photo">
+  <button type="button" onclick="addItem()">Add Item + Print Label</button>
+</div>
 
-<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+<div id="labels"></div>
 
-<button onclick="addItem()">Add Item</button>
+<script>
+let consignerCode = "";
+let user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  </div>  <div class="card">
-    <h2>Items</h2>
-    <div id="items"></div>
-  </div>  <div class="card">
-    <div class="action-row">
-      <button onclick="printLabels()">🖨️ Print Labels</button>
-      <button class="end-btn" onclick="endVisit()">✅ End Visit</button>
-    </div>
-  </div></div><script>
+function start() {
+  const first = document.getElementById("first").value.trim();
+  const last = document.getElementById("last").value.trim();
 
-let consignerCode = null;
-let consignerName = "";
-
-const itemNameInput = document.getElementById("itemName");
-const photoInput = document.getElementById("photoInput");
-const preview = document.getElementById("preview");
-const itemsContainer = document.getElementById("items");
-
-// CAMERA FIX
-function openCamera(){
-  photoInput.value = "";
-  photoInput.click();
-}
-
-// PREVIEW
-photoInput.addEventListener("change", () => {
-  const file = photoInput.files[0];
-  if(file){
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
+  if (!first || !last) {
+    alert("Enter name");
+    return;
   }
-});
 
-// START VISIT
-function startVisit(){
-  const f = first.value.trim().toUpperCase();
-  const l = last.value.trim().toUpperCase();
-
-  if(!f || !l) return alert("Enter names");
-
-  consignerCode = f.slice(0,3) + l.slice(0,3);
-  consignerName = f + " " + l;
-
-  codeDisplay.innerText = "Consigner Code: " + consignerCode;
-
-  loadItems();
+  consignerCode = (first.slice(0,3) + last.slice(0,3)).toUpperCase();
+  document.getElementById("code").innerText = "Consigner Code: " + consignerCode;
 }
 
-// ADD ITEM (FIXED)
-async function addItem(){
+async function addItem() {
+  const title = document.getElementById("title").value.trim();
+  const file = document.getElementById("photo").files[0];
 
-  if(!consignerCode) return alert("Start visit first");
-
-  const name = itemNameInput.value.trim();
-  if(!name) return alert("Enter item name");
+  if (!title) {
+    alert("Enter item name");
+    return;
+  }
 
   let photoPath = null;
 
-  if(photoInput.files.length > 0){
+  if (file) {
+    const formData = new FormData();
+    formData.append("photo", file);
 
-    const form = new FormData();
-    form.append("photo", photoInput.files[0]);
+    const uploadRes = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
 
-    try {
-      const uploadRes = await fetch('/upload', {
-        method:'POST',
-        body: form
-      });
-
-      const data = await uploadRes.json();
-
-      alert("UPLOAD RESPONSE: " + JSON.stringify(data));
-
-      if(!data.success || !data.path){
-        return alert("UPLOAD FAILED");
-      }
-
-      photoPath = data.path;
-
-      alert("PHOTO PATH: " + photoPath);
-
-    } catch(err){
-      console.error(err);
-      alert("UPLOAD ERROR");
-      return;
-    }
+    const uploadData = await uploadRes.json();
+    photoPath = uploadData.path;
   }
 
-  const itemsRes = await fetch('/items');
-  const items = await itemsRes.json();
+  const lotRes = await fetch("/next-lot-code");
+  const lotData = await lotRes.json();
+  const lotCode = lotData.lotCode;
 
-  const count = items.filter(i => i.code === consignerCode).length + 1;
+  const item = {
+    title,
+    consignerFirstName: "",
+    consignerLastName: "",
+    consignerCode,
+    lotCode,
+    itemNumber: 1,
+    partCount: 1,
+    createdBy: user.name || "system",
+    createdAt: new Date().toISOString(),
+    photo: photoPath
+  };
 
-  await fetch('/items',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      name,
-      consigner: consignerName,
-      code: consignerCode,
-      number: count,
-      photos: photoPath ? [photoPath] : []
-    })
+  const res = await fetch("/addItems", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ items:[item] })
   });
 
-  itemNameInput.value = "";
-  photoInput.value = "";
-  preview.style.display = "none";
+  const data = await res.json();
 
-  loadItems();
+  if (!data.success) {
+    alert(data.message || "Error");
+    return;
+  }
+
+  renderLabel(item);
+
+  setTimeout(() => window.print(), 400);
 }
 
-// LOAD ITEMS
-async function loadItems(){
+function renderLabel(item) {
+  const id = Date.now();
 
-  if(!consignerCode) return;
-
-  const res = await fetch('/items');
-  const all = await res.json();
-
-  const list = all.filter(i => i.code === consignerCode);
-
-  itemsContainer.innerHTML = "";
-
-  list.forEach(i => {
-
-    const div = document.createElement("div");
-    div.className = "item-card";
-
-    const qrId = "qr_" + i.id;
-
-    div.innerHTML = `
-      <canvas id="${qrId}" class="item-qr"></canvas>
-
-      ${i.photos && i.photos[0]
-        ? `<img src="${window.location.origin + i.photos[0]}" class="item-img">`
-        : `<div class="item-img">No Image</div>`}
-
-      <div class="item-meta">
-        <div class="item-code">${i.code}-${i.number}</div>
-        <div class="item-name">${i.name}</div>
+  document.getElementById("labels").innerHTML += `
+    <div class="label">
+      <canvas id="qr-${id}"></canvas>
+      <div class="label-text">
+        <strong>${item.title}</strong><br>
+        Lot ${item.lotCode}<br>
+        ${item.consignerCode}
       </div>
-    `;
+    </div>
+  `;
 
-    itemsContainer.appendChild(div);
-
-    QRCode.toCanvas(document.getElementById(qrId), `${i.code}-${i.number}`);
-  });
+  QRCode.toCanvas(document.getElementById(`qr-${id}`), item.lotCode);
 }
 
-// PRINT
-async function printLabels(){
-
-  const res = await fetch('/items');
-  const all = await res.json();
-
-  const list = all.filter(i => i.code === consignerCode);
-
-  const win = window.open("");
-
-  win.document.write(`
-    <html>
-    <body>
-      ${list.map(i => `
-        <div style="display:flex;gap:10px;margin-bottom:10px;">
-          <canvas id="qr_${i.id}"></canvas>
-          <div>${i.name}</div>
-        </div>
-      `).join("")}
-      <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
-      <script>
-        const items = ${JSON.stringify(list)};
-        items.forEach(i=>{
-          QRCode.toCanvas(document.getElementById("qr_"+i.id), i.code+"-"+i.number);
-        });
-        setTimeout(()=>window.print(),500);
-      <\/script>
-    </body>
-    </html>
-  `);
+function goHome() {
+  window.location.href = "/dashboard.html";
 }
+</script>
 
-// END VISIT
-function endVisit(){
-  alert("Visit Complete");
-}
-
-</script></body>
+</body>
 </html>
