@@ -1,22 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Initial Visit</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
 body {
-  font-family: Arial;
+  margin: 0;
+  font-family: Arial, sans-serif;
   background: #0b1b2b;
   color: white;
-  padding: 20px;
+}
+
+.header {
+  background: #0f2a3d;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.logout {
+  font-size: 14px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.container {
+  padding: 16px;
 }
 
 .card {
   background: #132a3a;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 16px;
 }
 
@@ -34,6 +59,10 @@ button {
   font-weight: bold;
 }
 
+.hidden {
+  display: none;
+}
+
 .label {
   background: white;
   color: black;
@@ -41,6 +70,7 @@ button {
   padding: 10px;
   border-radius: 12px;
   margin-top: 10px;
+  align-items: center;
 }
 
 .label-text {
@@ -51,41 +81,79 @@ button {
 
 <body>
 
-<h2 onclick="goHome()" style="cursor:pointer;">Auction Legacy</h2>
-
-<div class="card">
-  <input id="first" placeholder="First Name">
-  <input id="last" placeholder="Last Name">
-  <button type="button" onclick="start()">Start</button>
-  <p id="code"></p>
+<div class="header">
+  <div class="title" onclick="goHome()">Auction Legacy</div>
+  <div class="logout" onclick="logout()">Logout</div>
 </div>
 
-<div class="card">
-  <input id="title" placeholder="Item Name">
-  <input type="file" id="photo">
-  <button type="button" onclick="addItem()">Add Item + Print Label</button>
-</div>
+<div class="container">
 
-<div id="labels"></div>
+  <!-- STEP 1: CONSIGNER -->
+  <div class="card">
+    <h2>Initial Visit</h2>
+
+    <input id="first" placeholder="First Name">
+    <input id="last" placeholder="Last Name">
+
+    <button type="button" onclick="startSession()">Start</button>
+
+    <p id="code"></p>
+  </div>
+
+  <!-- STEP 2: ITEMS -->
+  <div id="itemSection" class="card hidden">
+    <h3>Add Item</h3>
+
+    <input id="title" placeholder="Item Name">
+    <input type="file" id="photo">
+
+    <button type="button" onclick="addItem()">Add Item + Print Label</button>
+  </div>
+
+  <div id="labels"></div>
+
+</div>
 
 <script>
 let consignerCode = "";
+let sessionStarted = false;
 let user = JSON.parse(localStorage.getItem("user") || "{}");
 
-function start() {
+function goHome() {
+  window.location.href = "/dashboard.html";
+}
+
+function logout() {
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
+
+function startSession() {
   const first = document.getElementById("first").value.trim();
   const last = document.getElementById("last").value.trim();
 
   if (!first || !last) {
-    alert("Enter name");
+    alert("Enter consigner name");
     return;
   }
 
   consignerCode = (first.slice(0,3) + last.slice(0,3)).toUpperCase();
-  document.getElementById("code").innerText = "Consigner Code: " + consignerCode;
+
+  document.getElementById("code").innerText =
+    "Consigner Code: " + consignerCode;
+
+  document.getElementById("itemSection").classList.remove("hidden");
+
+  sessionStarted = true;
 }
 
 async function addItem() {
+
+  if (!sessionStarted) {
+    alert("Start session first");
+    return;
+  }
+
   const title = document.getElementById("title").value.trim();
   const file = document.getElementById("photo").files[0];
 
@@ -96,73 +164,89 @@ async function addItem() {
 
   let photoPath = null;
 
-  if (file) {
-    const formData = new FormData();
-    formData.append("photo", file);
+  try {
+    // UPLOAD PHOTO
+    if (file) {
+      const formData = new FormData();
+      formData.append("photo", file);
 
-    const uploadRes = await fetch("/upload", {
+      const uploadRes = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadData.success) {
+        alert("Upload failed");
+        return;
+      }
+
+      photoPath = uploadData.path;
+    }
+
+    // GET LOT CODE
+    const lotRes = await fetch("/next-lot-code");
+    const lotData = await lotRes.json();
+
+    const lotCode = lotData.lotCode;
+
+    // SAVE ITEM
+    const res = await fetch("/addItems", {
       method: "POST",
-      body: formData
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        items: [{
+          title,
+          consignerCode,
+          lotCode,
+          itemNumber: 1,
+          partCount: 1,
+          createdBy: user.name || "system",
+          createdAt: new Date().toISOString(),
+          photo: photoPath
+        }]
+      })
     });
 
-    const uploadData = await uploadRes.json();
-    photoPath = uploadData.path;
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Failed to save");
+      return;
+    }
+
+    renderLabel(title, lotCode);
+
+    document.getElementById("title").value = "";
+    document.getElementById("photo").value = "";
+
+    setTimeout(() => window.print(), 300);
+
+  } catch (err) {
+    console.error(err);
+    alert("Something broke");
   }
-
-  const lotRes = await fetch("/next-lot-code");
-  const lotData = await lotRes.json();
-  const lotCode = lotData.lotCode;
-
-  const item = {
-    title,
-    consignerFirstName: "",
-    consignerLastName: "",
-    consignerCode,
-    lotCode,
-    itemNumber: 1,
-    partCount: 1,
-    createdBy: user.name || "system",
-    createdAt: new Date().toISOString(),
-    photo: photoPath
-  };
-
-  const res = await fetch("/addItems", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ items:[item] })
-  });
-
-  const data = await res.json();
-
-  if (!data.success) {
-    alert(data.message || "Error");
-    return;
-  }
-
-  renderLabel(item);
-
-  setTimeout(() => window.print(), 400);
 }
 
-function renderLabel(item) {
+function renderLabel(title, lotCode) {
   const id = Date.now();
 
   document.getElementById("labels").innerHTML += `
     <div class="label">
       <canvas id="qr-${id}"></canvas>
       <div class="label-text">
-        <strong>${item.title}</strong><br>
-        Lot ${item.lotCode}<br>
-        ${item.consignerCode}
+        <strong>${title}</strong><br>
+        Lot ${lotCode}<br>
+        ${consignerCode}
       </div>
     </div>
   `;
 
-  QRCode.toCanvas(document.getElementById(`qr-${id}`), item.lotCode);
-}
-
-function goHome() {
-  window.location.href = "/dashboard.html";
+  QRCode.toCanvas(
+    document.getElementById(`qr-${id}`),
+    lotCode
+  );
 }
 </script>
 
