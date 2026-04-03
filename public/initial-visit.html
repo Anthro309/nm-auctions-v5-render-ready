@@ -19,6 +19,7 @@ body {
   padding: 16px;
   display: flex;
   justify-content: space-between;
+  font-weight: bold;
 }
 
 .card {
@@ -53,12 +54,75 @@ button {
   border-radius: 8px;
 }
 
-.label {
-  background: white;
-  color: black;
+/* ========================= */
+/* LABEL STYLE */
+/* ========================= */
+
+.label-sheet {
+  background: #fff;
   padding: 10px;
-  border-radius: 12px;
-  margin-top: 10px;
+  border-radius: 10px;
+}
+
+.label {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 10px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 8px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.qr canvas {
+  width: 90px !important;
+  height: 90px !important;
+}
+
+.text {
+  overflow: hidden;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1.2;
+  max-height: 32px;
+  overflow: hidden;
+}
+
+.meta {
+  font-size: 11px;
+  color: #333;
+  margin-top: 4px;
+}
+
+/* ========================= */
+/* PRINT MODE */
+/* ========================= */
+
+@media print {
+
+  body {
+    background: white;
+    padding: 0;
+  }
+
+  .header,
+  .card,
+  .status {
+    display: none;
+  }
+
+  .label-sheet {
+    padding: 0;
+  }
+
+  .label {
+    page-break-inside: avoid;
+  }
+
 }
 </style>
 </head>
@@ -75,21 +139,22 @@ button {
 <div class="card">
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
-  <button type="button" onclick="startSession()">Start</button>
+  <button onclick="startSession()">Start</button>
   <p id="code"></p>
 </div>
 
 <div id="itemSection" class="card hidden">
-  <input id="title" placeholder="Item Name">
-  <input type="file" id="photo">
-  <button type="button" onclick="addItem()">Add Item</button>
+  <input id="titleInput" placeholder="Item Name">
+  <input type="file" id="photoInput">
+  <button onclick="addItem()">Add Item + Label</button>
+  <button onclick="printLabels()">Print Labels</button>
 </div>
 
-<div id="labels"></div>
+<div class="label-sheet" id="labels"></div>
 
 <script>
 let consignerCode = "";
-let sessionStarted = false;
+let started = false;
 
 function log(msg){
   document.getElementById("status").innerText = msg;
@@ -118,29 +183,26 @@ function startSession(){
   code.innerText = "Consigner Code: "+consignerCode;
   itemSection.classList.remove("hidden");
 
-  sessionStarted = true;
+  started = true;
 
   log("✅ Session started");
 }
 
 async function safeJSON(res){
   const text = await res.text();
-  try{
-    return JSON.parse(text);
-  }catch{
-    throw new Error("Server returned non-JSON: "+text.substring(0,100));
-  }
+  try { return JSON.parse(text); }
+  catch { throw new Error(text.slice(0,100)); }
 }
 
 async function addItem(){
 
-  if(!sessionStarted){
+  if(!started){
     log("❌ Start session first");
     return;
   }
 
-  const title = document.getElementById("title").value.trim();
-  const file = document.getElementById("photo").files[0];
+  const title = titleInput.value.trim();
+  const file = photoInput.files[0];
 
   if(!title){
     log("❌ Missing title");
@@ -149,12 +211,10 @@ async function addItem(){
 
   let photoPath = null;
 
-  try{
+  try {
 
-    // UPLOAD
     if(file){
       log("📸 Uploading...");
-
       const formData = new FormData();
       formData.append("photo", file);
 
@@ -170,16 +230,13 @@ async function addItem(){
       log("✅ Upload OK");
     }
 
-    // LOT CODE
     log("🔢 Getting lot...");
-
     const lotRes = await fetch("/next-lot-code");
     const lotData = await safeJSON(lotRes);
 
     const lotCode = lotData.lotCode;
 
     log("💾 Saving...");
-
     const res = await fetch("/addItems",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -200,34 +257,37 @@ async function addItem(){
     const data = await safeJSON(res);
 
     if(!data.success){
-      log("❌ Save failed: "+data.message);
+      log("❌ Save failed");
       return;
     }
 
     log("✅ SAVED");
 
-    renderLabel(title,lotCode);
+    renderLabel(title, lotCode);
 
-  }catch(err){
+  } catch(err){
     log("❌ ERROR: "+err.message);
   }
 }
 
-function renderLabel(title,lotCode){
+function renderLabel(title, lotCode){
   const id = Date.now();
 
   labels.innerHTML += `
     <div class="label">
-      <canvas id="qr-${id}"></canvas>
-      <div>
-        <strong>${title}</strong><br>
-        ${lotCode}<br>
-        ${consignerCode}
+      <div class="qr"><canvas id="qr-${id}"></canvas></div>
+      <div class="text">
+        <div class="title">${title}</div>
+        <div class="meta">Lot ${lotCode} · ${consignerCode}</div>
       </div>
     </div>
   `;
 
   QRCode.toCanvas(document.getElementById(`qr-${id}`), lotCode);
+}
+
+function printLabels(){
+  window.print();
 }
 </script>
 
