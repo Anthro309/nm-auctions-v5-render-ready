@@ -62,6 +62,18 @@
   cursor: pointer;
   margin-top: 10px;
 }
+.btn-red {
+  width: 100%;
+  background: #dc2626;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
 .btn-blue {
   width: 100%;
   background: #2563eb;
@@ -169,6 +181,11 @@ select, input {
     <div id="locationMsg" class="success-msg">✅ Location saved</div>
   </div>
 
+  <!-- ADMIN: DELETE ITEM -->
+  <div class="card" id="deleteCard" style="display:none;">
+    <button class="btn-red" onclick="deleteItem()">Delete Item</button>
+  </div>
+
   <!-- REQUEST HANDOFF -->
   <div class="card">
     <h3 style="margin-bottom:4px;">Request Handoff</h3>
@@ -230,6 +247,9 @@ async function load() {
 }
 
 function render() {
+  if (user && user.isAdmin) {
+    document.getElementById('deleteCard').style.display = 'block';
+  }
   document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
   document.getElementById('detailLot').innerText = item.lotNumber || '—';
   document.getElementById('detailConsigner').innerText = item.consigner || '—';
@@ -369,6 +389,25 @@ async function printLabel() {
   }
 
   setTimeout(() => { window.print(); }, 600);
+}
+
+// =========================
+// DELETE ITEM (admin only)
+// =========================
+async function deleteItem() {
+  if (!user || !user.isAdmin) return;
+  if (!confirm('Permanently delete "' + (item.name || 'this item') + '"? This cannot be undone.')) return;
+  try {
+    const res = await fetch('/items/' + item.id, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/items.html';
+    } else {
+      alert('Delete failed');
+    }
+  } catch (err) {
+    alert('Delete failed');
+  }
 }
 
 function escapeHtml(v) {

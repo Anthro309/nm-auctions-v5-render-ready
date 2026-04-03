@@ -282,6 +282,18 @@ app.put('/items/:id', (req, res) => {
 });
 
 // =========================
+// DELETE ITEM
+// =========================
+app.delete('/items/:id', (req, res) => {
+  let items = readJSON(ITEMS_FILE);
+  const idx = items.findIndex(i => String(i.id) === String(req.params.id));
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Item not found' });
+  items.splice(idx, 1);
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true });
+});
+
+// =========================
 // ADD NOTE
 // =========================
 app.post('/items/:id/note', (req, res) => {
