@@ -3,84 +3,206 @@
 <head>
 <meta charset="UTF-8">
 <title>Scanner</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body {
+  margin: 0;
   font-family: Arial;
   background: #0b1b2b;
   color: white;
-  text-align: center;
-  padding: 20px;
+  padding: 16px;
 }
 
-#reader {
-  max-width: 400px;
-  margin: auto;
+.header {
+  background: #0f2a3d;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
 }
 
-.item {
-  margin-top: 20px;
+.card {
   background: #132a3a;
-  padding: 15px;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+input, button {
+  width: 100%;
+  padding: 16px;
+  margin-top: 10px;
   border-radius: 10px;
+  border: none;
+  font-size: 16px;
+}
+
+button {
+  background: #16a34a;
+  color: white;
+  font-weight: bold;
+}
+
+.stage {
+  font-size: 18px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.big {
+  font-size: 22px;
+}
+
+.status {
+  background: black;
+  color: lime;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h2 onclick="goHome()" style="cursor:pointer;">Auction Legacy</h2>
+<div class="header">
+  <div onclick="goHome()">Auction Legacy</div>
+  <div onclick="logout()">Logout</div>
+</div>
 
-<div id="reader"></div>
-<div id="result"></div>
+<div id="status" class="status">Ready to scan...</div>
+
+<div class="card">
+  <input id="scanInput" placeholder="Scan or enter lot code" autofocus>
+</div>
+
+<div id="itemBox" class="card" style="display:none;">
+  <div class="big" id="itemName"></div>
+  <div id="lot"></div>
+  <div class="stage" id="stage"></div>
+
+  <button onclick="advanceStage()">Move to Next Stage</button>
+</div>
 
 <script>
-function goHome() {
+
+const stages = [
+  "Received at Studio",
+  "Review & Cleaning",
+  "Photograph",
+  "Prep for Pickup",
+  "Picked Up"
+];
+
+let currentItem = null;
+
+function log(msg){
+  document.getElementById("status").innerText = msg;
+}
+
+function goHome(){
   window.location.href = "/dashboard.html";
 }
 
-function onScanSuccess(decodedText) {
-  loadItem(decodedText);
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
 }
 
-async function loadItem(lotCode) {
-  const res = await fetch(`/items/by-lot/${lotCode}`);
-  const item = await res.json();
+// 🔥 SCAN ENTER
+scanInput.addEventListener("keypress", async function(e){
+  if(e.key === "Enter"){
+    loadItem(scanInput.value.trim());
+  }
+});
 
-  if (!item) {
-    document.getElementById("result").innerHTML = "Item not found";
+async function loadItem(lot){
+
+  if(!lot){
+    log("❌ No code");
     return;
   }
 
-  document.getElementById("result").innerHTML = `
-    <div class="item">
-      <h3>${item.name}</h3>
-      <p>Lot: ${item.lotNumber}</p>
-      <p>Stage: ${item.stage}</p>
+  log("🔍 Looking up...");
 
-      <button onclick="moveStage('${item.id}', 'Review & Cleaning')">
-        Send to Review
-      </button>
-    </div>
-  `;
+  try {
+
+    const res = await fetch(`/items/by-lot/${lot}`);
+    const item = await res.json();
+
+    if(!item){
+      log("❌ Item not found");
+      return;
+    }
+
+    currentItem = item;
+
+    itemBox.style.display = "block";
+    itemName.innerText = item.name || "No name";
+    stage.innerText = item.stage;
+    lot.innerText = "Lot: " + item.lotNumber;
+
+    log("✅ Loaded");
+
+  } catch(err){
+    log("❌ Error loading");
+  }
 }
 
-async function moveStage(id, stage) {
-  await fetch(`/items/${id}/stage`, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      stage,
-      employee: JSON.parse(localStorage.getItem("user")).name
-    })
-  });
+async function advanceStage(){
 
-  alert("Moved!");
+  if(!currentItem){
+    log("❌ No item loaded");
+    return;
+  }
+
+  const currentIndex = stages.indexOf(currentItem.stage);
+
+  if(currentIndex === -1 || currentIndex === stages.length - 1){
+    log("⚠️ Already complete");
+    return;
+  }
+
+  const nextStage = stages[currentIndex + 1];
+
+  log("➡️ Moving to " + nextStage);
+
+  try {
+
+    const res = await fetch(`/items/${currentItem.id}/stage`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        stage: nextStage,
+        employee: "scanner"
+      })
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      log("❌ Failed");
+      return;
+    }
+
+    currentItem = data.item;
+
+    stage.innerText = currentItem.stage;
+
+    log("✅ Moved to " + nextStage);
+
+    // 🔥 AUTO CLEAR FOR SPEED
+    setTimeout(()=>{
+      scanInput.value = "";
+      itemBox.style.display = "none";
+      currentItem = null;
+      log("Ready to scan...");
+    }, 1200);
+
+  } catch(err){
+    log("❌ Error");
+  }
 }
 
-new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 })
-  .render(onScanSuccess);
 </script>
 
 </body>
