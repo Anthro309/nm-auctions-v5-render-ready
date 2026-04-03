@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Items</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item Library</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
-
 <body>
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
@@ -18,7 +18,7 @@
   <div class="sidebar-title">Auction Legacy</div>
   <a href="/dashboard.html">Dashboard</a>
   <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/dropoff.html">Received at Studio</a>
+  <a href="/scanner.html">Scanner</a>
   <a href="/items.html">Item Library</a>
   <a href="/reports.html">Reports</a>
 </div>
@@ -26,76 +26,64 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
-
   <div class="card">
     <h2>Item Library</h2>
-
-    <!-- SEARCH -->
     <input id="search" placeholder="Search by name, code, or consigner" oninput="render()">
-
-    <div id="list" class="grid" style="margin-top:15px;"></div>
+    <div id="list" style="margin-top:15px;"></div>
   </div>
-
 </div>
 
 <script>
 let allItems = [];
 
-function toggleMenu(){
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
 }
 
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = '/';
 }
 
-// =========================
-// LOAD
-// =========================
-async function load(){
+async function load() {
   const res = await fetch('/items');
   allItems = await res.json();
   render();
 }
 
-// =========================
-// RENDER WITH SEARCH
-// =========================
-function render(){
-  const q = search.value.toLowerCase();
-
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
   const filtered = allItems.filter(i =>
-    i.name.toLowerCase().includes(q) ||
-    i.code.toLowerCase().includes(q) ||
-    i.consigner.toLowerCase().includes(q)
+    (i.name || '').toLowerCase().includes(q) ||
+    (i.code || '').toLowerCase().includes(q) ||
+    (i.consigner || '').toLowerCase().includes(q)
   );
 
   const grouped = {};
-
-  filtered.forEach(i=>{
-    if(!grouped[i.code]) grouped[i.code] = [];
+  filtered.forEach(i => {
+    if (!grouped[i.code]) grouped[i.code] = [];
     grouped[i.code].push(i);
   });
 
-  list.innerHTML = "";
+  const list = document.getElementById('list');
+  list.innerHTML = '';
 
-  Object.keys(grouped).forEach(code=>{
+  if (!Object.keys(grouped).length) {
+    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
+    return;
+  }
+
+  Object.keys(grouped).forEach(code => {
     const group = grouped[code];
-
-    const div = document.createElement("div");
-    div.className = "button-card";
-
+    const div = document.createElement('div');
+    div.className = 'button-card';
+    div.style.marginBottom = '12px';
     div.innerHTML = `
-      <div class="button-title">${group[0].consigner}</div>
-      <div class="button-sub">${group.length} items</div>
+      <div class="button-title">${group[0].consigner || code}</div>
+      <div class="button-sub">${group.length} item${group.length !== 1 ? 's' : ''} · Code: ${code}</div>
     `;
-
-    div.onclick = ()=>{
-      window.location.href = "/consigner.html?code=" + code;
-    };
-
+    div.onclick = () => { window.location.href = '/consigner.html?code=' + code; };
     list.appendChild(div);
   });
 }
