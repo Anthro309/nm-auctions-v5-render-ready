@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Consigner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consigner</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
-
 <body>
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center">Auction Legacy</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
   <div class="nav-right" onclick="logout()">Logout</div>
 </div>
 
@@ -18,7 +18,7 @@
   <div class="sidebar-title">Auction Legacy</div>
   <a href="/dashboard.html">Dashboard</a>
   <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/dropoff.html">Received at Studio</a>
+  <a href="/scanner.html">Scanner</a>
   <a href="/items.html">Item Library</a>
   <a href="/reports.html">Reports</a>
 </div>
@@ -26,66 +26,63 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
-
   <div class="card">
-    <h2 id="name"></h2>
-    <div id="stats" class="label"></div>
+    <h2 id="consignerName"></h2>
+    <div id="consignerStats" class="label"></div>
   </div>
-
   <div id="grid" class="grid"></div>
-
 </div>
 
 <script>
-let code = new URLSearchParams(window.location.search).get("code");
+const code = new URLSearchParams(window.location.search).get('code');
 
-async function load(){
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+function logout() {
+  localStorage.removeItem('user');
+  window.location.href = '/';
+}
+
+async function load() {
   const res = await fetch('/items');
   const items = await res.json();
-
   const list = items.filter(i => i.code === code);
 
-  name.innerText = list[0]?.consigner || "";
-  stats.innerText = list.length + " items";
+  document.getElementById('consignerName').innerText = list[0]?.consigner || code || 'Consigner';
+  document.getElementById('consignerStats').innerText = list.length + ' item' + (list.length !== 1 ? 's' : '');
 
-  grid.innerHTML = "";
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
 
-  list.forEach(i=>{
-    const div = document.createElement("div");
-    div.className = "item";
+  if (!list.length) {
+    grid.innerHTML = '<div class="card">No items found.</div>';
+    return;
+  }
 
-    if(i.stage === "Received at Studio") div.classList.add("received");
-    if(i.stage === "Missing at Drop Off") div.classList.add("missing");
+  list.forEach(i => {
+    const div = document.createElement('div');
+    div.className = 'item' + (i.stage === 'Received at Studio' ? ' received' : '') + (i.stage === 'Missing at Drop Off' ? ' missing' : '');
 
     let badge = `<span class="badge blue">${i.stage}</span>`;
-    if(i.stage === "Received at Studio") badge = `<span class="badge green">Received</span>`;
-    if(i.stage === "Missing at Drop Off") badge = `<span class="badge red">Missing</span>`;
+    if (i.stage === 'Received at Studio') badge = `<span class="badge green">Received</span>`;
+    if (i.stage === 'Missing at Drop Off') badge = `<span class="badge red">Missing</span>`;
+    if (i.stage === 'Picked Up')           badge = `<span class="badge gold">Picked Up</span>`;
 
     div.innerHTML = `
-      ${i.photos?.[0] ? `<img src="${i.photos[0]}">` : ""}
-      <div style="padding:14px">
-        <div class="title">${i.name}</div>
-        <div class="label">${i.code}-${i.number}</div>
+      ${i.photos?.[0] ? `<img src="${i.photos[0]}" alt="${i.name}">` : '<div style="height:160px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px;">No Image</div>'}
+      <div style="padding:14px;">
+        <div class="title">${i.name || 'Unnamed'}</div>
+        <div class="label">${i.lotNumber || (i.code + '-' + i.number)}</div>
         ${badge}
       </div>
     `;
 
-    div.onclick = ()=>{
-      window.location.href = "/item.html?id=" + i.id;
-    };
-
+    div.onclick = () => { window.location.href = '/item.html?id=' + i.id; };
     grid.appendChild(div);
   });
-}
-
-function toggleMenu(){
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
-}
-
-function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
 }
 
 load();
