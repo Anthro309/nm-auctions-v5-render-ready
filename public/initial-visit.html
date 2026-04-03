@@ -14,6 +14,13 @@ body {
   padding: 16px;
 }
 
+.header {
+  background: #0f2a3d;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
 .card {
   background: #132a3a;
   padding: 16px;
@@ -35,23 +42,20 @@ button {
   font-weight: bold;
 }
 
-.hidden {
-  display: none;
-}
+.hidden { display:none; }
 
 .status {
   background: black;
   color: lime;
   padding: 10px;
   font-size: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   border-radius: 8px;
 }
 
 .label {
   background: white;
   color: black;
-  display: flex;
   padding: 10px;
   border-radius: 12px;
   margin-top: 10px;
@@ -61,7 +65,10 @@ button {
 
 <body>
 
-<h2 onclick="goHome()">Auction Legacy</h2>
+<div class="header">
+  <div onclick="goHome()">Auction Legacy</div>
+  <div onclick="logout()">Logout</div>
+</div>
 
 <div id="status" class="status">Ready...</div>
 
@@ -84,38 +91,50 @@ button {
 let consignerCode = "";
 let sessionStarted = false;
 
-function log(msg) {
+function log(msg){
   document.getElementById("status").innerText = msg;
 }
 
-function goHome() {
+function goHome(){
   window.location.href = "/dashboard.html";
 }
 
-function startSession() {
-  const first = document.getElementById("first").value.trim();
-  const last = document.getElementById("last").value.trim();
+function logout(){
+  localStorage.removeItem("user");
+  window.location.href = "/";
+}
 
-  if (!first || !last) {
+function startSession(){
+  const first = first.value.trim();
+  const last = last.value.trim();
+
+  if(!first || !last){
     log("❌ Missing name");
     return;
   }
 
-  consignerCode = (first.slice(0,3) + last.slice(0,3)).toUpperCase();
+  consignerCode = (first.slice(0,3)+last.slice(0,3)).toUpperCase();
 
-  document.getElementById("code").innerText =
-    "Consigner Code: " + consignerCode;
-
-  document.getElementById("itemSection").classList.remove("hidden");
+  code.innerText = "Consigner Code: "+consignerCode;
+  itemSection.classList.remove("hidden");
 
   sessionStarted = true;
 
   log("✅ Session started");
 }
 
-async function addItem() {
+async function safeJSON(res){
+  const text = await res.text();
+  try{
+    return JSON.parse(text);
+  }catch{
+    throw new Error("Server returned non-JSON: "+text.substring(0,100));
+  }
+}
 
-  if (!sessionStarted) {
+async function addItem(){
+
+  if(!sessionStarted){
     log("❌ Start session first");
     return;
   }
@@ -123,91 +142,81 @@ async function addItem() {
   const title = document.getElementById("title").value.trim();
   const file = document.getElementById("photo").files[0];
 
-  if (!title) {
-    log("❌ Missing item title");
+  if(!title){
+    log("❌ Missing title");
     return;
   }
 
-  log("📸 Uploading image...");
-
   let photoPath = null;
 
-  try {
+  try{
 
     // UPLOAD
-    if (file) {
+    if(file){
+      log("📸 Uploading...");
+
       const formData = new FormData();
       formData.append("photo", file);
 
-      const uploadRes = await fetch("/upload", {
-        method: "POST",
-        body: formData
-      });
+      const uploadRes = await fetch("/upload",{method:"POST",body:formData});
+      const uploadData = await safeJSON(uploadRes);
 
-      const uploadData = await uploadRes.json();
-
-      if (!uploadData.success) {
+      if(!uploadData.success){
         log("❌ Upload failed");
         return;
       }
 
       photoPath = uploadData.path;
-      log("✅ Upload success");
+      log("✅ Upload OK");
     }
 
     // LOT CODE
-    log("🔢 Getting lot code...");
+    log("🔢 Getting lot...");
 
     const lotRes = await fetch("/next-lot-code");
-    const lotData = await lotRes.json();
-
-    if (!lotData.lotCode) {
-      log("❌ Lot code failed");
-      return;
-    }
+    const lotData = await safeJSON(lotRes);
 
     const lotCode = lotData.lotCode;
 
-    log("💾 Saving item...");
+    log("💾 Saving...");
 
-    // SAVE
-    const res = await fetch("/addItems", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
+    const res = await fetch("/addItems",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
-        items: [{
+        items:[{
           title,
           consignerCode,
           lotCode,
-          itemNumber: 1,
-          partCount: 1,
-          createdBy: "mobile",
-          createdAt: new Date().toISOString(),
-          photo: photoPath
+          itemNumber:1,
+          partCount:1,
+          createdBy:"mobile",
+          createdAt:new Date().toISOString(),
+          photo:photoPath
         }]
       })
     });
 
-    const data = await res.json();
+    const data = await safeJSON(res);
 
-    if (!data.success) {
-      log("❌ Save failed: " + data.message);
+    if(!data.success){
+      log("❌ Save failed: "+data.message);
       return;
     }
 
-    log("✅ Item saved");
+    log("✅ SAVED");
 
-    renderLabel(title, lotCode);
+    renderLabel(title,lotCode);
 
-  } catch (err) {
-    log("❌ ERROR: " + err.message);
+  }catch(err){
+    log("❌ ERROR: "+err.message);
   }
 }
 
-function renderLabel(title, lotCode) {
+function renderLabel(title,lotCode){
   const id = Date.now();
 
-  document.getElementById("labels").innerHTML += `
+  labels.innerHTML += `
     <div class="label">
       <canvas id="qr-${id}"></canvas>
       <div>
