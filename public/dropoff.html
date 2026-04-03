@@ -1,206 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
-  />
-  <title>NM Auctions | Initial Visit</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<meta charset="UTF-8">
+<title>Initial Visit</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-  <style>
-    :root {
-      --bg: #0b1b2b;
-      --panel: #122538;
-      --panel-2: #173149;
-      --line: rgba(255,255,255,0.08);
-      --text: #f4f7fb;
-      --muted: #a8b7c7;
-      --accent: #3b82f6;
-      --accent-2: #2563eb;
-      --green: #16a34a;
-      --green-2: #15803d;
-      --red: #dc2626;
-      --white: #ffffff;
-      --label-border: #d8dbe2;
-      --shadow: 0 18px 50px rgba(0,0,0,0.28);
-      --radius: 18px;
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #0b1b2b;
+  color: white;
+  padding: 20px;
+}
 
-    * { box-sizing: border-box; }
+.card {
+  background: #132a3a;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(180deg, #081421 0%, #0b1b2b 100%);
-      color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
-      min-height: 100%;
-    }
+input, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+}
 
-    body { padding: 18px; }
+button {
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+}
 
-    .app { max-width: 1400px; margin: 0 auto; }
+.label {
+  background: white;
+  color: black;
+  display: flex;
+  padding: 10px;
+  border-radius: 12px;
+  margin-top: 10px;
+  align-items: center;
+}
 
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 16px; margin-bottom: 18px; flex-wrap: wrap;
-    }
+.qr {
+  width: 90px;
+  height: 90px;
+}
 
-    .brand-title {
-      font-size: 28px; font-weight: 800; letter-spacing: 0.03em;
-      cursor: pointer;
-    }
-
-    .brand-sub { color: var(--muted); font-size: 14px; }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    .panel {
-      background: rgba(18, 37, 56, 0.98);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .panel-body { padding: 16px 18px 18px; }
-
-    .grid { display: grid; gap: 12px; }
-    .grid.two { grid-template-columns: 1fr 1fr; }
-
-    input, textarea {
-      width: 100%;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: #0d1d2d;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 15px;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 12px;
-      padding: 13px 16px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn.green {
-      background: linear-gradient(180deg, var(--green), var(--green-2));
-      color: white;
-    }
-
-    .list { display: grid; gap: 12px; }
-
-    .item-card {
-      background: #173149;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .labels-grid { display: grid; gap: 10px; }
-
-    .nm-label {
-      background: var(--white);
-      border: 1px solid var(--label-border);
-      border-radius: 18px;
-      display: grid;
-      grid-template-columns: 100px 1fr;
-      padding: 12px;
-      gap: 10px;
-      color: black;
-    }
-
-    .qr-box canvas {
-      width: 90px !important;
-      height: 90px !important;
-    }
-
-    @media print {
-      body { background: white !important; }
-      .left-panel, .topbar { display: none; }
-    }
-  </style>
+.label-text {
+  padding-left: 10px;
+}
+</style>
 </head>
 
 <body>
-<div class="app">
 
-  <div class="topbar">
-    <div>
-      <div class="brand-title" onclick="goDashboard()">NM Auctions</div>
-      <div class="brand-sub">Initial Visit (Field Intake)</div>
-    </div>
-  </div>
+<h2 onclick="goHome()" style="cursor:pointer;">Auction Legacy</h2>
 
-  <div class="layout">
+<div class="card">
+  <input id="first" placeholder="First Name">
+  <input id="last" placeholder="Last Name">
 
-    <!-- LEFT PANEL -->
-    <div class="panel left-panel">
-      <div class="panel-body">
+  <button onclick="start()">Start</button>
 
-        <div class="grid two">
-          <input id="firstName" placeholder="First Name">
-          <input id="lastName" placeholder="Last Name">
-        </div>
-
-        <input id="itemTitle" placeholder="Item Name">
-        <input id="dimensions" placeholder="Dimensions">
-        <input type="file" id="photo">
-
-        <button class="btn green" onclick="addItem()">Add Item + Print Label</button>
-
-        <div id="status"></div>
-
-      </div>
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div class="panel">
-      <div class="panel-body">
-        <div id="itemsList" class="list"></div>
-
-        <div style="margin-top:20px;">
-          <div id="labelsGrid" class="labels-grid"></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
+  <p id="code"></p>
 </div>
 
-<script>
-let currentUser = JSON.parse(localStorage.getItem("user"));
+<div class="card">
+  <input id="title" placeholder="Item Name">
+  <input type="file" id="photo">
 
-function consignerCode(first, last) {
-  return (first.substring(0,3) + last.substring(0,3)).toUpperCase();
+  <!-- IMPORTANT: type="button" -->
+  <button type="button" onclick="addItem()">Add</button>
+</div>
+
+<div id="labels"></div>
+
+<script>
+let consignerCode = "";
+let user = JSON.parse(localStorage.getItem("user") || "{}");
+
+function start() {
+  const first = document.getElementById("first").value.trim();
+  const last = document.getElementById("last").value.trim();
+
+  if (!first || !last) {
+    alert("Enter name");
+    return;
+  }
+
+  consignerCode = (first.slice(0,3) + last.slice(0,3)).toUpperCase();
+  document.getElementById("code").innerText = "Consigner Code: " + consignerCode;
 }
 
 async function addItem() {
 
-  const first = document.getElementById("firstName").value.trim();
-  const last = document.getElementById("lastName").value.trim();
-  const title = document.getElementById("itemTitle").value.trim();
-  const dimensions = document.getElementById("dimensions").value.trim();
+  const title = document.getElementById("title").value.trim();
   const file = document.getElementById("photo").files[0];
 
-  if (!first || !last || !title) {
-    alert("Missing fields");
+  if (!title) {
+    alert("Enter item");
     return;
   }
 
   let photoPath = null;
 
+  // =========================
+  // UPLOAD PHOTO
+  // =========================
   if (file) {
     const formData = new FormData();
     formData.append("photo", file);
@@ -214,23 +123,29 @@ async function addItem() {
     photoPath = uploadData.path;
   }
 
+  // =========================
+  // GET LOT CODE
+  // =========================
   const lotRes = await fetch("/next-lot-code");
   const lotData = await lotRes.json();
   const lotCode = lotData.lotCode;
 
   const item = {
     title,
-    consignerFirstName: first,
-    consignerLastName: last,
-    consignerCode: consignerCode(first,last),
+    consignerFirstName: "",
+    consignerLastName: "",
+    consignerCode,
     lotCode,
     itemNumber: 1,
     partCount: 1,
-    createdBy: currentUser.name,
+    createdBy: user.name || "system",
     createdAt: new Date().toISOString(),
     photo: photoPath
   };
 
+  // =========================
+  // SAVE ITEM
+  // =========================
   const res = await fetch("/addItems", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
@@ -240,32 +155,22 @@ async function addItem() {
   const data = await res.json();
 
   if (!data.success) {
-    alert(data.message);
+    alert(data.message || "Failed");
     return;
   }
 
-  renderItem(item);
   renderLabel(item);
 
-  setTimeout(()=>window.print(),400);
-}
-
-function renderItem(item) {
-  const div = document.createElement("div");
-  div.className = "item-card";
-  div.innerHTML = `<strong>${item.title}</strong><br>Lot ${item.lotCode}`;
-  document.getElementById("itemsList").prepend(div);
+  setTimeout(() => window.print(), 400);
 }
 
 function renderLabel(item) {
-  const container = document.getElementById("labelsGrid");
-
   const id = Date.now();
 
-  const html = `
-    <div class="nm-label">
-      <div class="qr-box"><canvas id="qr-${id}"></canvas></div>
-      <div>
+  document.getElementById("labels").innerHTML += `
+    <div class="label">
+      <canvas id="qr-${id}"></canvas>
+      <div class="label-text">
         <strong>${item.title}</strong><br>
         Lot ${item.lotCode}<br>
         ${item.consignerCode}
@@ -273,12 +178,10 @@ function renderLabel(item) {
     </div>
   `;
 
-  container.insertAdjacentHTML("afterbegin", html);
-
   QRCode.toCanvas(document.getElementById(`qr-${id}`), item.lotCode);
 }
 
-function goDashboard() {
+function goHome() {
   window.location.href = "/dashboard.html";
 }
 </script>
