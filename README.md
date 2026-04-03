@@ -52,3 +52,47 @@ Consigner codes are generated using:
 - First 3 letters of last name
 
 Example:
+
+---
+
+### 📸 Photography Stage
+
+- Items marked as photographed
+- Stores:
+  - Dimensions
+  - Description
+  - Notes
+- Supports multi-part lots (1/2, 2/2, etc.)
+
+---
+
+### 📊 Daily Lot Report
+
+At the end of each day:
+- Generate a report of all photographed items
+- Ordered by time photographed (NOT lot order)
+- Designed for printing
+- Used for auction upload workflow
+
+---
+
+### 🧠 Admin Features
+
+- Add/remove employees
+- View workflow metrics (future)
+- Control permissions
+- Prevent deletion after intake is finalized
+
+---
+
+## 🏗️ Tech Stack
+
+- Node.js
+- Express
+- JSON file storage (users, items, reports)
+- Vanilla JS frontend
+- QR Code library
+
+---
+
+## 📁 Project Structure
