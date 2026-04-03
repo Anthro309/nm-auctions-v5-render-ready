@@ -1,57 +1,54 @@
 # NM Auctions V5
 
-A deployment-ready Node.js app for NM Auctions with:
-- employee PIN login
-- consigner drop offs
-- lot/item intake
-- workflow handoffs with acceptance
-- required reason when skipping a step
-- notification center for incoming approvals
-- daily close out with printable photographed-item report
-- stored daily reports visible to all employees
+Internal inventory and workflow management system for NM Auctions.
 
-## Quick start
+This system is designed for a fast-moving auction floor environment where items move through multiple stages from drop-off to customer pickup.
 
-```bash
-npm install
-npm start
-```
+Built for tablets first, with a clean desktop fallback.
 
-Open `http://localhost:3000`
+---
 
-## Default logins
+## 🚀 Features
 
-On first run the app seeds these users. Every user starts with PIN `1234` and is forced to change it at first login.
+### 🔐 Employee Login
+- Name + 4-digit PIN
+- Role-based access (admin / user)
+- Default PIN: `1234` (should be changed on first login)
 
-- James (admin)
-- Fabian (admin)
-- Steven (admin)
-- Mike
-- Gio
-- Hector
-- Michelle
-- Sara
+---
 
-## Render deployment
+### 📦 Item Workflow Tracking
 
-### 1. Push this project to GitHub
+Items move through defined stages:
 
-### 2. Create a new Web Service on Render
-- Environment: `Node`
-- Build Command: `npm install`
-- Start Command: `npm start`
+1. Drop Off  
+2. Back of House  
+3. Review & Cleaning  
+4. Photograph  
+5. Prepare for Pickup  
+6. Picked Up  
 
-### 3. Optional persistent disk
-This app uses SQLite by default. To keep data across restarts on Render, attach a persistent disk and set:
+Each movement:
+- Logs time and date
+- Tracks responsible employee
+- Can require confirmation before advancing
 
-- Mount path: `/var/data`
-- Environment variable: `DATA_DIR=/var/data`
+---
 
-If you do not attach a disk, the app will still run, but data may reset when the service restarts.
+### 🏷️ QR Code System
 
-## Printing
-Use the built-in print button on the daily report page. Reports are formatted for regular letter paper.
+- Each item is assigned a unique QR code
+- QR scanning allows:
+  - Quick lookup
+  - Fast stage updates
+  - Viewing all items for a consigner
 
-## Notes
-- This is a strong MVP, built to be stable and deployable.
-- For production at larger scale, move to PostgreSQL and durable session storage.
+---
+
+### 🧾 Consigner Labeling
+
+Consigner codes are generated using:
+- First 3 letters of first name
+- First 3 letters of last name
+
+Example:
