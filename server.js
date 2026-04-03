@@ -410,6 +410,42 @@ app.post('/analyze-image', async (req, res) => {
 });
 
 // =========================
+// REPORTS — DAILY SUMMARY
+// =========================
+app.get('/reports/daily-summary', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const today = new Date().toLocaleDateString('en-US');
+
+  const photographedToday = [];
+  const stagedToday = [];
+
+  items.forEach(item => {
+    if (!Array.isArray(item.logs)) return;
+    item.logs.forEach(log => {
+      const logDate = new Date(log.timestamp).toLocaleDateString('en-US');
+      if (logDate !== today) return;
+      const entry = {
+        lotNumber: item.lotNumber || '—',
+        name: item.name || 'Unnamed',
+        consigner: item.consigner || '—',
+        toStage: log.toStage,
+        employee: log.employee,
+        timestamp: log.timestamp
+      };
+      if (log.toStage === 'Photograph') photographedToday.push(entry);
+      if (log.toStage) stagedToday.push(entry);
+    });
+  });
+
+  res.json({
+    date: today,
+    photographedCount: photographedToday.length,
+    photographedItems: photographedToday.sort((a, b) => a.lotNumber.localeCompare(b.lotNumber)),
+    totalMoved: stagedToday.length
+  });
+});
+
+// =========================
 // REPORTS — GET ALL
 // =========================
 app.get('/reports', (req, res) => {
@@ -422,10 +458,28 @@ app.get('/reports', (req, res) => {
 app.post('/closeout', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const reports = readJSON(REPORTS_FILE);
-  const today = new Date().toLocaleDateString();
+  const today = new Date().toLocaleDateString('en-US');
+
+  const photographedToday = [];
+  items.forEach(item => {
+    if (!Array.isArray(item.logs)) return;
+    item.logs.forEach(log => {
+      const logDate = new Date(log.timestamp).toLocaleDateString('en-US');
+      if (logDate === today && log.toStage === 'Photograph') {
+        photographedToday.push({
+          lotNumber: item.lotNumber || '—',
+          name: item.name || 'Unnamed',
+          consigner: item.consigner || '—'
+        });
+      }
+    });
+  });
+
   const report = {
     id: Date.now(),
     date: today,
+    photographedCount: photographedToday.length,
+    photographedItems: photographedToday.sort((a, b) => a.lotNumber.localeCompare(b.lotNumber)),
     items: items.map(i => ({
       lotNumber: i.lotNumber,
       name: i.name,

@@ -34,9 +34,29 @@
 
 <div class="container">
 
+  <!-- TODAY'S PHOTOGRAPHY SUMMARY -->
+  <div class="card" id="photoSummaryCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="margin:0;">📸 Today's Photography</h2>
+      <span id="photoDate" style="font-size:13px;color:#6b7280;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <div style="background:#eff6ff;border-radius:16px;padding:18px 24px;text-align:center;flex-shrink:0;">
+        <div id="photoCount" style="font-size:48px;font-weight:800;color:#1d4ed8;line-height:1;">—</div>
+        <div style="font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Lots Photographed</div>
+      </div>
+      <div style="flex:1;">
+        <div id="photoStatus" style="font-size:14px;color:#374151;line-height:1.6;"></div>
+      </div>
+    </div>
+    <div id="photoList" style="margin-top:4px;"></div>
+    <button onclick="loadDailySummary()" style="width:100%;background:#f1f5f9;color:#374151;margin-top:12px;font-size:14px;">↻ Refresh</button>
+  </div>
+
+  <!-- DAILY REPORT -->
   <div class="card">
     <h2>Daily Report</h2>
-    <button onclick="generateReport()" style="width:100%;margin-bottom:8px;">Generate Today's Report</button>
+    <button onclick="generateReport()" style="width:100%;margin-bottom:8px;">Generate Today's Full Report</button>
     <button onclick="window.print()" style="width:100%;background:#6b7280;">🖨️ Print</button>
   </div>
 
@@ -60,6 +80,41 @@ function logout() {
   window.location.href = '/';
 }
 
+async function loadDailySummary() {
+  try {
+    const res = await fetch('/reports/daily-summary');
+    const data = await res.json();
+
+    document.getElementById('photoDate').innerText = data.date;
+    document.getElementById('photoCount').innerText = data.photographedCount;
+
+    if (data.photographedCount === 0) {
+      document.getElementById('photoStatus').innerText = 'No items photographed yet today.';
+      document.getElementById('photoList').innerHTML = '';
+      return;
+    }
+
+    document.getElementById('photoStatus').innerText =
+      `${data.photographedCount} lot${data.photographedCount !== 1 ? 's' : ''} reached the Photograph stage today.`;
+
+    document.getElementById('photoList').innerHTML = data.photographedItems.map(i => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #f1f5f9;font-size:14px;">
+        <div>
+          <span style="font-weight:700;color:#111827;">${escapeHtml(i.lotNumber)}</span>
+          <span style="color:#374151;margin-left:8px;">${escapeHtml(i.name)}</span>
+        </div>
+        <div style="font-size:12px;color:#6b7280;flex-shrink:0;margin-left:8px;">${escapeHtml(i.consigner)}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('photoStatus').innerText = 'Could not load summary.';
+  }
+}
+
+function escapeHtml(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 async function generateReport() {
   try {
     const res = await fetch('/closeout', { method: 'POST' });
@@ -75,7 +130,21 @@ async function generateReport() {
 
 function renderReport(report) {
   const area = document.getElementById('printArea');
-  let html = `<h2>NM Auctions</h2><h3>Daily Lot Report</h3><p>${report.date}</p><hr>`;
+  const photoCount = report.photographedCount ?? '—';
+  const photoItems = report.photographedItems ?? [];
+
+  let html = `
+    <h2 style="margin-bottom:4px;">NM Auctions — Daily Lot Report</h2>
+    <p style="color:#6b7280;margin-bottom:16px;">${report.date}</p>
+    <div style="background:#eff6ff;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:16px;">
+      <div style="font-size:36px;font-weight:800;color:#1d4ed8;">${photoCount}</div>
+      <div>
+        <div style="font-weight:700;color:#1e40af;">Lots Photographed</div>
+        ${photoItems.length ? photoItems.map(i => `<span style="font-size:12px;color:#374151;margin-right:10px;">${escapeHtml(i.lotNumber)}</span>`).join('') : ''}
+      </div>
+    </div>
+    <hr>
+  `;
   report.items.forEach(i => {
     html += `<div style="margin-bottom:12px;"><b>${i.lotNumber || '—'}</b> — ${i.name}<br><span style="font-size:12px;color:#666;">${i.consigner} · ${i.stage}</span></div><hr>`;
   });
@@ -99,9 +168,11 @@ async function loadHistory() {
       const div = document.createElement('div');
       div.className = 'button-card';
       div.style.marginBottom = '12px';
+      const photoLine = r.photographedCount != null
+        ? ` · 📸 ${r.photographedCount} photographed` : '';
       div.innerHTML = `
         <div class="button-title">${r.date}</div>
-        <div class="button-sub">${r.items.length} item${r.items.length !== 1 ? 's' : ''}</div>
+        <div class="button-sub">${r.items.length} item${r.items.length !== 1 ? 's' : ''}${photoLine}</div>
       `;
       div.onclick = () => renderReport(r);
       historyEl.appendChild(div);
@@ -111,6 +182,7 @@ async function loadHistory() {
   }
 }
 
+loadDailySummary();
 loadHistory();
 </script>
 
