@@ -1,10 +1,47 @@
 [
-  { "name": "Fabian", "pin": "1234", "isAdmin": true },
-  { "name": "James", "pin": "1234", "isAdmin": true },
-  { "name": "Steven", "pin": "1234", "isAdmin": true },
-  { "name": "Mike", "pin": "1234", "isAdmin": false },
-  { "name": "Gio", "pin": "1234", "isAdmin": false },
-  { "name": "Hector", "pin": "1234", "isAdmin": false },
-  { "name": "Michelle", "pin": "1234", "isAdmin": false },
-  { "name": "Sara", "pin": "1234", "isAdmin": false }
+  {
+    "name": "Fabian",
+    "pin": "1234",
+    "role": "admin"
+  },
+  {
+    "name": "James",
+    "pin": "1234",
+    "role": "admin"
+  },
+  {
+    "name": "Steven",
+    "pin": "1234",
+    "role": "admin"
+  },
+  {
+    "name": "Mike",
+    "pin": "1234",
+    "role": "user"
+  },
+  {
+    "name": "Gio",
+    "pin": "1234",
+    "role": "user"
+  },
+  {
+    "name": "Michelle",
+    "pin": "1234",
+    "role": "user"
+  },
+  {
+    "name": "Sara",
+    "pin": "1234",
+    "role": "user"
+  },
+  {
+    "name": "Alejandro",
+    "pin": "1234",
+    "role": "user"
+  },
+  {
+    "name": "Christian",
+    "pin": "1234",
+    "role": "user"
+  }
 ]
