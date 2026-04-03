@@ -139,7 +139,7 @@ async function loadItem(lot){
     itemBox.style.display = "block";
     itemName.innerText = item.name || "No name";
     stage.innerText = item.stage;
-    lot.innerText = "Lot: " + item.lotNumber;
+    document.getElementById("lot").innerText = "Lot: " + item.lotNumber;
 
     log("✅ Loaded");
 

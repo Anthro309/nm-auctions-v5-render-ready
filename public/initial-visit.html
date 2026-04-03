@@ -209,7 +209,7 @@ input, textarea {
 
 <div class="container">
 
-  <div class="iv-card">
+  <div id="visitCard" class="iv-card">
     <h2>Initial Visit</h2>
     <input id="firstInput" placeholder="First Name">
     <input id="lastInput" placeholder="Last Name">
@@ -287,11 +287,9 @@ function startVisit() {
     code: (first.slice(0,3) + last.slice(0,3)).toUpperCase(),
     date: new Date().toLocaleDateString()
   };
-  const cd = document.getElementById('codeDisplay');
-  cd.style.display = 'block';
-  cd.innerText = 'Code: ' + session.code;
+  document.getElementById('visitCard').style.display = 'none';
   document.getElementById('itemSection').style.display = 'block';
-  setStatus('Visit started. Add items below.');
+  setStatus('Visit started for ' + session.code + '. Add items below.');
 }
 
 async function uploadPhoto() {
