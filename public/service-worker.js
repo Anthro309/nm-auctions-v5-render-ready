@@ -1,27 +1,29 @@
-const CACHE_NAME = 'auction-legacy-v1';
+// NM Auctions Service Worker (SAFE MODE)
 
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
-  '/items.html',
-  '/consigner.html',
-  '/item.html',
-  '/dropoff.html',
-  '/initial-visit.html',
-  '/reports.html',
-  '/styles.css',
-  '/manifest.json'
-];
+// This version disables aggressive caching so updates always load
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(URLS_TO_CACHE))
-  );
+  console.log('Service Worker Installed');
+  self.skipWaiting();
 });
 
+self.addEventListener('activate', event => {
+  console.log('Service Worker Activated');
+
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => caches.delete(key)))
+    )
+  );
+
+  self.clients.claim();
+});
+
+// Always fetch fresh files (no caching issues)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    fetch(event.request).catch(() => {
+      return new Response("Offline", { status: 503 });
+    })
   );
 });
