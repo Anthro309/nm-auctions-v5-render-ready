@@ -310,18 +310,10 @@ app.post('/addItems', (req, res) => {
       photographedAt: null,
       lotAssignedAt: new Date().toISOString(),
       lotAssignedBy: i.createdBy || 'system',
-      pendingHandoff: {
-        requestedStage: 'Review & Cleaning',
-        fromStage: 'Received at Studio',
-        requestedBy: i.createdBy || 'system',
-        requestedAt: new Date().toISOString(),
-        reason: 'Initial Visit intake'
-      },
       createdAt: i.createdAt || new Date().toISOString(),
       logs: []
     };
-    addLog(item, { employee: i.createdBy || 'system', action: 'item received', toStage: 'Received at Studio' });
-    addLog(item, { employee: i.createdBy || 'system', action: 'handoff requested', fromStage: 'Received at Studio', toStage: 'Review & Cleaning', reason: 'Initial Visit intake' });
+    addLog(item, { employee: i.createdBy || 'system', action: 'item created', toStage: 'Home Visit' });
     newItems.push(item);
   }
 
