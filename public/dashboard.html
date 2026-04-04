@@ -57,35 +57,148 @@
       .dash-title { font-size: 18px; }
       .dash-sub { font-size: 14px; }
     }
-    .welcome-card {
-      background: linear-gradient(135deg, #0b1b2b 0%, #1e3a5f 100%);
-      border-radius: 18px;
-      padding: 24px 22px;
+    .welcome-banner {
+      background: linear-gradient(135deg, #0b1b2b 0%, #0f2d52 60%, #1a3a5f 100%);
+      border-radius: 20px;
+      padding: 22px 20px;
       margin-bottom: 16px;
       color: white;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
     }
-    .welcome-text {}
-    .welcome-name {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 2px;
+    .welcome-banner::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: rgba(37,99,235,0.12);
+      pointer-events: none;
     }
-    .welcome-sub {
+    .welcome-banner::after {
+      content: '';
+      position: absolute;
+      bottom: -50px; right: 30px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: rgba(37,99,235,0.08);
+      pointer-events: none;
+    }
+    .welcome-avatar {
+      width: 58px;
+      height: 58px;
+      min-width: 58px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.12);
+    }
+    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
+    .welcome-text { flex: 1; min-width: 0; }
+    .welcome-greeting {
       font-size: 13px;
       opacity: 0.55;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
     }
-    .welcome-logo {
-      font-size: 40px;
-      opacity: 0.18;
+    .welcome-name {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 4px;
+    }
+    .welcome-date {
+      font-size: 12px;
+      opacity: 0.45;
+      font-weight: 500;
+    }
+    .welcome-badge {
+      background: rgba(37,99,235,0.28);
+      border: 1px solid rgba(37,99,235,0.4);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     @media (min-width: 600px) {
-      .welcome-card { padding: 28px 28px; margin-bottom: 20px; border-radius: 20px; }
-      .welcome-name { font-size: 24px; }
-      .welcome-sub { font-size: 14px; }
-      .welcome-logo { font-size: 56px; }
+      .welcome-banner { padding: 28px 26px; border-radius: 22px; margin-bottom: 20px; }
+      .welcome-avatar { width: 68px; height: 68px; min-width: 68px; font-size: 32px; border-radius: 18px; }
+      .welcome-name { font-size: 26px; }
+    }
+
+    /* ── WORD OF THE DAY ── */
+    .wotd-card {
+      background: linear-gradient(135deg, #0b1b2b 0%, #112236 100%);
+      border-radius: 18px;
+      padding: 20px 20px 22px;
+      margin-top: 6px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .wotd-card::before {
+      content: '';
+      position: absolute;
+      top: -20px; right: -20px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(234,88,12,0.1);
+      pointer-events: none;
+    }
+    .wotd-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #f97316;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .wotd-word {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+    .wotd-pronunciation {
+      font-size: 12px;
+      opacity: 0.4;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .wotd-def {
+      font-size: 14px;
+      opacity: 0.75;
+      line-height: 1.55;
+    }
+    .wotd-example {
+      font-size: 12px;
+      opacity: 0.4;
+      margin-top: 8px;
+      font-style: italic;
+      line-height: 1.5;
+    }
+    @media (min-width: 600px) {
+      .wotd-card { padding: 24px 26px 26px; }
+      .wotd-word { font-size: 30px; }
     }
   </style>
 </head>
@@ -115,12 +228,16 @@
 
 <div class="container">
 
-  <div id="welcomeCard" class="page-header-block" style="display:none;margin-bottom:16px;">
-    <div class="page-header-icon">🏷️</div>
-    <div>
-      <div class="page-header-title" id="welcomeName"></div>
-      <div class="page-header-sub">Welcome back · Auction Legacy</div>
+  <div id="welcomeCard" class="welcome-banner" style="display:none;">
+    <div class="welcome-avatar">
+      <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
     </div>
+    <div class="welcome-text">
+      <div class="welcome-greeting" id="welcomeGreeting">Good morning</div>
+      <div class="welcome-name" id="welcomeName"></div>
+      <div class="welcome-date" id="welcomeDate"></div>
+    </div>
+    <div class="welcome-badge" id="welcomeRole">Employee</div>
   </div>
 
   <div class="stat-grid" id="statsRow" style="display:none;">
@@ -166,6 +283,15 @@
 
   </div>
 
+  <!-- Word of the Day -->
+  <div class="wotd-card" id="wotdCard">
+    <div class="wotd-label">🔥 Word of the Day</div>
+    <div class="wotd-word" id="wotdWord"></div>
+    <div class="wotd-pronunciation" id="wotdPronun"></div>
+    <div class="wotd-def" id="wotdDef"></div>
+    <div class="wotd-example" id="wotdEx"></div>
+  </div>
+
 </div>
 
 <script>
@@ -181,10 +307,50 @@
 
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
+
+  // Welcome banner
   if (user && user.name) {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    const dateStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+    document.getElementById('welcomeGreeting').innerText = greeting;
     document.getElementById('welcomeName').innerText = user.name;
-    document.getElementById('welcomeCard').style.display = 'block';
+    document.getElementById('welcomeDate').innerText = dateStr;
+    document.getElementById('welcomeRole').innerText = user.isAdmin ? 'Admin' : 'Employee';
+    document.getElementById('welcomeCard').style.display = 'flex';
   }
+
+  // Word of the Day
+  const words = [
+    { word: 'Bidgasm', pronun: '/ˈbɪd.ɡæz.əm/', def: 'The full-body shiver of joy experienced when winning an item for $3 that was listed at $200. Often followed by immediate regret about storage space.', ex: '"She had a complete bidgasm when the vintage lamp closed at $4.50."' },
+    { word: 'Lot-nesia', pronun: '/lɒt.ˈniː.ziə/', def: 'The total inability to remember where you physically placed an item 11 minutes after scanning it into the system. Affects 9 out of 10 studio employees on a Friday.', ex: '"I checked the entire warehouse twice. Full lot-nesia. It was in my hand the whole time."' },
+    { word: 'Consignificant Other', pronun: '/kənˌsaɪ.nɪf.ɪ.kənt ˈʌð.ər/', def: 'An item you spent 20 minutes photographing and genuinely grew attached to. You will never see it again after pickup and that is okay.', ex: '"That lamp was my consignificant other. I cried a little when it sold."' },
+    { word: 'Furni-turd', pronun: '/ˈfɜː.nɪ.tɜːd/', def: 'A piece of furniture described in the intake form as "rustic farmhouse antique" that is, by all objective measures, simply broken.', ex: '"It\'s listed as a vintage accent table. It\'s a furni-turd. Sand it and move on."' },
+    { word: 'Asskew', pronun: '/æˈskjuː/', def: 'When a product photo is technically in frame, technically in focus, but tilted at exactly 4 degrees — just enough to make the photographer look unhinged.', ex: '"Every single shot from Tuesday is asskew. Did you photograph these on a boat?"' },
+    { word: 'Stagefright', pronun: '/ˈsteɪdʒ.fraɪt/', def: 'The creeping paralysis felt when standing in front of an item, scanner in hand, with absolutely no idea which stage it should be in.', ex: '"He had a full stagefright moment for seven minutes. The item was literally labeled."' },
+    { word: 'Gavel Envy', pronun: '/ˈɡæv.əl ˈen.vi/', def: 'The irrational desire to personally click the "close lot" button, even when it\'s not your job and you don\'t fully understand what it does.', ex: '"Everyone on the team has gavel envy. Michelle handles it better than anyone."' },
+    { word: 'Schmuck Spread', pronun: '/ʃmʌk sprɛd/', def: 'An estimated value range so wide — say, $50 to $2,000 — that it technically cannot be wrong and is therefore completely useless.', ex: '"The AI gave a schmuck spread of $10 to $800. Helpful. Very helpful."' },
+    { word: 'Booty Call', pronun: '/ˈbuː.ti kɔːl/', def: 'An urgent request from management to photograph 40+ items before end of day with no prior notice and questionable lighting.', ex: '"Steven just sent the group chat. Total booty call. We\'re here until 9."' },
+    { word: 'Crapitalism', pronun: '/ˈkræp.ɪ.tæl.ɪ.z(ə)m/', def: 'The economic system in which someone else\'s questionable life choices become your carefully catalogued inventory responsibility.', ex: '"Three boxes of ceramic frogs. That\'s crapitalism in action."' },
+    { word: 'Turdtique', pronun: '/tɜːdˈtiːk/', def: 'An item so old and so deteriorated that its only remaining value is the story you make up about its origins to justify the listing price.', ex: '"Call it a Civil War relic. It\'s a turdtique but it\'s a good turdtique."' },
+    { word: 'Picklust', pronun: '/ˈpɪk.lʌst/', def: 'The uncontrollable urge to photograph just five more items even though your shift ended 45 minutes ago and everyone else has gone home.', ex: '"She couldn\'t leave. Classic picklust. She got through twelve more lots."' },
+    { word: 'Lotflation', pronun: '/lɒtˈfleɪ.ʃən/', def: 'The gradual mental process by which an employee convinces themselves a cracked ceramic owl is worth $85, usually occurring after hour six of a shift.', ex: '"His estimates have serious lotflation by Thursday afternoon. We always adjust."' },
+    { word: 'Scan-demonium', pronun: '/skænˈdiː.mə.ni.əm/', def: 'The chaos that erupts when three people are trying to scan the same cart of items on the same scanner page simultaneously and nobody is communicating.', ex: '"Drop-off day is always scan-demonium. It\'s beautiful and terrible."' },
+    { word: 'Assetsment', pronun: '/ˈæs.ets.mənt/', def: 'The act of confidently nodding along as a consigner explains what their item is worth, while internally knowing you have absolutely no idea and will be Googling it later.', ex: '"He held a full assetsment for six minutes. Didn\'t blink once. Total professional."' },
+    { word: 'Clog-nito', pronun: '/klɒɡˈniː.toʊ/', def: 'An item that somehow ends up in the workflow with no lot number, no consigner code, and no memory of how it got there. It simply exists now.', ex: '"Found a full taxidermy fox. Total clog-nito. We named him Gerald."' },
+    { word: 'Priappraisal', pronun: '/praɪˌæp.reɪ.z(ə)l/', def: 'An estimated value so absurdly inflated it becomes legally and morally questionable. Typically produced by AI after analyzing a blurry photo.', ex: '"The AI gave a priappraisal of $4,000 on a broken alarm clock. Poetic, honestly."' },
+  ];
+
+  const dayIndex = Math.floor(Date.now() / 86400000) % words.length;
+  const w = words[dayIndex];
+  document.getElementById('wotdWord').innerText = w.word;
+  document.getElementById('wotdPronun').innerText = w.pronun;
+  document.getElementById('wotdDef').innerText = w.def;
+  document.getElementById('wotdEx').innerText = w.ex;
 
   async function loadStats() {
     try {
