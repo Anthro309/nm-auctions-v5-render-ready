@@ -1162,6 +1162,7 @@ async function generateSocialPost() {
     const data = await res.json();
     if (data.success) {
       const p = data.posts;
+      window._socialHashtags = (p.hashtags || []).map(h => '#' + h).join(' ');
       const hashtagsHtml = (p.hashtags || []).map(h => `<span style="background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">#${h}</span>`).join('');
       const copyBtn = (id, label) => `<button onclick="navigator.clipboard.writeText(document.getElementById('${id}').innerText);this.innerText='✅ Copied!';setTimeout(()=>this.innerText='📋 Copy',1500)" style="margin-top:6px;padding:5px 12px;background:#f1f5f9;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 Copy</button>`;
       document.getElementById('socialResult').innerHTML = `
@@ -1181,8 +1182,8 @@ async function generateSocialPost() {
           ${copyBtn('ttHook')}
         </div>
         <div style="margin-bottom:6px;font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;">🏷️ Hashtags</div>
-        <div id="hashtagSet" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${hashtagsHtml}</div>
-        <button onclick="navigator.clipboard.writeText(${JSON.stringify((p.hashtags||[]).map(h=>'#'+h).join(' '))});this.innerText='✅ Copied!';setTimeout(()=>this.innerText='📋 Copy All Hashtags',1500)" style="padding:5px 12px;background:#f1f5f9;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 Copy All Hashtags</button>
+        <div id="hashtagSet" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${hashtagsHtml}</div>
+        <button id="copyHashtagsBtn" onclick="navigator.clipboard.writeText(window._socialHashtags||'');this.innerText='✅ Copied!';setTimeout(()=>this.innerText='📋 Copy All Hashtags',1500)" style="padding:5px 12px;background:#f1f5f9;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 Copy All Hashtags</button>
       `;
       document.getElementById('socialResult').style.display = 'block';
     } else { alert(data.message || 'Post generation failed'); }
