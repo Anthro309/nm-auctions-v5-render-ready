@@ -319,15 +319,22 @@
     </div>
   </div>
 
-  <!-- AI CONDITION AUTO-ASSESSMENT -->
+  <!-- AI CONDITION + DAMAGE (COMBINED) -->
   <div class="card" id="conditionCard">
-    <h3 style="margin-bottom:4px;">AI Condition Report</h3>
-    <div id="conditionReportDisplay" style="display:none;margin-bottom:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;font-size:13px;line-height:1.6;color:#374151;"></div>
+    <h3 style="margin-bottom:8px;">🔍 Condition & Damage Report</h3>
+
+    <!-- Condition report result -->
+    <div id="conditionReportDisplay" style="display:none;margin-bottom:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;font-size:13px;line-height:1.6;color:#374151;"></div>
     <button class="btn-blue" onclick="assessCondition()">🔍 Assess Condition from Photo</button>
     <div id="conditionMsg" class="success-msg">✅ Condition assessed</div>
-  </div>
 
-  <!-- AI DESCRIPTION VARIANTS -->
+    <hr style="border:none;border-top:1px solid #f1f5f9;margin:14px 0;">
+
+    <!-- Damage detection result -->
+    <p style="font-size:13px;color:#6b7280;margin:0 0 10px;">AI scans for chips, cracks, stains, and wear — adds a detailed damage report.</p>
+    <button class="btn-blue" onclick="detectDamage()" id="damageBtn">✨ Scan for Damage</button>
+    <div id="damageResult" style="display:none;margin-top:12px;"></div>
+  </div>
   <div class="card" id="variantsCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Description Variants</h3>
     <div id="variantsDisplay" style="display:none;margin-bottom:10px;">
@@ -397,14 +404,6 @@
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI identifies the design movement, era, and origin — then auto-tags the item.</p>
     <button class="btn-blue" onclick="identifyStyle()" id="styleBtn">✨ Identify Style & Era</button>
     <div id="styleResult" style="display:none;margin-top:12px;"></div>
-  </div>
-
-  <!-- AI DAMAGE DETECTION -->
-  <div class="card">
-    <h3 style="margin-bottom:4px;">🔍 Damage Detection</h3>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI scans the photo for chips, cracks, stains, and wear — then adds a detailed condition report.</p>
-    <button class="btn-blue" onclick="detectDamage()" id="damageBtn">✨ Scan for Damage</button>
-    <div id="damageResult" style="display:none;margin-top:12px;"></div>
   </div>
 
   <!-- AI SOCIAL POST GENERATOR -->
