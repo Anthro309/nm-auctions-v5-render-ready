@@ -126,15 +126,15 @@
   <div class="stat-grid" id="statsRow" style="display:none;">
     <div class="stat-tile">
       <div class="stat-number" id="statInStudio">—</div>
-      <div class="stat-label">In Studio</div>
+      <div class="stat-label">Total in Inventory</div>
     </div>
     <div class="stat-tile">
       <div class="stat-number" id="statReady">—</div>
-      <div class="stat-label">Ready for Pickup</div>
+      <div class="stat-label">Ready to Photograph</div>
     </div>
     <div class="stat-tile">
       <div class="stat-number" id="statToday">—</div>
-      <div class="stat-label">Added Today</div>
+      <div class="stat-label">Photographed Today</div>
     </div>
   </div>
 
@@ -191,12 +191,26 @@
       const res = await fetch('/items');
       const items = await res.json();
       const today = new Date().toLocaleDateString();
-      const inStudio    = items.filter(i => i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off');
-      const readyPickup = items.filter(i => i.stage === 'Prep for Pick Up');
-      const addedToday  = items.filter(i => new Date(i.createdAt).toLocaleDateString() === today);
-      document.getElementById('statInStudio').innerText = inStudio.length;
-      document.getElementById('statReady').innerText    = readyPickup.length;
-      document.getElementById('statToday').innerText    = addedToday.length;
+
+      // Total in inventory = everything not picked up or missing
+      const totalInventory = items.filter(i =>
+        i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off'
+      );
+
+      // Ready to photograph = items at "Review & Cleaning" stage (next step is photograph)
+      const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
+
+      // Photographed today = items whose logs show a stage change TO 'Photograph' today
+      const photographedToday = items.filter(i =>
+        Array.isArray(i.logs) && i.logs.some(l =>
+          l.toStage === 'Photograph' &&
+          new Date(l.timestamp).toLocaleDateString() === today
+        )
+      );
+
+      document.getElementById('statInStudio').innerText = totalInventory.length;
+      document.getElementById('statReady').innerText    = readyToPhoto.length;
+      document.getElementById('statToday').innerText    = photographedToday.length;
       document.getElementById('statsRow').style.display = 'grid';
     } catch (err) {
       console.warn('Stats failed to load');
