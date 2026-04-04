@@ -609,6 +609,71 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 });
 
 // =========================
+// PHOTO STUDIO — BG REMOVAL + ITEM LINK
+// =========================
+
+// Process a photo: remove background via remove.bg if API key set, else return original
+app.post('/photos/process-bg', upload.single('photo'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  const originalPath = `/uploads/${req.file.filename}`;
+
+  if (!process.env.REMOVE_BG_API_KEY) {
+    return res.json({ success: true, path: originalPath, processed: false, message: 'No REMOVE_BG_API_KEY set — original saved' });
+  }
+
+  try {
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const blob = new Blob([fileBuffer], { type: req.file.mimetype });
+    const form = new FormData();
+    form.append('image_file', blob, req.file.filename);
+    form.append('size', 'auto');
+    form.append('format', 'png');
+    form.append('bg_color', 'ffffff');
+
+    const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: { 'X-Api-Key': process.env.REMOVE_BG_API_KEY },
+      body: form
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`remove.bg ${response.status}: ${errText}`);
+    }
+
+    const processedBuffer = Buffer.from(await response.arrayBuffer());
+    const processedFilename = `clean_${Date.now()}_${Math.floor(Math.random()*10000)}.png`;
+    const processedFilePath = path.join(uploadsPath, processedFilename);
+    fs.writeFileSync(processedFilePath, processedBuffer);
+
+    // Remove original temp file
+    try { fs.unlinkSync(req.file.path); } catch (_) {}
+
+    return res.json({ success: true, path: `/uploads/${processedFilename}`, processed: true });
+  } catch (err) {
+    console.error('BG removal error:', err.message);
+    return res.json({ success: true, path: originalPath, processed: false, error: err.message });
+  }
+});
+
+// Add a processed photo to an item's photo array
+app.post('/items/:id/add-photo', (req, res) => {
+  const { photoPath } = req.body;
+  if (!photoPath) return res.status(400).json({ success: false, message: 'No photoPath provided' });
+
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  if (!Array.isArray(item.photos)) item.photos = [];
+  if (!item.photos.includes(photoPath)) item.photos.unshift(photoPath);
+
+  addLog(item, { employee: req.body.employee || 'system', action: 'photo added', note: photoPath });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
 // VOICE TO ITEM
 // =========================
 app.post('/voice-to-item', async (req, res) => {

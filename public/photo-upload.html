@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Photo Studio | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: white;
+  margin-bottom: 20px;
+}
+.drop-zone.drag-over {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.drop-zone-icon { font-size: 40px; margin-bottom: 10px; }
+.drop-zone-title { font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.drop-zone-sub { font-size: 13px; color: #6b7280; }
+.drop-zone input { display: none; }
+
+/* Photo processing grid */
+.photo-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 600px) {
+  .photo-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Photo card */
+.photo-proc-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
+  border: 1.5px solid #e5e7eb;
+}
+.photo-proc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 0;
+}
+.photo-proc-filename {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.photo-status {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.photo-status.uploading { background: #eff6ff; color: #1d4ed8; }
+.photo-status.processing { background: #fef9c3; color: #a16207; }
+.photo-status.done { background: #ecfdf5; color: #047857; }
+.photo-status.error { background: #fef2f2; color: #b91c1c; }
+.photo-status.raw { background: #f3f4f6; color: #6b7280; }
+
+/* Before/after preview */
+.photo-before-after {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 10px 14px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.photo-col {
+  position: relative;
+}
+.photo-col-label {
+  position: absolute;
+  top: 6px; left: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.photo-col img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+  background: #f3f4f6;
+}
+.photo-col.processed img {
+  background: #ffffff;
+  object-fit: contain;
+}
+.photo-col-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  padding: 0 4px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Single-wide when no processed version yet */
+.photo-before-after.single {
+  grid-template-columns: 1fr;
+}
+
+/* Spinner overlay */
+.photo-spinner {
+  width: 100%;
+  height: 140px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+.spinner-ring {
+  width: 28px; height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Item pairing section */
+.photo-pair-section {
+  padding: 12px 14px 14px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 10px;
+}
+.photo-pair-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+.pair-search-wrap {
+  position: relative;
+}
+.pair-search-wrap input {
+  margin-top: 0;
+  padding-right: 40px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+.pair-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+  z-index: 10;
+  overflow: hidden;
+  display: none;
+}
+.pair-result-row {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pair-result-row:last-child { border-bottom: none; }
+.pair-result-row:hover { background: #f8fafc; }
+.pair-result-thumb {
+  width: 32px; height: 32px; border-radius: 6px;
+  object-fit: cover; background: #e5e7eb; flex-shrink: 0;
+}
+.pair-result-name { font-size: 13px; font-weight: 700; color: #111827; }
+.pair-result-lot { font-size: 11px; color: #6b7280; }
+
+.paired-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+.paired-thumb {
+  width: 32px; height: 32px; border-radius: 6px; object-fit: cover; background: #e5e7eb; flex-shrink: 0;
+}
+.paired-info { flex: 1; min-width: 0; }
+.paired-name { font-size: 12px; font-weight: 700; color: #047857; }
+.paired-lot { font-size: 11px; color: #6b7280; }
+.paired-clear {
+  font-size: 16px; color: #9ca3af; cursor: pointer; flex-shrink: 0;
+  background: none; border: none; padding: 0; line-height: 1;
+}
+.paired-clear:hover { color: #b91c1c; box-shadow: none; transform: none; background: none; }
+
+.save-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: #16a34a;
+}
+.save-btn:hover { background: #15803d; }
+.save-btn:disabled { background: #9ca3af; cursor: default; transform: none; box-shadow: none; }
+.save-btn.saved { background: #1d4ed8; }
+
+/* Top batch process button */
+.process-all-btn {
+  width: 100%;
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  color: white;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 18px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.process-all-btn.visible { display: flex; }
+.process-all-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; }
+
+.upload-progress {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 10px;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">📸</div>
+    <div>
+      <div class="page-header-title">AI Photo Studio</div>
+      <div class="page-header-sub">Remove backgrounds &amp; pair shots with items</div>
+    </div>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="drop-zone-icon">🖼️</div>
+    <div class="drop-zone-title">Drop photos here or tap to select</div>
+    <div class="drop-zone-sub">Select multiple photos from today's shoot — JPEG or PNG</div>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <!-- Batch process button -->
+  <button class="process-all-btn" id="processAllBtn" onclick="processAll()">
+    ✨ Remove Backgrounds on All Photos
+  </button>
+  <div class="upload-progress" id="uploadProgress"></div>
+
+  <!-- Photo cards grid -->
+  <div class="photo-grid" id="photoGrid"></div>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+// ── Drag & drop ──
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files]);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFiles([...e.target.files]);
+  e.target.value = '';
+});
+
+// ── State ──
+// Each entry: { id, file, originalPath, processedPath, status, itemId, itemName, itemLot, itemThumb, saved }
+let cards = [];
+
+function handleFiles(files) {
+  const images = files.filter(f => f.type.startsWith('image/'));
+  if (!images.length) return;
+  images.forEach(f => addCard(f));
+  document.getElementById('processAllBtn').classList.add('visible');
+}
+
+function addCard(file) {
+  const id = Date.now() + Math.random();
+  const localUrl = URL.createObjectURL(file);
+  cards.push({ id, file, localUrl, originalPath: null, processedPath: null, status: 'ready', itemId: null });
+  renderCard(id);
+}
+
+function renderCard(id) {
+  const c = cards.find(x => x.id === id);
+  if (!c) return;
+
+  let el = document.getElementById('card-' + id);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'photo-proc-card';
+    el.id = 'card-' + id;
+    document.getElementById('photoGrid').appendChild(el);
+  }
+
+  const statusLabel = { ready: 'Ready', uploading: 'Uploading…', processing: 'Processing…', done: 'Done ✓', error: 'Error' }[c.status] || c.status;
+  const statusCls = { ready: 'raw', uploading: 'uploading', processing: 'processing', done: 'done', error: 'error' }[c.status] || 'raw';
+
+  const shortName = c.file.name.length > 22 ? c.file.name.slice(0, 20) + '…' : c.file.name;
+
+  // Preview section
+  let previewHTML = '';
+  if (c.status === 'uploading' || c.status === 'processing') {
+    previewHTML = `
+      <div class="photo-before-after single">
+        <div class="photo-col">
+          <img src="${c.localUrl}" alt="original">
+          <span class="photo-col-label">Original</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:12px;color:#6b7280;">
+        <div class="spinner-ring"></div>
+        ${c.status === 'uploading' ? 'Uploading…' : 'Removing background…'}
+      </div>`;
+  } else if (c.processedPath) {
+    previewHTML = `
+      <div class="photo-before-after">
+        <div class="photo-col">
+          <img src="${c.localUrl}" alt="original">
+          <span class="photo-col-label">Original</span>
+        </div>
+        <div class="photo-col processed">
+          <img src="${c.processedPath}" alt="processed">
+          <span class="photo-col-label">Clean ✓</span>
+        </div>
+      </div>`;
+  } else {
+    previewHTML = `
+      <div class="photo-before-after single">
+        <div class="photo-col">
+          <img src="${c.localUrl}" alt="original">
+          <span class="photo-col-label">Original</span>
+        </div>
+      </div>`;
+  }
+
+  // Pairing section
+  let pairHTML = '';
+  if (c.status === 'done' || c.status === 'ready' || c.status === 'error') {
+    if (c.itemId) {
+      const saved = c.saved;
+      pairHTML = `
+        <div class="photo-pair-section">
+          <div class="photo-pair-label">Paired item</div>
+          <div class="paired-item">
+            ${c.itemThumb ? `<img class="paired-thumb" src="${c.itemThumb}" loading="lazy">` : '<div class="paired-thumb"></div>'}
+            <div class="paired-info">
+              <div class="paired-name">${c.itemName}</div>
+              <div class="paired-lot">${c.itemLot}</div>
+            </div>
+            <button class="paired-clear" onclick="clearPair('${id}')" title="Remove pairing">✕</button>
+          </div>
+          <button class="save-btn${saved ? ' saved' : ''}" onclick="saveToItem('${id}')" ${saved ? 'disabled' : ''}>
+            ${saved ? '✓ Saved to Item' : '💾 Save Photo to Item'}
+          </button>
+        </div>`;
+    } else {
+      pairHTML = `
+        <div class="photo-pair-section">
+          <div class="photo-pair-label">Pair with item</div>
+          <div class="pair-search-wrap">
+            <input type="text" placeholder="Search item name or lot…" oninput="searchItems(this, '${id}')" autocomplete="off">
+            <div class="pair-results" id="results-${id}"></div>
+          </div>
+        </div>`;
+    }
+  }
+
+  el.innerHTML = `
+    <div class="photo-proc-header">
+      <span class="photo-proc-filename">${shortName}</span>
+      <span class="photo-status ${statusCls}">${statusLabel}</span>
+    </div>
+    ${previewHTML}
+    ${pairHTML}
+  `;
+}
+
+// ── Process all ──
+async function processAll() {
+  const unprocessed = cards.filter(c => c.status === 'ready');
+  if (!unprocessed.length) return;
+
+  const btn = document.getElementById('processAllBtn');
+  const prog = document.getElementById('uploadProgress');
+  btn.disabled = true;
+  prog.style.display = 'block';
+
+  for (let i = 0; i < unprocessed.length; i++) {
+    const c = unprocessed[i];
+    prog.innerText = `Processing ${i + 1} of ${unprocessed.length}…`;
+    await processCard(c.id);
+  }
+
+  prog.innerText = `✅ All ${unprocessed.length} photo${unprocessed.length !== 1 ? 's' : ''} processed`;
+  btn.disabled = false;
+  btn.innerHTML = '✨ Process New Photos';
+  setTimeout(() => { prog.style.display = 'none'; }, 3000);
+}
+
+async function processCard(id) {
+  const c = cards.find(x => x.id === id);
+  if (!c || c.status !== 'ready') return;
+
+  // Upload phase
+  c.status = 'uploading';
+  renderCard(id);
+
+  try {
+    const formData = new FormData();
+    formData.append('photo', c.file);
+
+    const res = await fetch('/photos/process-bg', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.message || 'Upload failed');
+
+    c.originalPath = data.path;
+    c.status = data.processed ? 'done' : 'done';
+    c.processedPath = data.path;
+    renderCard(id);
+  } catch (err) {
+    c.status = 'error';
+    c.processedPath = c.localUrl;
+    renderCard(id);
+  }
+}
+
+// ── Item search ──
+let searchTimers = {};
+
+async function searchItems(input, cardId) {
+  const q = input.value.trim();
+  const resultsEl = document.getElementById('results-' + cardId);
+  clearTimeout(searchTimers[cardId]);
+
+  if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+
+  searchTimers[cardId] = setTimeout(async () => {
+    try {
+      const res = await fetch(`/items/search?q=${encodeURIComponent(q)}`);
+      const items = await res.json();
+      if (!items.length) { resultsEl.style.display = 'none'; return; }
+
+      resultsEl.innerHTML = items.slice(0, 6).map(i => `
+        <div class="pair-result-row" onclick="selectItem('${cardId}','${i.id}','${(i.name || '').replace(/'/g,"\\'")}','${(i.lotNumber || i.code + '-' + i.number || '—').replace(/'/g,"\\'")}','${(i.photos?.[0] || '').replace(/'/g,"\\'")}')">
+          ${i.photos?.[0] ? `<img class="pair-result-thumb" src="${i.photos[0]}" loading="lazy">` : '<div class="pair-result-thumb"></div>'}
+          <div>
+            <div class="pair-result-name">${i.name || 'Unnamed'}</div>
+            <div class="pair-result-lot">Lot ${i.lotNumber || '—'} · ${i.stage || ''}</div>
+          </div>
+        </div>
+      `).join('');
+      resultsEl.style.display = 'block';
+    } catch (_) {}
+  }, 300);
+}
+
+function selectItem(cardId, itemId, itemName, itemLot, itemThumb) {
+  const c = cards.find(x => String(x.id) === String(cardId));
+  if (!c) return;
+  c.itemId = itemId;
+  c.itemName = itemName;
+  c.itemLot = itemLot;
+  c.itemThumb = itemThumb;
+  c.saved = false;
+  renderCard(c.id);
+}
+
+function clearPair(cardId) {
+  const c = cards.find(x => String(x.id) === String(cardId));
+  if (!c) return;
+  c.itemId = null; c.itemName = null; c.itemLot = null; c.itemThumb = null; c.saved = false;
+  renderCard(c.id);
+}
+
+async function saveToItem(cardId) {
+  const c = cards.find(x => String(x.id) === String(cardId));
+  if (!c || !c.itemId || !c.processedPath) return;
+
+  const btn = document.querySelector(`#card-${CSS.escape(String(c.id))} .save-btn`);
+  if (btn) { btn.disabled = true; btn.innerText = 'Saving…'; }
+
+  try {
+    const res = await fetch(`/items/${c.itemId}/add-photo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoPath: c.processedPath, employee: user?.name || 'unknown' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      c.saved = true;
+      renderCard(c.id);
+    } else {
+      if (btn) { btn.disabled = false; btn.innerText = '💾 Save Photo to Item'; }
+      alert('Save failed: ' + (data.message || 'Unknown error'));
+    }
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.innerText = '💾 Save Photo to Item'; }
+    alert('Save failed. Check connection.');
+  }
+}
+
+// Close pair results on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.pair-search-wrap')) {
+    document.querySelectorAll('.pair-results').forEach(el => el.style.display = 'none');
+  }
+});
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>
