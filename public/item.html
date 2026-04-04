@@ -203,6 +203,7 @@
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
     <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
     <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
 </div>
@@ -388,6 +389,30 @@
     </div>
     <div id="eventMsg" class="success-msg">✅ Assigned to event</div>
     <div id="autoAssignResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
+  </div>
+
+  <!-- AI STYLE / ERA IDENTIFICATION -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">🎨 Style & Era ID</h3>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI identifies the design movement, era, and origin — then auto-tags the item.</p>
+    <button class="btn-blue" onclick="identifyStyle()" id="styleBtn">✨ Identify Style & Era</button>
+    <div id="styleResult" style="display:none;margin-top:12px;"></div>
+  </div>
+
+  <!-- AI DAMAGE DETECTION -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">🔍 Damage Detection</h3>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI scans the photo for chips, cracks, stains, and wear — then adds a detailed condition report.</p>
+    <button class="btn-blue" onclick="detectDamage()" id="damageBtn">✨ Scan for Damage</button>
+    <div id="damageResult" style="display:none;margin-top:12px;"></div>
+  </div>
+
+  <!-- AI SOCIAL POST GENERATOR -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">📱 Social Post Generator</h3>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI writes ready-to-post Instagram, Facebook, and TikTok captions for this item.</p>
+    <button class="btn-blue" onclick="generateSocialPost()" id="socialBtn">✨ Generate Social Posts</button>
+    <div id="socialResult" style="display:none;margin-top:12px;"></div>
   </div>
 
   <!-- TAGS & ESTIMATED VALUE -->
@@ -1039,6 +1064,130 @@ async function predictPrice() {
     } else { alert(data.message || 'Prediction failed'); }
   } catch { alert('Failed to predict price'); }
   finally { btn.disabled = false; btn.innerText = '🎯 Predict Closing Price'; }
+}
+
+// =========================
+// AI — STYLE / ERA IDENTIFICATION
+// =========================
+async function identifyStyle() {
+  const btn = document.getElementById('styleBtn');
+  btn.disabled = true; btn.innerText = '⏳ Analyzing…';
+  try {
+    const res = await fetch(`/items/${item.id}/identify-style`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const id = data.identification;
+      const confColor = { high: '#f0fdf4;border-color:#86efac;color:#15803d', medium: '#fff7ed;border-color:#fed7aa;color:#c2410c', low: '#fef2f2;border-color:#fecaca;color:#b91c1c' }[id.confidence] || '#f8fafc;border-color:#e2e8f0;color:#374151';
+      document.getElementById('styleResult').innerHTML = `
+        <div style="background:${confColor};border:1px solid;border-radius:12px;padding:14px;margin-bottom:10px;">
+          <div style="font-size:18px;font-weight:800;margin-bottom:2px;">${id.style}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${id.era}${id.movement ? ' · ' + id.movement : ''}</div>
+          <div style="font-size:12px;opacity:0.8;">Origin: ${id.origin} · Confidence: ${id.confidence?.toUpperCase()}</div>
+        </div>
+        <div style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:10px;">${id.notes}</div>
+        ${id.tags?.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${id.tags.map(t=>`<span style="background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">#${t}</span>`).join('')}</div>` : ''}
+        <div style="font-size:11px;color:#16a34a;margin-top:8px;font-weight:600;">✅ Tags auto-added to item</div>
+      `;
+      document.getElementById('styleResult').style.display = 'block';
+      // Refresh item in memory
+      item.tags = data.identification.tags ? [...(item.tags||[]), ...data.identification.tags.filter(t=>!(item.tags||[]).includes(t))] : item.tags;
+    } else { alert(data.message || 'Style ID failed'); }
+  } catch { alert('Failed to identify style'); }
+  finally { btn.disabled = false; btn.innerText = '✨ Identify Style & Era'; }
+}
+
+// =========================
+// AI — DAMAGE DETECTION
+// =========================
+async function detectDamage() {
+  const btn = document.getElementById('damageBtn');
+  btn.disabled = true; btn.innerText = '⏳ Scanning…';
+  try {
+    const res = await fetch(`/items/${item.id}/detect-damage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const r = data.report;
+      const condColors = { Excellent: '#f0fdf4;color:#15803d', Good: '#f0fdf4;color:#15803d', Fair: '#fff7ed;color:#c2410c', Poor: '#fef2f2;color:#b91c1c' };
+      const condStyle = condColors[r.overallCondition] || '#f8fafc;color:#374151';
+      const sevColor = { minor: '#eff6ff;color:#1d4ed8', moderate: '#fff7ed;color:#c2410c', significant: '#fef2f2;color:#b91c1c' };
+      const damageRows = (r.damages || []).map(d => `
+        <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="background:${sevColor[d.severity]||'#f8fafc;color:#374151'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;">${d.severity}</span>
+            <span style="font-size:13px;font-weight:700;text-transform:capitalize;">${d.type}</span>
+          </div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📍 ${d.location}</div>
+          <div style="font-size:13px;color:#374151;">${d.description}</div>
+        </div>
+      `).join('');
+      document.getElementById('damageResult').innerHTML = `
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;background:${condStyle};border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:16px;font-weight:800;">${r.overallCondition}</div>
+            <div style="font-size:10px;text-transform:uppercase;opacity:0.7;margin-top:2px;">Overall Condition</div>
+          </div>
+          <div style="flex:1;background:#f8fafc;border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:16px;font-weight:800;">${r.damages?.length || 0}</div>
+            <div style="font-size:10px;text-transform:uppercase;color:#6b7280;margin-top:2px;">Issues Found</div>
+          </div>
+        </div>
+        ${r.damageFound && r.damages?.length ? damageRows : '<div style="color:#15803d;font-weight:700;font-size:13px;padding:10px;background:#f0fdf4;border-radius:10px;">✅ No significant damage detected</div>'}
+        <div style="margin-top:10px;padding:10px;background:#f5f3ff;border-radius:10px;font-size:12px;color:#5b21b6;font-weight:600;">🔧 Recommendation: ${r.repairRecommendation}</div>
+        <div style="margin-top:8px;font-size:12px;color:#374151;line-height:1.5;font-style:italic;">"${r.saleabilityNote}"</div>
+        <div style="margin-top:10px;font-size:12px;color:#374151;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:10px;">${r.conditionSummary}</div>
+      `;
+      document.getElementById('damageResult').style.display = 'block';
+    } else { alert(data.message || 'Damage scan failed'); }
+  } catch { alert('Failed to scan for damage'); }
+  finally { btn.disabled = false; btn.innerText = '✨ Scan for Damage'; }
+}
+
+// =========================
+// AI — SOCIAL POST GENERATOR
+// =========================
+async function generateSocialPost() {
+  const btn = document.getElementById('socialBtn');
+  btn.disabled = true; btn.innerText = '⏳ Writing Posts…';
+  try {
+    const res = await fetch(`/items/${item.id}/social-post`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const p = data.posts;
+      const hashtagsHtml = (p.hashtags || []).map(h => `<span style="background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">#${h}</span>`).join('');
+      const copyBtn = (id, label) => `<button onclick="navigator.clipboard.writeText(document.getElementById('${id}').innerText);this.innerText='✅ Copied!';setTimeout(()=>this.innerText='📋 Copy',1500)" style="margin-top:6px;padding:5px 12px;background:#f1f5f9;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 Copy</button>`;
+      document.getElementById('socialResult').innerHTML = `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">📸 Instagram</div>
+          <div id="igCaption" style="font-size:13px;color:#374151;line-height:1.6;background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:10px;">${p.instagram}</div>
+          ${copyBtn('igCaption')}
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">👥 Facebook</div>
+          <div id="fbPost" style="font-size:13px;color:#374151;line-height:1.6;background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:10px;">${p.facebook}</div>
+          ${copyBtn('fbPost')}
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">🎵 TikTok Hook</div>
+          <div id="ttHook" style="font-size:14px;font-weight:700;color:#374151;background:#fff0f6;border:1px solid #fbcfe8;border-radius:10px;padding:10px;">${p.tiktok}</div>
+          ${copyBtn('ttHook')}
+        </div>
+        <div style="margin-bottom:6px;font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;">🏷️ Hashtags</div>
+        <div id="hashtagSet" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${hashtagsHtml}</div>
+        <button onclick="navigator.clipboard.writeText(${JSON.stringify((p.hashtags||[]).map(h=>'#'+h).join(' '))});this.innerText='✅ Copied!';setTimeout(()=>this.innerText='📋 Copy All Hashtags',1500)" style="padding:5px 12px;background:#f1f5f9;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📋 Copy All Hashtags</button>
+      `;
+      document.getElementById('socialResult').style.display = 'block';
+    } else { alert(data.message || 'Post generation failed'); }
+  } catch { alert('Failed to generate social posts'); }
+  finally { btn.disabled = false; btn.innerText = '✨ Generate Social Posts'; }
 }
 
 // =========================

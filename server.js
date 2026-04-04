@@ -1462,6 +1462,332 @@ Return ONLY valid JSON:
 });
 
 // =========================
+// AI — STYLE / ERA IDENTIFICATION
+// =========================
+app.post('/items/:id/identify-style', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const photos = (item.photos || []).filter(Boolean);
+  const photoUrl = photos.length
+    ? `${req.protocol}://${req.get('host')}${photos[0]}`
+    : null;
+
+  const contentParts = [];
+  if (photoUrl) contentParts.push({ type: 'image_url', image_url: { url: photoUrl } });
+  contentParts.push({
+    type: 'text',
+    text: `You are an antiques and design historian specializing in furniture, decor, and collectibles.
+Analyze this item: "${item.title}" (category: ${item.category}${item.description ? `, description: ${item.description}` : ''}).
+${photoUrl ? 'Use the photo as your primary source.' : ''}
+
+Identify the style era, design movement, and origin.
+
+Return ONLY valid JSON:
+{
+  "style": "primary style name (e.g. Mid-Century Modern, Victorian, Art Deco, Farmhouse, Industrial, Baroque, Shaker, Arts & Crafts)",
+  "era": "approximate time period (e.g. 1950s–1960s, Late 19th Century, 1920s–1930s)",
+  "movement": "design movement or school if applicable (e.g. Bauhaus, Arts & Crafts, Hollywood Regency)",
+  "origin": "likely country or region of origin",
+  "confidence": "high / medium / low",
+  "notes": "1-2 sentence explanation of key identifying features",
+  "tags": ["array","of","4-6","style","tags","to","add"]
+}`
+  });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: contentParts }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.style) throw new Error('Style identification failed');
+
+    // Auto-add style tags to item
+    const existingTags = item.tags || [];
+    const newTags = (parsed.tags || []).filter(t => !existingTags.includes(t));
+    item.tags = [...existingTags, ...newTags];
+    item.styleIdentification = parsed;
+    writeJSON(ITEMS_FILE, items);
+
+    res.json({ success: true, identification: parsed });
+  } catch (err) {
+    console.error('Style ID error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — DAMAGE DETECTION
+// =========================
+app.post('/items/:id/detect-damage', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const photos = (item.photos || []).filter(Boolean);
+  const photoUrl = photos.length
+    ? `${req.protocol}://${req.get('host')}${photos[0]}`
+    : null;
+
+  if (!photoUrl) return res.json({ success: false, message: 'No photo available for damage analysis' });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: photoUrl } },
+          {
+            type: 'text',
+            text: `You are a professional auction house condition specialist. Carefully examine this photo of "${item.title}" for any damage, wear, or defects.
+
+Look for: chips, cracks, scratches, stains, fading, missing parts, repairs, restoration, water damage, rust, tarnish, tears, breaks, warping, discoloration.
+
+Return ONLY valid JSON:
+{
+  "overallCondition": "Excellent / Good / Fair / Poor",
+  "damageFound": true or false,
+  "damages": [
+    {
+      "type": "chip / crack / scratch / stain / fade / missing / repair / other",
+      "location": "describe where on the item (e.g. top left corner, bottom edge, center surface)",
+      "severity": "minor / moderate / significant",
+      "description": "specific description of the damage"
+    }
+  ],
+  "repairRecommendation": "none / professional cleaning / minor touch-up / full restoration",
+  "saleabilityNote": "one sentence on how damage affects auction value",
+  "conditionSummary": "2-3 sentence professional condition report paragraph"
+}`
+          }
+        ]
+      }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Damage analysis failed');
+
+    // Save damage report to item
+    item.damageReport = parsed;
+    if (parsed.conditionSummary && !item.conditionReport) {
+      item.conditionReport = parsed.conditionSummary;
+    }
+    writeJSON(ITEMS_FILE, items);
+
+    res.json({ success: true, report: parsed });
+  } catch (err) {
+    console.error('Damage detection error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — SOCIAL POST GENERATOR
+// =========================
+app.post('/items/:id/social-post', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const photos = (item.photos || []).filter(Boolean);
+  const photoUrl = photos.length
+    ? `${req.protocol}://${req.get('host')}${photos[0]}`
+    : null;
+
+  const contentParts = [];
+  if (photoUrl) contentParts.push({ type: 'image_url', image_url: { url: photoUrl } });
+  contentParts.push({
+    type: 'text',
+    text: `You are a social media manager for NM Estate Auctions, a high-energy estate auction house.
+Write social media posts for this auction item:
+
+Title: ${item.title}
+Category: ${item.category}
+Condition: ${item.condition || 'unknown'}
+${item.description ? `Description: ${item.description}` : ''}
+${item.estimatedValueLow ? `Estimated Value: $${item.estimatedValueLow}–$${item.estimatedValueHigh}` : ''}
+${(item.tags || []).length ? `Tags/Style: ${item.tags.join(', ')}` : ''}
+
+Voice: exciting, knowledgeable, conversational. Make people feel like they're missing out.
+
+Return ONLY valid JSON:
+{
+  "instagram": "Instagram caption (2-4 sentences, punchy opener, emoji, ends with call to action)",
+  "facebook": "Facebook post (3-5 sentences, more detail, friendly tone, includes auction context)",
+  "hashtags": ["array","of","10-15","relevant","hashtags","no","#","prefix"],
+  "tiktok": "Short punchy TikTok hook line (under 100 chars, designed to stop scrolling)"
+}`
+  });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: contentParts }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.instagram) throw new Error('Social post generation failed');
+
+    item.socialPosts = parsed;
+    writeJSON(ITEMS_FILE, items);
+
+    res.json({ success: true, posts: parsed });
+  } catch (err) {
+    console.error('Social post error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — INTAKE VALUE ESTIMATOR (consigner pre-screen)
+// =========================
+app.post('/intake-estimate', upload.single('photo'), async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+
+  const description = req.body.description || '';
+  const photoUrl = req.file
+    ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`
+    : null;
+
+  const contentParts = [];
+  if (photoUrl) contentParts.push({ type: 'image_url', image_url: { url: photoUrl } });
+  contentParts.push({
+    type: 'text',
+    text: `You are an expert estate auction evaluator for NM Estate Auctions. A consigner wants to know if their item is worth bringing in.
+${description ? `Their description: "${description}"` : ''}
+${photoUrl ? 'Analyze the photo carefully.' : ''}
+
+Evaluate whether this item is worth accepting for auction based on typical estate auction sale prices ($25+ minimum to be worth processing).
+
+Return ONLY valid JSON:
+{
+  "verdict": "YES — Bring It In / MAYBE — Borderline / NO — Not Worth It",
+  "confidence": "high / medium / low",
+  "estimatedSaleRange": "$X–$Y",
+  "estimatedPayout": "$X–$Y (after 35% commission)",
+  "category": "best category for this item",
+  "reasoning": "2-3 sentences explaining the verdict",
+  "tips": "1-2 sentences of advice to the consigner (e.g. clean it, bring all pieces, find provenance)",
+  "hotness": "Cold / Warm / Hot — how in-demand this type of item is right now at auction"
+}`
+  });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: contentParts }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.verdict) throw new Error('Estimation failed');
+
+    res.json({ success: true, estimate: parsed });
+  } catch (err) {
+    console.error('Intake estimate error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — MONTHLY PERFORMANCE NARRATIVE
+// =========================
+app.post('/reports/performance-narrative', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+
+  const { month } = req.body; // e.g. "2025-03"
+  const items = readJSON(ITEMS_FILE);
+  const events = readJSON(EVENTS_FILE);
+
+  // Filter to target month if provided
+  const filterMonth = (dateStr) => {
+    if (!month) return true;
+    return dateStr && dateStr.startsWith(month);
+  };
+
+  const soldItems = items.filter(i => i.soldPrice && i.soldPrice > 0 && filterMonth(i.soldDate || i.updatedAt));
+  const allMonthItems = items.filter(i => filterMonth(i.createdAt));
+  const monthEvents = events.filter(e => filterMonth(e.date));
+
+  const totalRevenue = soldItems.reduce((s, i) => s + (i.soldPrice || 0), 0);
+  const totalPayout  = soldItems.reduce((s, i) => s + (i.payout || 0), 0);
+  const avgSalePrice = soldItems.length ? (totalRevenue / soldItems.length).toFixed(2) : 0;
+
+  const byCategory = {};
+  soldItems.forEach(i => {
+    if (!byCategory[i.category]) byCategory[i.category] = { count: 0, revenue: 0 };
+    byCategory[i.category].count++;
+    byCategory[i.category].revenue += i.soldPrice || 0;
+  });
+
+  const topCategory = Object.entries(byCategory).sort((a,b) => b[1].revenue - a[1].revenue)[0];
+  const worstCategory = Object.entries(byCategory).sort((a,b) => a[1].revenue - b[1].revenue)[0];
+
+  const unsoldCount = items.filter(i => !i.soldPrice && filterMonth(i.createdAt)).length;
+
+  const snapshot = {
+    period: month || 'all time',
+    totalItemsSold: soldItems.length,
+    totalItemsIntaken: allMonthItems.length,
+    unsoldCount,
+    totalRevenue: totalRevenue.toFixed(2),
+    totalPayout: totalPayout.toFixed(2),
+    grossProfit: (totalRevenue - totalPayout).toFixed(2),
+    avgSalePrice,
+    eventsHeld: monthEvents.length,
+    topCategory: topCategory ? `${topCategory[0]} ($${topCategory[1].revenue.toFixed(0)}, ${topCategory[1].count} items)` : 'N/A',
+    worstCategory: worstCategory && worstCategory[0] !== topCategory?.[0] ? `${worstCategory[0]} ($${worstCategory[1].revenue.toFixed(0)})` : 'N/A',
+    categoryBreakdown: Object.entries(byCategory).map(([cat, d]) => `${cat}: ${d.count} sold, $${d.revenue.toFixed(0)}`).join(' | ')
+  };
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `You are the operations analyst for NM Estate Auctions writing a performance summary for the team.
+
+Data for ${snapshot.period}:
+- Items Intaken: ${snapshot.totalItemsIntaken}
+- Items Sold: ${snapshot.totalItemsSold}
+- Unsold Items: ${snapshot.unsoldCount}
+- Total Revenue: $${snapshot.totalRevenue}
+- Total Consigner Payouts: $${snapshot.totalPayout}
+- Gross Profit: $${snapshot.grossProfit}
+- Average Sale Price: $${snapshot.avgSalePrice}
+- Auction Events Held: ${snapshot.eventsHeld}
+- Top Category: ${snapshot.topCategory}
+- Weakest Category: ${snapshot.worstCategory}
+- Category Breakdown: ${snapshot.categoryBreakdown}
+
+Write a performance narrative for the team. Be direct, specific, and use the actual numbers. Highlight wins, call out areas to improve, and give 2-3 actionable recommendations. Tone: professional but energetic, like a coach giving a team debrief. Use paragraph form, 3-4 paragraphs total.`
+      }]
+    });
+
+    const narrative = (response.choices[0].message.content || '').trim();
+    res.json({ success: true, narrative, snapshot });
+  } catch (err) {
+    console.error('Narrative error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
 // ERROR HANDLER
 // =========================
 app.use((err, req, res, next) => {

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intake Value Estimator | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.estimator-wrap {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: #f8fafc;
+  position: relative;
+}
+.drop-zone.drag-over {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.drop-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.drop-zone-icon { font-size: 40px; margin-bottom: 8px; }
+.drop-zone-label { font-size: 15px; font-weight: 700; color: #374151; }
+.drop-zone-sub { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+.preview-img {
+  width: 100%; max-height: 280px; object-fit: cover;
+  border-radius: 14px; margin-top: 14px; display: none;
+}
+.verdict-card {
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 16px;
+  text-align: center;
+}
+.verdict-yes { background: #f0fdf4; border: 2px solid #86efac; }
+.verdict-maybe { background: #fff7ed; border: 2px solid #fed7aa; }
+.verdict-no { background: #fef2f2; border: 2px solid #fecaca; }
+.verdict-text {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.verdict-yes .verdict-text { color: #15803d; }
+.verdict-maybe .verdict-text { color: #c2410c; }
+.verdict-no .verdict-text { color: #b91c1c; }
+.hotness-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.hot { background: #fee2e2; color: #b91c1c; }
+.warm { background: #fff7ed; color: #c2410c; }
+.cold { background: #f1f5f9; color: #64748b; }
+.price-row {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+.price-box {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+.price-num { font-size: 20px; font-weight: 900; color: #1d4ed8; }
+.price-label { font-size: 10px; text-transform: uppercase; color: #6b7280; margin-top: 3px; font-weight: 700; }
+.history-list { list-style: none; padding: 0; margin: 0; }
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.history-item:hover { border-color: #2563eb; }
+.history-thumb {
+  width: 48px; height: 48px; min-width: 48px;
+  border-radius: 8px; object-fit: cover; background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.history-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-yes { background: #dcfce7; color: #15803d; }
+.badge-maybe { background: #ffedd5; color: #c2410c; }
+.badge-no { background: #fee2e2; color: #b91c1c; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <div class="top-bar-title">Intake Estimator</div>
+  <div style="width:40px;"></div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/intake-estimator.html" class="active"><span class="sidebar-icon">💰</span> Intake Estimator</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container estimator-wrap">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">💰</div>
+    <div>
+      <div class="page-header-title">Intake Value Estimator</div>
+      <div class="page-header-sub">AI pre-screen — is this item worth bringing in?</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px;">Upload a Photo</h3>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="photoInput" accept="image/*" onchange="onPhotoSelect(this)">
+      <div class="drop-zone-icon">📷</div>
+      <div class="drop-zone-label">Tap to take or choose photo</div>
+      <div class="drop-zone-sub">JPG, PNG, HEIC — any angle works</div>
+    </div>
+    <img id="previewImg" class="preview-img" alt="Preview">
+
+    <h3 style="margin-top:16px;margin-bottom:8px;">Describe the Item <span style="font-weight:400;font-size:13px;color:#9ca3af;">(optional)</span></h3>
+    <textarea id="descInput" placeholder="e.g. old wooden dresser with brass handles, 6 drawers, some scratches on top, about 4 feet tall…" rows="3" style="width:100%;border:1.5px solid #e5e7eb;border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+
+    <button class="btn-green" style="margin-top:14px;" onclick="runEstimate()" id="estimateBtn">✨ AI Pre-Screen This Item</button>
+    <div id="estimateStatus" style="display:none;text-align:center;padding:16px;color:#6b7280;font-size:14px;font-weight:600;">⏳ Analyzing item…</div>
+  </div>
+
+  <div id="resultCard" style="display:none;">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="card" id="historySection" style="display:none;">
+    <h3 style="margin-bottom:12px;">Session History</h3>
+    <ul class="history-list" id="historyList"></ul>
+  </div>
+
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+let selectedFile = null;
+const sessionHistory = [];
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) showPreview(f);
+});
+
+function onPhotoSelect(input) {
+  if (input.files[0]) showPreview(input.files[0]);
+}
+
+function showPreview(file) {
+  selectedFile = file;
+  const img = document.getElementById('previewImg');
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+}
+
+async function runEstimate() {
+  const desc = document.getElementById('descInput').value.trim();
+  if (!selectedFile && !desc) {
+    alert('Please upload a photo or describe the item.');
+    return;
+  }
+
+  const btn = document.getElementById('estimateBtn');
+  const status = document.getElementById('estimateStatus');
+  btn.style.display = 'none';
+  status.style.display = 'block';
+
+  try {
+    const fd = new FormData();
+    if (selectedFile) fd.append('photo', selectedFile);
+    if (desc) fd.append('description', desc);
+
+    const res = await fetch('/intake-estimate', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!data.success) { alert(data.message || 'Estimation failed'); return; }
+
+    renderResult(data.estimate, desc);
+    addToHistory(data.estimate, desc);
+  } catch (err) {
+    alert('Failed to estimate. Check your connection.');
+  } finally {
+    btn.style.display = 'block';
+    status.style.display = 'none';
+  }
+}
+
+function verdictClass(verdict) {
+  if (verdict.startsWith('YES')) return 'verdict-yes';
+  if (verdict.startsWith('MAYBE')) return 'verdict-maybe';
+  return 'verdict-no';
+}
+function verdictEmoji(verdict) {
+  if (verdict.startsWith('YES')) return '✅';
+  if (verdict.startsWith('MAYBE')) return '🤔';
+  return '❌';
+}
+function hotnessClass(h) {
+  if (!h) return 'cold';
+  const lower = h.toLowerCase();
+  if (lower.includes('hot')) return 'hot';
+  if (lower.includes('warm')) return 'warm';
+  return 'cold';
+}
+function hotnessEmoji(h) {
+  if (!h) return '❄️';
+  const lower = h.toLowerCase();
+  if (lower.includes('hot')) return '🔥';
+  if (lower.includes('warm')) return '🌤️';
+  return '❄️';
+}
+
+function renderResult(e, desc) {
+  const card = document.getElementById('resultCard');
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div class="card verdict-card ${verdictClass(e.verdict)}">
+      <div style="font-size:36px;margin-bottom:6px;">${verdictEmoji(e.verdict)}</div>
+      <div class="verdict-text">${e.verdict}</div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:12px;">Confidence: ${e.confidence?.toUpperCase()}</div>
+      <div class="hotness-badge ${hotnessClass(e.hotness)}">${hotnessEmoji(e.hotness)} Market: ${e.hotness}</div>
+      <div class="price-row">
+        <div class="price-box">
+          <div class="price-num">${e.estimatedSaleRange || 'N/A'}</div>
+          <div class="price-label">Est. Sale Price</div>
+        </div>
+        <div class="price-box">
+          <div class="price-num" style="color:#15803d;">${e.estimatedPayout || 'N/A'}</div>
+          <div class="price-label">Your Payout (~65%)</div>
+        </div>
+      </div>
+      <div style="background:white;border-radius:12px;padding:12px;margin-bottom:12px;text-align:left;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">AI Reasoning</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">${e.reasoning}</div>
+      </div>
+      ${e.tips ? `<div style="background:${verdictClass(e.verdict).includes('yes') ? '#dcfce7' : '#fff7ed'};border-radius:12px;padding:12px;text-align:left;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">💡 Tips for Consigner</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">${e.tips}</div>
+      </div>` : ''}
+      ${e.category ? `<div style="margin-top:10px;font-size:12px;color:#6b7280;">Suggested category: <strong>${e.category}</strong></div>` : ''}
+    </div>
+    <button class="btn-blue" style="margin-top:0;" onclick="resetForm()">✨ Estimate Another Item</button>
+  `;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function addToHistory(e, desc) {
+  sessionHistory.unshift({ estimate: e, desc, thumb: selectedFile ? URL.createObjectURL(selectedFile) : null });
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  section.style.display = 'block';
+
+  const badgeClass = e.verdict.startsWith('YES') ? 'badge-yes' : e.verdict.startsWith('MAYBE') ? 'badge-maybe' : 'badge-no';
+  const li = document.createElement('li');
+  li.className = 'history-item';
+  li.innerHTML = `
+    <div class="history-thumb">${e.thumb ? `<img src="${sessionHistory[0].thumb}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;">` : '📦'}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:700;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${desc || 'Item ' + sessionHistory.length}</div>
+      <div style="font-size:12px;color:#6b7280;">${e.estimatedSaleRange || ''} · ${e.category || ''}</div>
+    </div>
+    <span class="history-badge ${badgeClass}">${e.verdict.split('—')[0].trim()}</span>
+  `;
+  list.prepend(li);
+}
+
+function resetForm() {
+  selectedFile = null;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('descInput').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
