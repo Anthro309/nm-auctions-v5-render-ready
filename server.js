@@ -977,10 +977,41 @@ app.post('/closeout', (req, res) => {
 });
 
 // =========================
-// INTAKE — GET ALL
+// INTAKE — GET ALL (derived from items grouped by consigner session)
 // =========================
 app.get('/intake', (req, res) => {
-  res.json(readJSON(INTAKE_FILE));
+  const items = readJSON(ITEMS_FILE);
+
+  // Group items by consigner code; each unique (code, day) = one session
+  const sessions = {};
+  items.forEach(item => {
+    if (!item.code) return;
+    const day = item.createdAt ? item.createdAt.slice(0, 10) : 'unknown';
+    const key = `${item.code}__${day}`;
+    if (!sessions[key]) {
+      sessions[key] = {
+        id: key,
+        consigner: item.consigner || item.code,
+        code: item.code,
+        createdAt: item.createdAt || new Date().toISOString(),
+        items: []
+      };
+    }
+    sessions[key].items.push({
+      id: item.id,
+      code: item.code,
+      number: item.number,
+      name: item.name,
+      lotNumber: item.lotNumber,
+      category: item.category,
+      condition: item.condition
+    });
+  });
+
+  const result = Object.values(sessions).sort((a, b) =>
+    new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  res.json(result);
 });
 
 
@@ -1480,7 +1511,7 @@ app.post('/items/:id/identify-style', async (req, res) => {
   contentParts.push({
     type: 'text',
     text: `You are an antiques and design historian specializing in furniture, decor, and collectibles.
-Analyze this item: "${item.title}" (category: ${item.category}${item.description ? `, description: ${item.description}` : ''}).
+Analyze this item: "${item.name}" (category: ${item.category}${item.description ? `, description: ${item.description}` : ''}).
 ${photoUrl ? 'Use the photo as your primary source.' : ''}
 
 Identify the style era, design movement, and origin.
@@ -1548,7 +1579,7 @@ app.post('/items/:id/detect-damage', async (req, res) => {
           { type: 'image_url', image_url: { url: photoUrl } },
           {
             type: 'text',
-            text: `You are a professional auction house condition specialist. Carefully examine this photo of "${item.title}" for any damage, wear, or defects.
+            text: `You are a professional auction house condition specialist. Carefully examine this photo of "${item.name}" for any damage, wear, or defects.
 
 Look for: chips, cracks, scratches, stains, fading, missing parts, repairs, restoration, water damage, rust, tarnish, tears, breaks, warping, discoloration.
 
@@ -1612,7 +1643,7 @@ app.post('/items/:id/social-post', async (req, res) => {
     text: `You are a social media manager for NM Estate Auctions, a high-energy estate auction house.
 Write social media posts for this auction item:
 
-Title: ${item.title}
+Title: ${item.name}
 Category: ${item.category}
 Condition: ${item.condition || 'unknown'}
 ${item.description ? `Description: ${item.description}` : ''}
@@ -1701,6 +1732,39 @@ Return ONLY valid JSON:
     console.error('Intake estimate error:', err.message);
     res.json({ success: false, message: err.message });
   }
+});
+
+// =========================
+// EMPLOYEE PERFORMANCE STATS
+// =========================
+app.get('/performance', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const stats = {};
+
+  // Tally per-employee actions from logs
+  items.forEach(item => {
+    // Credit lot assignment
+    const assignedBy = item.lotAssignedBy;
+    if (assignedBy && assignedBy !== 'system') {
+      if (!stats[assignedBy]) stats[assignedBy] = { employee: assignedBy, created: 0, stageChanges: 0, scans: 0, handoffAccepted: 0, handoffRejected: 0, lotsAssigned: 0 };
+      stats[assignedBy].lotsAssigned++;
+    }
+
+    if (!Array.isArray(item.logs)) return;
+    item.logs.forEach(log => {
+      const emp = log.employee || 'system';
+      if (emp === 'system') return;
+      if (!stats[emp]) stats[emp] = { employee: emp, created: 0, stageChanges: 0, scans: 0, handoffAccepted: 0, handoffRejected: 0, lotsAssigned: 0 };
+      if (log.action === 'item created')        stats[emp].created++;
+      if (log.action === 'stage changed')        stats[emp].stageChanges++;
+      if (log.action === 'scanned')              stats[emp].scans++;
+      if (log.action === 'handoff accepted')     stats[emp].handoffAccepted++;
+      if (log.action === 'handoff rejected')     stats[emp].handoffRejected++;
+    });
+  });
+
+  const result = Object.values(stats).sort((a, b) => b.created - a.created);
+  res.json(result);
 });
 
 // =========================

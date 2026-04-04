@@ -10,6 +10,56 @@
 
   <style>
     canvas { margin-top: 14px; }
+
+    .performance-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    @media (min-width: 600px) {
+      .performance-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .employee-card {
+      background: #f8fafc;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .employee-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .employee-stat {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .alert-box {
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #9a3412;
+      margin-bottom: 8px;
+    }
+    .stage-box {
+      background: #f8fafc;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+    }
+    .stage-box.slow {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+    .stage-box.slow .employee-stat { color: #b91c1c; }
+    #alerts:empty::before { content: '✅ No stuck items'; font-size: 14px; color: #6b7280; }
   </style>
 </head>
 
@@ -66,28 +116,38 @@
 </div>
 
 <script>
+// Auth guard
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
 let employeeChart, stageChart;
 
 // =========================
 // LOAD
 // =========================
 async function load(){
-  const itemsRes = await fetch('/items');
-  const items = await itemsRes.json();
+  try {
+    const [itemsRes, perfRes] = await Promise.all([
+      fetch('/items'),
+      fetch('/performance')
+    ]);
+    const items = await itemsRes.json();
+    const perf  = await perfRes.json();
 
-  const perfRes = await fetch('/performance');
-  const perf = await perfRes.json();
-
-  buildAlerts(items);
-  buildEmployees(perf);
-  buildStageTimes(items);
+    buildAlerts(items);
+    buildEmployees(perf);
+    buildStageTimes(items);
+  } catch (err) {
+    console.error('Performance load error:', err);
+  }
 }
 
 // =========================
 // ALERTS
 // =========================
 function buildAlerts(items){
-  alerts.innerHTML = "";
+  const alertsEl = document.getElementById('alerts');
+  alertsEl.innerHTML = "";
 
   const now = new Date();
 
@@ -97,15 +157,11 @@ function buildAlerts(items){
     const last = new Date(i.logs[i.logs.length-1].timestamp);
     const diffHours = (now - last) / (1000*60*60);
 
-    if(diffHours > 24 && i.stage !== "Picked Up"){
+    if(diffHours > 24 && i.stage !== "Picked Up" && i.stage !== "Missing at Drop Off"){
       const div = document.createElement("div");
       div.className = "alert-box";
-
-      div.innerHTML = `
-        ${i.code}-${i.number} stuck in "${i.stage}" for ${Math.round(diffHours)} hrs
-      `;
-
-      alerts.appendChild(div);
+      div.innerHTML = `${i.code || '?'}-${i.number || '?'} stuck in "<strong>${i.stage}</strong>" for ${Math.round(diffHours)} hrs`;
+      alertsEl.appendChild(div);
     }
   });
 }
@@ -114,7 +170,13 @@ function buildAlerts(items){
 // EMPLOYEES
 // =========================
 function buildEmployees(data){
-  employees.innerHTML = "";
+  const employeesEl = document.getElementById('employees');
+  employeesEl.innerHTML = "";
+
+  if (!data.length) {
+    employeesEl.innerHTML = '<div style="color:#6b7280;font-size:14px;">No employee activity yet.</div>';
+    return;
+  }
 
   const labels = [];
   const values = [];
@@ -128,31 +190,35 @@ function buildEmployees(data){
 
     div.innerHTML = `
       <div class="employee-name">${e.employee}</div>
-      <div class="employee-stat">Created: ${e.created}</div>
-      <div class="employee-stat">Accepted: ${e.handoffAccepted}</div>
-      <div class="employee-stat">Rejected: ${e.handoffRejected}</div>
-      <div class="employee-stat">Lots: ${e.lotsAssigned}</div>
+      <div class="employee-stat">Items Created: <strong>${e.created}</strong></div>
+      <div class="employee-stat">Stage Changes: <strong>${e.stageChanges || 0}</strong></div>
+      <div class="employee-stat">Scans: <strong>${e.scans || 0}</strong></div>
+      <div class="employee-stat">Lots Assigned: <strong>${e.lotsAssigned}</strong></div>
     `;
 
-    employees.appendChild(div);
+    employeesEl.appendChild(div);
   });
 
   if(employeeChart) employeeChart.destroy();
 
-  employeeChart = new Chart(employeeChartCanvas(), {
+  employeeChart = new Chart(document.getElementById("employeeChart"), {
     type: 'bar',
     data: {
       labels,
       datasets: [{
         label: 'Items Created',
-        data: values
+        data: values,
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        borderSkipped: false
       }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
     }
   });
-}
-
-function employeeChartCanvas(){
-  return document.getElementById("employeeChart");
 }
 
 // =========================
@@ -170,14 +236,20 @@ function buildStageTimes(items){
 
       if(prev.toStage && curr.toStage){
         const diff = (new Date(curr.timestamp) - new Date(prev.timestamp)) / 60000;
-
+        if (diff < 0) return; // skip clock skew
         if(!stageTimes[prev.toStage]) stageTimes[prev.toStage] = [];
         stageTimes[prev.toStage].push(diff);
       }
     }
   });
 
-  stages.innerHTML = "";
+  const stagesEl = document.getElementById('stages');
+  stagesEl.innerHTML = "";
+
+  if (!Object.keys(stageTimes).length) {
+    stagesEl.innerHTML = '<div style="color:#6b7280;font-size:14px;">No stage history yet.</div>';
+    return;
+  }
 
   const labels = [];
   const values = [];
@@ -191,34 +263,38 @@ function buildStageTimes(items){
 
     const div = document.createElement("div");
     div.className = "stage-box";
-
     if(avg > 1440) div.classList.add("slow"); // > 24 hrs
 
+    const hrs = avg >= 60 ? ` (${(avg/60).toFixed(1)} hrs)` : '';
     div.innerHTML = `
-      <div style="font-weight:700;margin-bottom:4px;">${stage}</div>
-      <div class="employee-stat">Avg: ${avg} mins</div>
-      <div class="employee-stat">Samples: ${times.length}</div>
+      <div style="font-weight:700;margin-bottom:4px;color:#111827;">${stage}</div>
+      <div class="employee-stat">Avg time in stage: <strong>${avg} min${hrs}</strong></div>
+      <div class="employee-stat">Sample size: ${times.length} item${times.length !== 1 ? 's' : ''}</div>
     `;
 
-    stages.appendChild(div);
+    stagesEl.appendChild(div);
   });
 
   if(stageChart) stageChart.destroy();
 
-  stageChart = new Chart(stageChartCanvas(), {
+  stageChart = new Chart(document.getElementById("stageChart"), {
     type: 'bar',
     data: {
       labels,
       datasets: [{
-        label: 'Avg Minutes',
-        data: values
+        label: 'Avg Minutes in Stage',
+        data: values,
+        backgroundColor: '#8b5cf6',
+        borderRadius: 6,
+        borderSkipped: false
       }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
     }
   });
-}
-
-function stageChartCanvas(){
-  return document.getElementById("stageChart");
 }
 
 // =========================

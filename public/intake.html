@@ -28,6 +28,38 @@
       margin-top: 14px;
     }
     .action-row button { flex: 1; }
+    .report-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .report-card:last-child { border-bottom: none; }
+    .report-card:hover { background: #f8fafc; }
+    .report-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .report-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .report-badge {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
     @media print {
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
@@ -103,6 +135,10 @@
 </div>
 
 <script>
+// Auth guard
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
 let reports = [];
 let currentReport = null;
 
@@ -110,69 +146,71 @@ let currentReport = null;
 // LOAD
 // =========================
 async function load(){
-  const res = await fetch('/intake');
-  reports = await res.json();
-
-  buildAnalytics();
-  render();
+  try {
+    const res = await fetch('/intake');
+    reports = await res.json();
+    buildAnalytics();
+    render();
+  } catch (err) {
+    console.error('Failed to load intake:', err);
+  }
 }
 
 // =========================
 // ANALYTICS
 // =========================
 function buildAnalytics(){
-  totalReports.innerText = reports.length;
+  document.getElementById('totalReports').innerText = reports.length;
 
   let itemCount = 0;
-  let consigners = {};
+  const consigners = {};
 
-  reports.forEach(r=>{
-    itemCount += r.items.length;
-
-    consigners[r.consigner] =
-      (consigners[r.consigner] || 0) + r.items.length;
+  reports.forEach(r => {
+    itemCount += (r.items || []).length;
+    consigners[r.consigner] = (consigners[r.consigner] || 0) + (r.items || []).length;
   });
 
-  totalItems.innerText = itemCount;
+  document.getElementById('totalItems').innerText = itemCount;
 
-  const top = Object.entries(consigners)
-    .sort((a,b)=>b[1]-a[1])[0];
-
-  topConsigner.innerText = top ? top[0] : "-";
+  const top = Object.entries(consigners).sort((a, b) => b[1] - a[1])[0];
+  document.getElementById('topConsigner').innerText = top ? top[0] : '—';
 }
 
 // =========================
 // RENDER
 // =========================
 function render(){
-  const q = search.value.toLowerCase();
-  const dateVal = dateFilter.value;
+  const q = document.getElementById('search').value.toLowerCase();
+  const dateVal = document.getElementById('dateFilter').value;
+  const listEl = document.getElementById('list');
+  listEl.innerHTML = "";
 
-  list.innerHTML = "";
-
-  reports.slice().reverse().forEach(r=>{
+  const filtered = reports.filter(r => {
     const reportDate = new Date(r.createdAt);
-    const matchDate = !dateVal || reportDate.toISOString().slice(0,10) === dateVal;
+    const matchDate = !dateVal || reportDate.toISOString().slice(0, 10) === dateVal;
+    const matchText = (r.consigner || '').toLowerCase().includes(q) ||
+      (r.items || []).some(i => (i.name || '').toLowerCase().includes(q));
+    return matchDate && matchText;
+  });
 
-    const matchText =
-      r.consigner.toLowerCase().includes(q) ||
-      r.items.some(i => i.name.toLowerCase().includes(q));
+  if (!filtered.length) {
+    listEl.innerHTML = '<div style="color:#6b7280;font-size:14px;padding:12px 0;">No intake sessions found.</div>';
+    return;
+  }
 
-    if (!matchDate || !matchText) return;
-
-    const div = document.createElement("div");
-    div.className = "report-card";
-
+  filtered.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'report-card';
+    const reportDate = new Date(r.createdAt);
     div.innerHTML = `
-      <div class="report-title">${r.consigner}</div>
-      <div class="report-sub">
-        ${reportDate.toLocaleDateString()} • ${r.items.length} items
+      <div>
+        <div class="report-title">${escHtml(r.consigner)}</div>
+        <div class="report-sub">${reportDate.toLocaleDateString()} · ${(r.items || []).length} item${(r.items || []).length !== 1 ? 's' : ''}</div>
       </div>
+      <span class="report-badge">${escHtml(r.code || '')}</span>
     `;
-
-    div.onclick = ()=> openReport(r);
-
-    list.appendChild(div);
+    div.onclick = () => openReport(r);
+    listEl.appendChild(div);
   });
 }
 
@@ -183,18 +221,23 @@ function openReport(r){
   currentReport = r;
 
   let html = `
-    <h2>Consignment Intake</h2>
-    <p>${r.consigner}</p>
-    <p>${new Date(r.createdAt).toLocaleDateString()}</p>
-    <hr>
+    <h2 style="margin-bottom:4px;">Consignment Intake</h2>
+    <p style="color:#6b7280;margin-bottom:4px;">${escHtml(r.consigner)} — Code: ${escHtml(r.code || '')}</p>
+    <p style="color:#6b7280;margin-bottom:16px;">${new Date(r.createdAt).toLocaleDateString()}</p>
+    <hr style="margin-bottom:14px;">
   `;
 
-  r.items.forEach(i=>{
-    html += `<div><b>${i.code}-${i.number}</b> - ${i.name}</div>`;
+  (r.items || []).forEach(i => {
+    html += `<div style="margin-bottom:10px;"><b>${escHtml(i.code)}-${i.number || '?'}</b> · ${escHtml(i.name)}${i.lotNumber ? ` <span style="color:#6b7280;font-size:12px;">(${escHtml(i.lotNumber)})</span>` : ''}</div>`;
   });
 
-  printArea.innerHTML = html;
-  printArea.style.display = "block";
+  document.getElementById('printArea').innerHTML = html;
+  document.getElementById('printArea').style.display = 'block';
+  document.getElementById('printArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function escHtml(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // =========================
@@ -208,38 +251,39 @@ function printReport(){
 // EXPORT PDF
 // =========================
 function exportPDF(){
-  if(!currentReport) return alert("Open a report first");
+  if(!currentReport) return alert('Open a report first');
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  let y = 10;
+  let y = 14;
+  doc.setFontSize(16);
+  doc.text('Consignment Intake', 10, y); y += 10;
+  doc.setFontSize(12);
+  doc.text(currentReport.consigner || '', 10, y); y += 8;
+  doc.text(new Date(currentReport.createdAt).toLocaleDateString(), 10, y); y += 10;
+  doc.setFontSize(11);
 
-  doc.text("Consignment Intake", 10, y);
-  y += 10;
-
-  doc.text(currentReport.consigner, 10, y);
-  y += 10;
-
-  currentReport.items.forEach(i=>{
-    doc.text(`${i.code}-${i.number} - ${i.name}`, 10, y);
+  (currentReport.items || []).forEach(i => {
+    if (y > 270) { doc.addPage(); y = 14; }
+    doc.text(`${i.code || '?'}-${i.number || '?'} — ${i.name || ''}`, 10, y);
     y += 8;
   });
 
-  doc.save("intake-report.pdf");
+  doc.save('intake-report.pdf');
 }
 
 // =========================
 // NAV
 // =========================
 function toggleMenu(){
-  sidebar?.classList.toggle("open");
-  overlay?.classList.toggle("show");
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
 }
 
 function logout(){
-  localStorage.removeItem("user");
-  window.location.href = "/";
+  localStorage.removeItem('user');
+  window.location.href = '/';
 }
 
 load();
