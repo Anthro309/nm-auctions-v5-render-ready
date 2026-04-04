@@ -362,7 +362,7 @@ function render() {
   }
 
   // Stage advance
-  const stageOrder = ['Initial Visit','Received at Studio','Review & Cleaning','Photograph','Ready to Prep','Ready for Pick Up','Picked Up'];
+  const stageOrder = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
   const idx = stageOrder.indexOf(item.stage);
   if (idx !== -1 && idx < stageOrder.length - 1) {
     document.getElementById('nextStageName').innerText = item.stage + '  →  ' + stageOrder[idx + 1];
@@ -535,7 +535,7 @@ async function printLabel() {
 // ADVANCE STAGE
 // =========================
 async function advanceStage() {
-  const stageOrder = ['Initial Visit','Received at Studio','Review & Cleaning','Photograph','Ready to Prep','Ready for Pick Up','Picked Up'];
+  const stageOrder = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
   const idx = stageOrder.indexOf(item.stage);
   if (idx === -1 || idx >= stageOrder.length - 1) return;
   const nextStage = stageOrder[idx + 1];

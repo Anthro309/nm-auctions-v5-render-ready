@@ -39,7 +39,7 @@
 
   <div class="card">
     <h2>Auction Listing Export</h2>
-    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pickup</strong> stage — ready to list.</p>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage — ready to list.</p>
     <button onclick="exportAuctionCSV()" style="width:100%;">📤 Export Auction Listings CSV</button>
     <div id="exportMsg" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
   </div>
@@ -102,7 +102,7 @@ function render() {
 
 function exportAuctionCSV() {
   const ready = allItems.filter(i =>
-    i.stage === 'Photograph' || i.stage === 'Prep for Pickup'
+    i.stage === 'Photograph' || i.stage === 'Prep for Pick Up'
   );
 
   const msgEl = document.getElementById('exportMsg');
@@ -110,7 +110,7 @@ function exportAuctionCSV() {
   if (!ready.length) {
     msgEl.style.background = '#fef2f2';
     msgEl.style.color = '#b91c1c';
-    msgEl.innerText = 'No items in Photograph or Prep for Pickup stage.';
+    msgEl.innerText = 'No items in Photograph or Prep for Pick Up stage.';
     msgEl.style.display = 'block';
     setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
     return;

@@ -192,7 +192,7 @@
       const items = await res.json();
       const today = new Date().toLocaleDateString();
       const inStudio    = items.filter(i => i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off');
-      const readyPickup = items.filter(i => i.stage === 'Prep for Pickup');
+      const readyPickup = items.filter(i => i.stage === 'Prep for Pick Up');
       const addedToday  = items.filter(i => new Date(i.createdAt).toLocaleDateString() === today);
       document.getElementById('statInStudio').innerText = inStudio.length;
       document.getElementById('statReady').innerText    = readyPickup.length;

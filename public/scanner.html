@@ -261,7 +261,7 @@ async function loadItem(lotCode) {
 
     document.getElementById('scanRecorded').style.display = 'none';
     document.getElementById('checkInBtn').style.display =
-      item.stage === 'Initial Visit' ? 'block' : 'none';
+      item.stage === 'Home Visit' ? 'block' : 'none';
     log('Loaded: ' + (item.name || item.lotNumber));
 
     // Auto-record this employee's scan
@@ -316,7 +316,7 @@ async function recordScan(itemId) {
     const data = await res.json();
     if (data.success) {
       document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
-      if (!currentItem || currentItem.stage !== 'Initial Visit') {
+      if (!currentItem || currentItem.stage !== 'Home Visit') {
         document.getElementById('scanRecorded').style.display = 'block';
         setTimeout(resetScanner, 1800);
       }
