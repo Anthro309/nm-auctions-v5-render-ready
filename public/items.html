@@ -96,11 +96,43 @@
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
-  <div class="card">
-    <h2>Item Library</h2>
-    <input id="search" placeholder="Search by name, lot, or consigner" oninput="render()">
 
-    <div class="mode-toggle" style="margin-top:12px;">
+  <!-- Page Header -->
+  <div class="page-header-block">
+    <div class="page-header-icon">📦</div>
+    <div>
+      <div class="page-header-title">Item Library</div>
+      <div class="page-header-sub" id="itemCount">Browse all consigned items</div>
+    </div>
+  </div>
+
+  <!-- Search + Sort row -->
+  <div class="search-bar-row">
+    <input id="search" placeholder="Search by name, lot, or consigner" oninput="render()">
+  </div>
+
+  <!-- Filter row -->
+  <div class="filter-row">
+    <select id="stageFilter" onchange="render()">
+      <option value="">All Stages</option>
+      <option>Home Visit</option>
+      <option>Received at Studio</option>
+      <option>Review &amp; Cleaning</option>
+      <option>Photograph</option>
+      <option>Prep for Pick Up</option>
+      <option>Ready for Pick Up</option>
+      <option>Picked Up</option>
+      <option>Missing at Drop Off</option>
+    </select>
+    <select id="sortFilter" onchange="render()">
+      <option value="consigner">Group by Consigner</option>
+      <option value="stage">Sort by Stage</option>
+      <option value="recent">Most Recent</option>
+    </select>
+  </div>
+
+  <div class="card" style="padding-top:14px;padding-bottom:14px;">
+    <div class="mode-toggle">
       <button class="mode-btn active" id="modeConsigner" onclick="setMode('consigner')">By Consigner</button>
       <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Advance</button>
     </div>
@@ -111,7 +143,7 @@
       <select class="batch-select" id="batchStage">
         <option value="">Move to stage...</option>
         <option>Received at Studio</option>
-        <option>Review & Cleaning</option>
+        <option>Review &amp; Cleaning</option>
         <option>Photograph</option>
         <option>Prep for Pick Up</option>
         <option>Ready for Pick Up</option>
@@ -120,7 +152,7 @@
       <button class="batch-btn" id="batchAdvBtn" onclick="batchAdvance()">Advance</button>
     </div>
 
-    <div id="list" style="margin-top:8px;"></div>
+    <div id="list" style="margin-top:4px;"></div>
   </div>
 
   <div class="card">
@@ -157,42 +189,94 @@ async function load() {
 
 function getFiltered() {
   const q = document.getElementById('search').value.toLowerCase();
-  return allItems.filter(i =>
-    (i.name || '').toLowerCase().includes(q) ||
-    (i.lotNumber || '').toLowerCase().includes(q) ||
-    (i.code || '').toLowerCase().includes(q) ||
-    (i.consigner || '').toLowerCase().includes(q)
-  );
+  const stageF = document.getElementById('stageFilter').value;
+  return allItems.filter(i => {
+    const matchQ = !q ||
+      (i.name || '').toLowerCase().includes(q) ||
+      (i.lotNumber || '').toLowerCase().includes(q) ||
+      (i.code || '').toLowerCase().includes(q) ||
+      (i.consigner || '').toLowerCase().includes(q);
+    const matchStage = !stageF || i.stage === stageF;
+    return matchQ && matchStage;
+  });
 }
 
 function render() {
+  const filtered = getFiltered();
+  document.getElementById('itemCount').innerText =
+    filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
+    (allItems.length !== filtered.length ? ' (filtered from ' + allItems.length + ')' : '');
   currentMode === 'consigner' ? renderConsigner() : renderBatch();
 }
 
 function renderConsigner() {
   const filtered = getFiltered();
+  const sort = document.getElementById('sortFilter').value;
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
+    return;
+  }
+
+  if (sort === 'recent' || sort === 'stage') {
+    // Flat list sorted by date or stage
+    const sorted = [...filtered].sort((a, b) => {
+      if (sort === 'recent') {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      }
+      const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off'];
+      return stages.indexOf(a.stage) - stages.indexOf(b.stage);
+    });
+
+    sorted.forEach(i => {
+      const div = document.createElement('div');
+      div.className = 'button-card';
+      div.style.cssText = 'margin-bottom:10px;display:flex;align-items:center;gap:14px;';
+      const thumb = i.photos?.[0]
+        ? `<img src="${i.photos[0]}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;" loading="lazy">`
+        : `<div style="width:48px;height:48px;border-radius:10px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📦</div>`;
+      div.innerHTML = `
+        ${thumb}
+        <div style="flex:1;min-width:0;">
+          <div class="button-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${i.name || 'Unnamed'}</div>
+          <div class="button-sub">${i.lotNumber || '—'} · ${i.consigner || '—'}</div>
+        </div>
+        <span class="stage-pill">${i.stage || '—'}</span>
+      `;
+      div.onclick = () => { window.location.href = '/item.html?id=' + i.id; };
+      list.appendChild(div);
+    });
+    return;
+  }
+
+  // Default: group by consigner
   const grouped = {};
   filtered.forEach(i => {
     if (!grouped[i.code]) grouped[i.code] = [];
     grouped[i.code].push(i);
   });
 
-  const list = document.getElementById('list');
-  list.innerHTML = '';
-
-  if (!Object.keys(grouped).length) {
-    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
-    return;
-  }
-
   Object.keys(grouped).forEach(code => {
     const group = grouped[code];
     const div = document.createElement('div');
     div.className = 'button-card';
-    div.style.marginBottom = '12px';
+    div.style.cssText = 'margin-bottom:10px;display:flex;align-items:center;gap:14px;';
+
+    // Thumbnail strip from first photo
+    const thumb = group.find(i => i.photos?.[0]);
+    const thumbHTML = thumb
+      ? `<img src="${thumb.photos[0]}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;" loading="lazy">`
+      : `<div style="width:48px;height:48px;border-radius:10px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🏷️</div>`;
+
     div.innerHTML = `
-      <div class="button-title">${group[0].consigner || code}</div>
-      <div class="button-sub">${group.length} item${group.length !== 1 ? 's' : ''} · Code: ${code}</div>
+      ${thumbHTML}
+      <div style="flex:1;min-width:0;">
+        <div class="button-title">${group[0].consigner || code}</div>
+        <div class="button-sub">${group.length} item${group.length !== 1 ? 's' : ''} · Code: ${code}</div>
+      </div>
+      <span style="font-size:18px;opacity:0.35;">›</span>
     `;
     div.onclick = () => { window.location.href = '/consigner.html?code=' + code; };
     list.appendChild(div);
