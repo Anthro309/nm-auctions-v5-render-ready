@@ -220,6 +220,9 @@
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
     <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
 </div>
@@ -261,7 +264,9 @@
     <div class="loader" id="loader">
       <div class="loader-bar"></div>
     </div>
-    <button class="iv-btn" onclick="analyzePhoto()">📷 Analyze Photo with AI</button>
+    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);" onclick="autoIntake()">✨ AI Auto-Fill Everything</button>
+    <button class="iv-btn" onclick="analyzePhoto()">📷 Analyze Photo Only</button>
+    <div id="autoIntakeStatus" style="display:none;margin-top:8px;padding:10px 14px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
     <button class="iv-btn" onclick="addItem()">Add Item</button>
     <button class="iv-btn green" onclick="endVisit()">🖨️ End Visit & Print Labels</button>
     <div id="statusBox" class="status">Ready.</div>
@@ -343,6 +348,49 @@ async function uploadPhoto() {
   const data = await safeJson(res);
   if (!data.success) throw new Error(data.message || 'Upload failed');
   return data.path;
+}
+
+// =========================
+// FULL INTAKE AUTOMATION
+// =========================
+async function autoIntake() {
+  if (!session) { alert('Start visit first'); return; }
+  const photoFile = document.getElementById('photo').files[0];
+  if (!photoFile) { alert('Take or choose a photo first — it drives everything'); return; }
+
+  const statusEl = document.getElementById('autoIntakeStatus');
+  statusEl.innerText = '✨ AI analyzing photo and filling all fields…';
+  statusEl.style.display = 'block';
+
+  const form = new FormData();
+  form.append('photo', photoFile);
+  const voice = document.getElementById('itemName').value.trim();
+  if (voice) form.append('voiceTranscript', voice);
+  form.append('consignerCode', session.code);
+  form.append('consignerName', session.consigner);
+  form.append('employee', JSON.parse(localStorage.getItem('user') || '{}').name || 'system');
+
+  try {
+    const res = await fetch('/auto-intake', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!data.success && !data.photoPath) throw new Error(data.message || 'Auto-intake failed');
+
+    // Fill all fields from AI
+    if (data.title)       document.getElementById('itemName').value = data.title;
+    if (data.description) document.getElementById('itemDescription').value = data.description;
+    if (data.category)    document.getElementById('itemCategory').value = data.category;
+    if (data.condition)   document.getElementById('itemCondition').value = data.condition;
+    if (data.photoPath)   currentPhotoPath = data.photoPath;
+    if (data.tags)        currentTags = data.tags;
+    if (data.estimatedValueLow)  currentEstValueLow  = data.estimatedValueLow;
+    if (data.estimatedValueHigh) currentEstValueHigh = data.estimatedValueHigh;
+
+    statusEl.innerText = `✅ Done! ${data.title || 'Item'} — ${data.category} — ${data.condition} — $${data.estimatedValueLow||0}–$${data.estimatedValueHigh||0}`;
+    if (data.conditionReport) statusEl.innerText += `\n📋 ${data.conditionReport}`;
+    checkDuplicate(data.title);
+  } catch (err) {
+    statusEl.innerText = '⚠️ ' + (err.message || 'Auto-intake failed');
+  }
 }
 
 async function analyzePhoto() {

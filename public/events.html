@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auction Events | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.event-card {
+  background: white;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05);
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.event-card:hover, .event-card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+  border-color: rgba(37,99,235,0.18);
+}
+.event-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.event-name { font-size: 16px; font-weight: 800; color: #111827; margin-bottom: 3px; }
+.event-date { font-size: 13px; color: #6b7280; }
+.event-status {
+  font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+}
+.event-status.upcoming { background: #eff6ff; color: #1d4ed8; }
+.event-status.active   { background: #f0fdf4; color: #15803d; }
+.event-status.completed{ background: #f3f4f6; color: #6b7280; }
+.event-meta { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.event-stat { font-size: 12px; color: #6b7280; font-weight: 600; }
+.event-stat strong { color: #111827; }
+
+/* Create form */
+.create-form { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(15,23,42,0.06); display: none; }
+.create-form.open { display: block; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+.create-form h3 { margin: 0 0 14px; font-size: 16px; font-weight: 700; }
+.form-label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 12px; margin-bottom: 2px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">🏷️</div>
+    <div>
+      <div class="page-header-title">Auction Events</div>
+      <div class="page-header-sub" id="eventsSub">Manage sales, assign lots, import results</div>
+    </div>
+  </div>
+
+  <!-- Create new event -->
+  <div id="createForm" class="create-form">
+    <h3>New Auction Event</h3>
+    <div class="form-row">
+      <div>
+        <span class="form-label">Event Name *</span>
+        <input id="newName" placeholder="e.g. April 19th Estate Auction" style="margin-top:4px;">
+      </div>
+      <div>
+        <span class="form-label">Date *</span>
+        <input id="newDate" type="date" style="margin-top:4px;">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <span class="form-label">Category Focus</span>
+        <select id="newCategory" style="margin-top:4px;">
+          <option value="general">General Estate</option>
+          <option value="furniture">Furniture & Decor</option>
+          <option value="jewelry">Jewelry & Accessories</option>
+          <option value="art">Art & Collectibles</option>
+          <option value="electronics">Electronics & Tools</option>
+          <option value="outdoor">Outdoor & Garden</option>
+        </select>
+      </div>
+      <div>
+        <span class="form-label">Commission Rate (%)</span>
+        <input id="newCommission" type="number" value="35" min="0" max="100" style="margin-top:4px;">
+      </div>
+    </div>
+    <span class="form-label">Description (optional)</span>
+    <textarea id="newDesc" rows="2" placeholder="Notes about this sale..." style="margin-top:4px;"></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button onclick="createEvent()" style="flex:1;">Create Event</button>
+      <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
+    </div>
+    <div id="createMsg" style="display:none;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
+  </div>
+
+  <button onclick="toggleCreate()" id="createBtn" style="width:100%;margin-bottom:16px;">+ Create New Auction Event</button>
+
+  <div id="eventsList"></div>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+function toggleCreate() {
+  document.getElementById('createForm').classList.toggle('open');
+  document.getElementById('createBtn').innerText =
+    document.getElementById('createForm').classList.contains('open') ? '✕ Cancel' : '+ Create New Auction Event';
+}
+
+async function createEvent() {
+  const name = document.getElementById('newName').value.trim();
+  const date = document.getElementById('newDate').value;
+  if (!name || !date) { alert('Event name and date are required'); return; }
+
+  const btn = document.querySelector('#createForm button');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, date,
+        description: document.getElementById('newDesc').value.trim(),
+        category: document.getElementById('newCategory').value,
+        commissionRate: document.getElementById('newCommission').value,
+        createdBy: user.name
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('createMsg').innerText = '✅ Event created!';
+      document.getElementById('createMsg').style.display = 'block';
+      document.getElementById('newName').value = '';
+      document.getElementById('newDate').value = '';
+      document.getElementById('newDesc').value = '';
+      setTimeout(() => { toggleCreate(); load(); }, 1200);
+    }
+  } catch { alert('Failed to create event'); }
+  btn.disabled = false;
+}
+
+async function load() {
+  const res = await fetch('/events');
+  const events = await res.json();
+
+  events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const upcoming = events.filter(e => e.status === 'upcoming').length;
+  document.getElementById('eventsSub').innerText =
+    events.length + ' total · ' + upcoming + ' upcoming';
+
+  const el = document.getElementById('eventsList');
+  if (!events.length) {
+    el.innerHTML = '<div class="card" style="text-align:center;color:#6b7280;">No events yet. Create your first auction event above.</div>';
+    return;
+  }
+
+  el.innerHTML = '';
+  events.forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'event-card';
+    const dateStr = new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+    div.innerHTML = `
+      <div class="event-header">
+        <div>
+          <div class="event-name">${ev.name}</div>
+          <div class="event-date">📅 ${dateStr}</div>
+        </div>
+        <span class="event-status ${ev.status}">${ev.status}</span>
+      </div>
+      <div class="event-meta">
+        <span class="event-stat"><strong>${ev.lots?.length || 0}</strong> lots assigned</span>
+        <span class="event-stat"><strong>${ev.commissionRate || 35}%</strong> commission</span>
+        ${ev.category !== 'general' ? `<span class="event-stat">Focus: <strong>${ev.category}</strong></span>` : ''}
+        ${ev.description ? `<span class="event-stat">${ev.description}</span>` : ''}
+      </div>
+    `;
+    div.onclick = () => { window.location.href = '/event.html?id=' + ev.id; };
+    el.appendChild(div);
+  });
+}
+
+load();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>

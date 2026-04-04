@@ -200,6 +200,9 @@
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
     <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
 </div>
@@ -313,6 +316,78 @@
       <button class="feedback-btn" id="fbGood" onclick="sendFeedback('good')">👍 Looks Great</button>
       <button class="feedback-btn" id="fbBad"  onclick="sendFeedback('bad')">👎 Not Great</button>
     </div>
+  </div>
+
+  <!-- AI CONDITION AUTO-ASSESSMENT -->
+  <div class="card" id="conditionCard">
+    <h3 style="margin-bottom:4px;">AI Condition Report</h3>
+    <div id="conditionReportDisplay" style="display:none;margin-bottom:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;font-size:13px;line-height:1.6;color:#374151;"></div>
+    <button class="btn-blue" onclick="assessCondition()">🔍 Assess Condition from Photo</button>
+    <div id="conditionMsg" class="success-msg">✅ Condition assessed</div>
+  </div>
+
+  <!-- AI DESCRIPTION VARIANTS -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Description Variants</h3>
+    <div id="variantsDisplay" style="display:none;margin-bottom:10px;">
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;margin-bottom:4px;">📱 Short (Social)</div>
+        <div id="varShort" style="font-size:13px;line-height:1.5;color:#374151;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #e5e7eb;"></div>
+        <button onclick="copyVariant('varShort')" style="margin-top:4px;padding:6px 12px;font-size:11px;border-radius:8px;background:#f3f4f6;color:#374151;width:auto;">Copy</button>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;margin-bottom:4px;">🏷️ Medium (Listing)</div>
+        <div id="varMedium" style="font-size:13px;line-height:1.5;color:#374151;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #e5e7eb;"></div>
+        <button onclick="copyVariant('varMedium')" style="margin-top:4px;padding:6px 12px;font-size:11px;border-radius:8px;background:#f3f4f6;color:#374151;width:auto;">Copy</button>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;margin-bottom:4px;">📄 Long (Catalog)</div>
+        <div id="varLong" style="font-size:13px;line-height:1.5;color:#374151;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #e5e7eb;"></div>
+        <button onclick="copyVariant('varLong')" style="margin-top:4px;padding:6px 12px;font-size:11px;border-radius:8px;background:#f3f4f6;color:#374151;width:auto;">Copy</button>
+      </div>
+    </div>
+    <button class="btn-blue" onclick="generateVariants()">✨ Generate All 3 Variants</button>
+    <div id="variantsMsg" class="success-msg">✅ Variants generated</div>
+  </div>
+
+  <!-- SMART REPAIR ESTIMATE -->
+  <div class="card" id="repairEstCard" style="display:none;">
+    <h3 style="margin-bottom:4px;">Smart Repair Estimate</h3>
+    <div id="repairEstDisplay" style="display:none;margin-bottom:10px;"></div>
+    <button class="btn-orange" onclick="getRepairEstimate()">💰 Get AI Repair Estimate</button>
+    <div id="repairEstMsg" class="success-msg">✅ Estimate ready</div>
+  </div>
+
+  <!-- MARKET COMPARABLE PRICING -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Market Comparable Pricing</h3>
+    <div id="marketDisplay" style="display:none;margin-bottom:10px;"></div>
+    <button class="btn-blue" onclick="getMarketPricing()">📊 Research Market Comparables</button>
+    <div id="marketMsg" class="success-msg">✅ Market data ready</div>
+  </div>
+
+  <!-- PREDICTIVE SALE PRICE -->
+  <div class="card">
+    <h3 style="margin-bottom:4px;">Predicted Sale Price</h3>
+    <div id="predictDisplay" style="display:none;margin-bottom:10px;"></div>
+    <button class="btn-blue" onclick="predictPrice()">🎯 Predict Closing Price</button>
+    <div id="predictMsg" class="success-msg">✅ Prediction ready</div>
+  </div>
+
+  <!-- AUCTION EVENT ASSIGNMENT -->
+  <div class="card" id="eventCard">
+    <h3 style="margin-bottom:4px;">Auction Event</h3>
+    <div id="eventAssignedDisplay" style="display:none;margin-bottom:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
+      <div style="font-size:13px;font-weight:700;color:#047857;" id="eventAssignedName"></div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;" id="eventAssignedDate"></div>
+    </div>
+    <div id="eventSelectWrap">
+      <select id="eventSelect" style="margin-top:0;margin-bottom:10px;"><option value="">Loading events…</option></select>
+      <button class="btn-green" onclick="assignToEvent()">Assign to Event</button>
+      <button class="btn-blue" style="margin-top:8px;" onclick="autoAssignEvent()">✨ AI Auto-Assign</button>
+    </div>
+    <div id="eventMsg" class="success-msg">✅ Assigned to event</div>
+    <div id="autoAssignResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
   </div>
 
   <!-- TAGS & ESTIMATED VALUE -->
@@ -470,6 +545,28 @@ function render() {
 
   // History
   renderHistory();
+  // New AI features
+  renderConditionReport();
+  loadEvents();
+  if (item.needsRepair) document.getElementById('repairEstCard').style.display = 'block';
+  // Restore saved variants/market/predict if present
+  if (item.descriptionVariants) {
+    document.getElementById('varShort').innerText = item.descriptionVariants.short || '';
+    document.getElementById('varMedium').innerText = item.descriptionVariants.medium || '';
+    document.getElementById('varLong').innerText = item.descriptionVariants.long || '';
+    document.getElementById('variantsDisplay').style.display = 'block';
+  }
+  if (item.repairEstimate) {
+    const d = item.repairEstimate;
+    const recs = { repair: '🔧 Recommend Repair', 'sell-as-is': '✅ Sell As-Is', discard: '🗑 Consider Discarding' };
+    document.getElementById('repairEstDisplay').innerHTML = `<div style="font-weight:700;font-size:14px;margin-bottom:4px;">${recs[d.recommendation]||d.recommendation}</div><div style="font-size:13px;color:#374151;">${d.reasoning}</div><div style="font-size:13px;font-weight:700;margin-top:4px;">$${d.estimateLow}–$${d.estimateHigh}</div>`;
+    document.getElementById('repairEstDisplay').style.display = 'block';
+  }
+  if (item.pricePrediction) {
+    const d = item.pricePrediction;
+    document.getElementById('predictDisplay').innerHTML = `<div style="font-size:18px;font-weight:800;color:#1d4ed8;margin-bottom:4px;">$${d.predictedLow}–$${d.predictedHigh} <span style="font-size:12px;color:#6b7280;">· Start: $${d.suggestedStartingBid}</span></div><div style="font-size:12px;color:#6b7280;">${d.reasoning}</div>`;
+    document.getElementById('predictDisplay').style.display = 'block';
+  }
 }
 
 // =========================
@@ -763,6 +860,252 @@ async function deleteItem() {
     alert('Delete failed');
   }
 }
+// =========================
+// AI — CONDITION ASSESSMENT
+// =========================
+async function assessCondition() {
+  const btn = document.querySelector('[onclick="assessCondition()"]');
+  btn.disabled = true; btn.innerText = '🔍 Analyzing…';
+  try {
+    const res = await fetch(`/items/${item.id}/condition-assess`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item.conditionGrade = data.grade; item.conditionReport = data.report;
+      const d = document.getElementById('conditionReportDisplay');
+      d.innerHTML = `<strong>${data.grade}</strong> — ${data.report}`;
+      d.style.display = 'block';
+      document.getElementById('detailCondition').innerText = data.grade;
+      const msg = document.getElementById('conditionMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else { alert(data.message || 'Assessment failed. Ensure item has a photo.'); }
+  } catch { alert('Failed to assess condition'); }
+  finally { btn.disabled = false; btn.innerText = '🔍 Assess Condition from Photo'; }
+}
+
+// Show saved condition report on load
+function renderConditionReport() {
+  if (item.conditionReport) {
+    const d = document.getElementById('conditionReportDisplay');
+    d.innerHTML = `<strong>${item.conditionGrade || 'Assessed'}</strong> — ${item.conditionReport}`;
+    d.style.display = 'block';
+  }
+  if (item.needsRepair) document.getElementById('repairEstCard').style.display = 'block';
+}
+
+// =========================
+// AI — DESCRIPTION VARIANTS
+// =========================
+async function generateVariants() {
+  const btn = document.querySelector('[onclick="generateVariants()"]');
+  btn.disabled = true; btn.innerText = '⏳ Generating…';
+  try {
+    const res = await fetch(`/items/${item.id}/description-variants`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('varShort').innerText = data.short || '';
+      document.getElementById('varMedium').innerText = data.medium || '';
+      document.getElementById('varLong').innerText = data.long || '';
+      document.getElementById('variantsDisplay').style.display = 'block';
+      const msg = document.getElementById('variantsMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else { alert(data.message || 'Variant generation failed'); }
+  } catch { alert('Failed to generate variants'); }
+  finally { btn.disabled = false; btn.innerText = '✨ Generate All 3 Variants'; }
+}
+
+function copyVariant(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector(`[onclick="copyVariant('${id}')"]`);
+    const orig = btn.innerText; btn.innerText = '✅ Copied!';
+    setTimeout(() => { btn.innerText = orig; }, 1800);
+  });
+}
+
+// =========================
+// AI — SMART REPAIR ESTIMATE
+// =========================
+async function getRepairEstimate() {
+  const btn = document.querySelector('[onclick="getRepairEstimate()"]');
+  btn.disabled = true; btn.innerText = '⏳ Estimating…';
+  try {
+    const res = await fetch(`/items/${item.id}/repair-estimate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const recs = { repair: '🔧 Recommend Repair', 'sell-as-is': '✅ Sell As-Is', discard: '🗑 Consider Discarding' };
+      const recColors = { repair: '#eff6ff;color:#1d4ed8', 'sell-as-is': '#f0fdf4;color:#15803d', discard: '#fef2f2;color:#b91c1c' };
+      document.getElementById('repairEstDisplay').innerHTML = `
+        <div style="background:${recColors[data.recommendation] || '#f8fafc;color:#374151'};padding:10px;border-radius:8px;margin-bottom:8px;font-weight:700;font-size:14px;">
+          ${recs[data.recommendation] || data.recommendation}
+        </div>
+        <div style="font-size:13px;color:#374151;margin-bottom:6px;">${data.reasoning}</div>
+        <div style="font-size:13px;font-weight:700;">Estimated Cost: <span style="color:#c2410c;">$${data.estimateLow}–$${data.estimateHigh}</span></div>
+        ${data.repairType ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">Service: ${data.repairType}</div>` : ''}
+      `;
+      document.getElementById('repairEstDisplay').style.display = 'block';
+      const msg = document.getElementById('repairEstMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else { alert(data.message || 'Estimate failed'); }
+  } catch { alert('Failed to get repair estimate'); }
+  finally { btn.disabled = false; btn.innerText = '💰 Get AI Repair Estimate'; }
+}
+
+// =========================
+// AI — MARKET COMPARABLE PRICING
+// =========================
+async function getMarketPricing() {
+  const btn = document.querySelector('[onclick="getMarketPricing()"]');
+  btn.disabled = true; btn.innerText = '⏳ Researching…';
+  try {
+    const res = await fetch(`/items/${item.id}/comparable-pricing`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const comps = (data.comparables || []).map(c =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:12px;">
+          <span style="color:#374151;">${c.description}</span>
+          <span style="font-weight:700;color:#15803d;">$${c.soldFor} <span style="color:#9ca3af;font-weight:400;">· ${c.source}</span></span>
+        </div>`).join('');
+      document.getElementById('marketDisplay').innerHTML = `
+        <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px;text-align:center;min-width:80px;">
+            <div style="font-size:18px;font-weight:800;color:#15803d;">$${data.marketLow}–$${data.marketHigh}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;">Market Range</div>
+          </div>
+          <div style="flex:1;background:#eff6ff;border-radius:10px;padding:10px;text-align:center;min-width:80px;">
+            <div style="font-size:18px;font-weight:800;color:#1d4ed8;">$${data.typicalStartingBid}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;">Suggested Start</div>
+          </div>
+          <div style="flex:1;background:#fff7ed;border-radius:10px;padding:10px;text-align:center;min-width:80px;">
+            <div style="font-size:18px;font-weight:800;color:#c2410c;">$${data.reserveRecommendation}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;">Reserve</div>
+          </div>
+        </div>
+        ${comps ? `<div style="margin-bottom:10px;">${comps}</div>` : ''}
+        ${data.marketNotes ? `<div style="font-size:12px;color:#6b7280;line-height:1.5;">${data.marketNotes}</div>` : ''}
+      `;
+      document.getElementById('marketDisplay').style.display = 'block';
+      const msg = document.getElementById('marketMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else { alert(data.message || 'Market research failed'); }
+  } catch { alert('Failed to get market data'); }
+  finally { btn.disabled = false; btn.innerText = '📊 Research Market Comparables'; }
+}
+
+// =========================
+// AI — PREDICTIVE SALE PRICE
+// =========================
+async function predictPrice() {
+  const btn = document.querySelector('[onclick="predictPrice()"]');
+  btn.disabled = true; btn.innerText = '⏳ Predicting…';
+  try {
+    const res = await fetch(`/items/${item.id}/predict-price`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const confColors = { high: '#f0fdf4;color:#15803d', medium: '#fff7ed;color:#c2410c', low: '#fef2f2;color:#b91c1c' };
+      document.getElementById('predictDisplay').innerHTML = `
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <div style="flex:1;background:#eff6ff;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:#1d4ed8;">$${data.predictedLow}–$${data.predictedHigh}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;margin-top:2px;">Predicted Range</div>
+          </div>
+          <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:#15803d;">$${data.suggestedStartingBid}</div>
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;margin-top:2px;">Start Bid</div>
+          </div>
+        </div>
+        <div style="background:${confColors[data.confidence] || '#f8fafc;color:#374151'};border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;margin-bottom:8px;">
+          Confidence: ${data.confidence?.toUpperCase()}
+        </div>
+        <div style="font-size:12px;color:#6b7280;line-height:1.5;">${data.reasoning}</div>
+      `;
+      document.getElementById('predictDisplay').style.display = 'block';
+      const msg = document.getElementById('predictMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    } else { alert(data.message || 'Prediction failed'); }
+  } catch { alert('Failed to predict price'); }
+  finally { btn.disabled = false; btn.innerText = '🎯 Predict Closing Price'; }
+}
+
+// =========================
+// AUCTION EVENT ASSIGNMENT
+// =========================
+async function loadEvents() {
+  try {
+    const res = await fetch('/events');
+    const events = await res.json();
+    const upcoming = events.filter(e => e.status !== 'completed');
+    const sel = document.getElementById('eventSelect');
+    sel.innerHTML = '<option value="">-- Select Event --</option>' +
+      upcoming.map(e => `<option value="${e.id}">${e.name} (${e.date})</option>`).join('');
+    if (item.eventId) {
+      sel.value = item.eventId;
+      const ev = events.find(e => String(e.id) === String(item.eventId));
+      if (ev) {
+        document.getElementById('eventAssignedName').innerText = '🏷️ ' + ev.name;
+        document.getElementById('eventAssignedDate').innerText = ev.date;
+        document.getElementById('eventAssignedDisplay').style.display = 'block';
+        document.getElementById('eventSelectWrap').style.display = 'none';
+      }
+    }
+  } catch {}
+}
+
+async function assignToEvent() {
+  const eventId = document.getElementById('eventSelect').value;
+  if (!eventId) { alert('Select an event first'); return; }
+  const btn = document.querySelector('[onclick="assignToEvent()"]');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/events/${eventId}/assign`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item.eventId = eventId; item.eventName = data.event?.name;
+      const msg = document.getElementById('eventMsg');
+      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      await loadEvents();
+    }
+  } catch { alert('Failed to assign event'); }
+  finally { btn.disabled = false; }
+}
+
+async function autoAssignEvent() {
+  const btn = document.querySelector('[onclick="autoAssignEvent()"]');
+  btn.disabled = true; btn.innerText = '⏳ AI Assigning…';
+  try {
+    const res = await fetch(`/items/${item.id}/auto-assign-event`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+    const data = await res.json();
+    const result = document.getElementById('autoAssignResult');
+    if (data.success) {
+      result.innerText = `✅ Assigned to "${data.event.name}" — ${data.reason}`;
+      result.style.display = 'block';
+      item.eventId = data.event.id;
+      await loadEvents();
+    } else { result.innerText = '⚠️ ' + (data.message || 'Auto-assign failed'); result.style.display = 'block'; }
+  } catch { alert('Auto-assign failed'); }
+  finally { btn.disabled = false; btn.innerText = '✨ AI Auto-Assign'; }
+}
+
 function escapeHtml(v) {
   return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
