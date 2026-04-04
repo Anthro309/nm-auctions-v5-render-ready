@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photography Queue | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.queue-card {
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.05);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: 1.5px solid transparent;
+}
+.queue-card:hover, .queue-card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+  border-color: rgba(37,99,235,0.15);
+}
+.queue-thumb {
+  width: 64px; height: 64px; min-width: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  overflow: hidden;
+}
+.queue-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.queue-info { flex: 1; min-width: 0; }
+.queue-name { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue-lot { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+.queue-wait {
+  display: inline-block;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+}
+.queue-wait.urgent { background: #fef2f2; color: #b91c1c; }
+.queue-wait.warn   { background: #fff7ed; color: #c2410c; }
+.queue-wait.ok     { background: #f0fdf4; color: #15803d; }
+.queue-advance {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.queue-advance:hover { background: #1d4ed8; }
+.queue-advance.done { background: #16a34a; }
+.summary-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.summary-tile {
+  flex: 1;
+  min-width: 80px;
+  background: white;
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+.summary-num { font-size: 26px; font-weight: 800; color: #111827; line-height: 1; }
+.summary-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
+.summary-tile.urgent .summary-num { color: #b91c1c; }
+.empty-state { text-align: center; padding: 48px 24px; color: #6b7280; }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-title { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">🎯</div>
+    <div>
+      <div class="page-header-title">Photography Queue</div>
+      <div class="page-header-sub" id="queueSub">Items waiting to be photographed</div>
+    </div>
+  </div>
+
+  <div class="summary-bar" id="summaryBar" style="display:none;">
+    <div class="summary-tile urgent">
+      <div class="summary-num" id="statUrgent">0</div>
+      <div class="summary-label">5+ Days</div>
+    </div>
+    <div class="summary-tile">
+      <div class="summary-num" id="statWaiting">0</div>
+      <div class="summary-label">Waiting</div>
+    </div>
+    <div class="summary-tile">
+      <div class="summary-num" id="statDoneToday">0</div>
+      <div class="summary-label">Shot Today</div>
+    </div>
+  </div>
+
+  <div class="search-bar-row" style="margin-bottom:14px;">
+    <input id="search" placeholder="Filter by name or consigner…" oninput="render()">
+    <select id="sortBy" onchange="render()">
+      <option value="wait">Longest Wait</option>
+      <option value="name">Name A–Z</option>
+      <option value="value">Highest Value</option>
+    </select>
+  </div>
+
+  <div id="queueList"></div>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+let allItems = [];
+
+function daysSince(ts) {
+  if (!ts) return 999;
+  return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+}
+
+function waitClass(days) {
+  if (days >= 5) return 'urgent';
+  if (days >= 2) return 'warn';
+  return 'ok';
+}
+
+function waitLabel(days) {
+  if (days === 0) return 'Today';
+  if (days === 1) return '1 day';
+  return days + ' days';
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const sort = document.getElementById('sortBy').value;
+
+  let list = allItems.filter(i =>
+    !q ||
+    (i.name || '').toLowerCase().includes(q) ||
+    (i.consigner || '').toLowerCase().includes(q)
+  );
+
+  if (sort === 'wait') list.sort((a, b) => daysSince(a.lastStageAt || a.createdAt) - daysSince(b.lastStageAt || b.createdAt) < 0 ? 1 : -1);
+  else if (sort === 'name') list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  else if (sort === 'value') list.sort((a, b) => (b.estimatedValueHigh || 0) - (a.estimatedValueHigh || 0));
+
+  const el = document.getElementById('queueList');
+  el.innerHTML = '';
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📷</div><div class="empty-title">Queue is clear!</div><div>No items waiting for photography.</div></div>`;
+    return;
+  }
+
+  list.forEach(item => {
+    const ts = item.logs?.slice().reverse().find(l => l.toStage === 'Review & Cleaning')?.timestamp || item.createdAt;
+    const days = daysSince(ts);
+    const cls = waitClass(days);
+
+    const div = document.createElement('div');
+    div.className = 'queue-card';
+    div.innerHTML = `
+      <div class="queue-thumb">
+        ${item.photos?.[0] ? `<img src="${item.photos[0]}" loading="lazy">` : '📦'}
+      </div>
+      <div class="queue-info">
+        <div class="queue-name">${item.name || 'Unnamed'}</div>
+        <div class="queue-lot">Lot ${item.lotNumber || '—'} · ${item.consigner || '—'}${item.location ? ' · 📍 ' + item.location : ''}</div>
+        <span class="queue-wait ${cls}">⏱ ${waitLabel(days)} waiting</span>
+        ${item.estimatedValueHigh ? `<span style="font-size:11px;color:#15803d;font-weight:700;margin-left:8px;">$${item.estimatedValueLow||0}–$${item.estimatedValueHigh}</span>` : ''}
+      </div>
+      <button class="queue-advance" id="adv-${item.id}" onclick="markPhotographed(event,'${item.id}')">📷 Shot</button>
+    `;
+    div.onclick = (e) => {
+      if (e.target.closest('.queue-advance')) return;
+      window.location.href = '/item.html?id=' + item.id;
+    };
+    el.appendChild(div);
+  });
+}
+
+async function markPhotographed(e, itemId) {
+  e.stopPropagation();
+  const btn = document.getElementById('adv-' + itemId);
+  btn.disabled = true;
+  btn.innerText = '⏳';
+  try {
+    const res = await fetch(`/items/${itemId}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: 'Photograph', employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.className = 'queue-advance done';
+      btn.innerText = '✓ Done';
+      allItems = allItems.filter(i => String(i.id) !== String(itemId));
+      setTimeout(() => render(), 800);
+      updateStats();
+    }
+  } catch {
+    btn.disabled = false;
+    btn.innerText = '📷 Shot';
+  }
+}
+
+function updateStats() {
+  const today = new Date().toLocaleDateString();
+  const urgent = allItems.filter(i => {
+    const ts = i.logs?.slice().reverse().find(l => l.toStage === 'Review & Cleaning')?.timestamp || i.createdAt;
+    return daysSince(ts) >= 5;
+  }).length;
+  document.getElementById('statUrgent').innerText = urgent;
+  document.getElementById('statWaiting').innerText = allItems.length;
+}
+
+async function load() {
+  const res = await fetch('/items');
+  const items = await res.json();
+  allItems = items.filter(i => i.stage === 'Review & Cleaning');
+
+  const today = new Date().toLocaleDateString();
+  const doneToday = items.filter(i =>
+    Array.isArray(i.logs) && i.logs.some(l => l.toStage === 'Photograph' && new Date(l.timestamp).toLocaleDateString() === today)
+  ).length;
+
+  document.getElementById('statDoneToday').innerText = doneToday;
+  document.getElementById('summaryBar').style.display = 'flex';
+  document.getElementById('queueSub').innerText = allItems.length + ' item' + (allItems.length !== 1 ? 's' : '') + ' waiting · ' + doneToday + ' shot today';
+
+  updateStats();
+  render();
+}
+
+load();
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>

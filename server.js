@@ -627,6 +627,484 @@ app.get('/intake', (req, res) => {
   res.json(readJSON(INTAKE_FILE));
 });
 
+
+// =========================
+// EVENTS — AUCTION SALES
+// =========================
+const EVENTS_FILE = 'events.json';
+ensureArrayFile(EVENTS_FILE);
+
+app.get('/events', (req, res) => {
+  res.json(readJSON(EVENTS_FILE));
+});
+
+app.post('/events', (req, res) => {
+  const { name, date, description, category, commissionRate, createdBy } = req.body;
+  if (!name || !date) return res.status(400).json({ success: false, message: 'name and date required' });
+  const events = readJSON(EVENTS_FILE);
+  const ev = {
+    id: Date.now() + Math.floor(Math.random() * 10000),
+    name, date,
+    description: description || '',
+    category: category || 'general',
+    commissionRate: parseFloat(commissionRate) || 35,
+    status: 'upcoming',
+    lots: [],
+    createdAt: new Date().toISOString(),
+    createdBy: createdBy || 'system'
+  };
+  events.push(ev);
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true, event: ev });
+});
+
+app.get('/events/:id', (req, res) => {
+  const ev = readJSON(EVENTS_FILE).find(e => String(e.id) === String(req.params.id));
+  if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
+  const items = readJSON(ITEMS_FILE);
+  const lots = ev.lots.map(lid => items.find(i => String(i.id) === String(lid))).filter(Boolean);
+  res.json({ ...ev, lotItems: lots });
+});
+
+app.patch('/events/:id', (req, res) => {
+  const events = readJSON(EVENTS_FILE);
+  const ev = events.find(e => String(e.id) === String(req.params.id));
+  if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
+  const allowed = ['name','date','description','category','commissionRate','status'];
+  allowed.forEach(k => { if (req.body[k] !== undefined) ev[k] = req.body[k]; });
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true, event: ev });
+});
+
+app.delete('/events/:id', (req, res) => {
+  let events = readJSON(EVENTS_FILE);
+  events = events.filter(e => String(e.id) !== String(req.params.id));
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true });
+});
+
+app.post('/events/:id/assign', (req, res) => {
+  const { itemId } = req.body;
+  if (!itemId) return res.status(400).json({ success: false, message: 'itemId required' });
+  const events = readJSON(EVENTS_FILE);
+  const ev = events.find(e => String(e.id) === String(req.params.id));
+  if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
+  if (!ev.lots.map(String).includes(String(itemId))) ev.lots.push(String(itemId));
+  // also save eventId on item
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(itemId));
+  if (item) { item.eventId = String(ev.id); item.eventName = ev.name; writeJSON(ITEMS_FILE, items); }
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true, event: ev });
+});
+
+app.delete('/events/:id/lots/:itemId', (req, res) => {
+  const events = readJSON(EVENTS_FILE);
+  const ev = events.find(e => String(e.id) === String(req.params.id));
+  if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
+  ev.lots = ev.lots.filter(l => String(l) !== String(req.params.itemId));
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.itemId));
+  if (item) { item.eventId = null; item.eventName = null; writeJSON(ITEMS_FILE, items); }
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true });
+});
+
+// Import auction results — CSV body: [{lotNumber, soldPrice}]
+app.post('/events/:id/import-results', (req, res) => {
+  const { results, employee } = req.body; // results: [{lotNumber, soldPrice}]
+  if (!Array.isArray(results)) return res.status(400).json({ success: false, message: 'results array required' });
+  const events = readJSON(EVENTS_FILE);
+  const ev = events.find(e => String(e.id) === String(req.params.id));
+  if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
+  const items = readJSON(ITEMS_FILE);
+  let matched = 0, unmatched = [];
+  for (const r of results) {
+    const sold = parseFloat(r.soldPrice) || 0;
+    const item = items.find(i => (i.lotNumber || '').toLowerCase().trim() === (r.lotNumber || '').toLowerCase().trim());
+    if (item) {
+      item.soldPrice = sold;
+      item.soldAt = new Date().toISOString();
+      item.soldBy = employee || 'system';
+      const rate = (ev.commissionRate || 35) / 100;
+      item.payoutAmount = parseFloat((sold * (1 - rate)).toFixed(2));
+      item.payoutStatus = 'pending';
+      item.stage = 'Picked Up';
+      addLog(item, { employee: employee || 'system', action: 'sold', note: `$${sold} — payout $${item.payoutAmount}`, toStage: 'Picked Up' });
+      matched++;
+    } else {
+      unmatched.push(r.lotNumber);
+    }
+  }
+  ev.status = 'completed';
+  ev.completedAt = new Date().toISOString();
+  writeJSON(ITEMS_FILE, items);
+  writeJSON(EVENTS_FILE, events);
+  res.json({ success: true, matched, unmatched });
+});
+
+// =========================
+// AI — CONDITION AUTO-ASSESSMENT
+// =========================
+app.post('/items/:id/condition-assess', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const photo = item.photos?.[0];
+  if (!photo) return res.json({ success: false, message: 'No photo on item' });
+
+  const photoUrl = `${req.protocol}://${req.get('host')}${photo}`;
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: photoUrl } },
+          { type: 'text', text: `You are an estate auction condition inspector. Examine this item photo and write a detailed condition report. Be specific about: visible damage (chips, cracks, scratches, stains, fading, missing parts), overall wear level, and anything affecting value. Keep it factual, 3-5 sentences. Start with overall condition grade: Excellent / Good / Fair / Worn / Poor. Format: {"grade":"Good","report":"Full condition report here."}. Return ONLY valid JSON.` }
+        ]
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Bad AI response');
+    item.conditionGrade = parsed.grade;
+    item.conditionReport = parsed.report;
+    if (!item.condition || item.condition === 'unknown') item.condition = parsed.grade.toLowerCase();
+    addLog(item, { employee: req.body.employee || 'system', action: 'condition assessed', note: parsed.grade });
+    writeJSON(ITEMS_FILE, items);
+    res.json({ success: true, grade: parsed.grade, report: parsed.report });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — DESCRIPTION VARIANTS (short/medium/long)
+// =========================
+app.post('/items/:id/description-variants', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `Write three versions of an estate auction listing description for this item.
+Item: ${item.name || 'Unknown'}
+Category: ${item.category || 'misc'}
+Condition: ${item.conditionGrade || item.condition || 'unknown'}
+Condition Notes: ${item.conditionReport || item.repairNote || 'none'}
+Tags: ${(item.tags || []).join(', ') || 'none'}
+Estimated Value: $${item.estimatedValueLow || 0}–$${item.estimatedValueHigh || 0}
+Existing Description: ${item.description || 'none'}
+
+Return ONLY valid JSON:
+{"short":"1-2 sentence social media caption (under 50 words)","medium":"Listing headline paragraph (80-100 words, auction-ready)","long":"Full catalog description (180-220 words, detailed provenance, condition, appeal)"}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Bad AI response');
+    item.descriptionVariants = parsed;
+    writeJSON(ITEMS_FILE, items);
+    res.json({ success: true, ...parsed });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — SMART REPAIR ESTIMATE
+// =========================
+app.post('/items/:id/repair-estimate', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const repairNote = item.repairNote || req.body.repairNote || 'general repair needed';
+  const estimatedValue = item.estimatedValueHigh || item.estimatedValueLow || 0;
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `You are an estate auction repair advisor. Analyze this repair situation and give a practical recommendation.
+
+Item: ${item.name || 'Unknown'}
+Category: ${item.category || 'misc'}
+Repair needed: ${repairNote}
+Estimated item value: $${estimatedValue}
+
+Return ONLY valid JSON:
+{"estimateLow":0,"estimateHigh":0,"recommendation":"repair"|"sell-as-is"|"discard","reasoning":"2-3 sentence explanation","repairType":"type of repair shop or service needed"}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Bad AI response');
+    item.repairEstimate = parsed;
+    writeJSON(ITEMS_FILE, items);
+    res.json({ success: true, ...parsed });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — MARKET COMPARABLE PRICING
+// =========================
+app.post('/items/:id/comparable-pricing', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `You are an estate auction market analyst. Based on your knowledge of auction results and resale markets, provide comparable pricing for this item.
+
+Item: ${item.name || 'Unknown'}
+Category: ${item.category || 'misc'}
+Condition: ${item.conditionGrade || item.condition || 'unknown'}
+Description: ${item.description || 'none'}
+Tags: ${(item.tags || []).join(', ') || 'none'}
+
+Provide realistic auction market data based on comparable sold items. Return ONLY valid JSON:
+{"marketLow":0,"marketHigh":0,"typicalStartingBid":0,"reserveRecommendation":0,"comparables":[{"description":"brief comparable item description","soldFor":0,"source":"auction platform name"}],"marketNotes":"2-3 sentences on current market for this type of item"}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Bad AI response');
+    item.marketPricing = parsed;
+    writeJSON(ITEMS_FILE, items);
+    res.json({ success: true, ...parsed });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — NATURAL LANGUAGE SEARCH
+// =========================
+app.post('/items/search-nl', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ success: false });
+
+  const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off'];
+  const categories = ['furniture','decor','tools','art','electronics','glassware','kitchenware','books','jewelry','outdoor','collectibles','clothing','toys','misc'];
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `Convert this search query into filter criteria for an estate auction item database.
+Query: "${query}"
+Valid stages: ${stages.join(', ')}
+Valid categories: ${categories.join(', ')}
+
+Return ONLY valid JSON (null means no filter):
+{"nameContains":null,"stage":null,"category":null,"condition":null,"minValue":null,"maxValue":null,"needsRepair":null,"hasPhoto":null,"hasDescription":null}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const filters = safeJsonParse(raw, {});
+    const items = readJSON(ITEMS_FILE);
+    const results = items.filter(i => {
+      if (filters.stage && i.stage !== filters.stage) return false;
+      if (filters.category && (i.category || '').toLowerCase() !== filters.category.toLowerCase()) return false;
+      if (filters.nameContains && !(i.name || '').toLowerCase().includes(filters.nameContains.toLowerCase())) return false;
+      if (filters.condition && (i.condition || '').toLowerCase() !== filters.condition.toLowerCase()) return false;
+      if (filters.minValue !== null && filters.minValue !== undefined && (i.estimatedValueHigh || 0) < filters.minValue) return false;
+      if (filters.maxValue !== null && filters.maxValue !== undefined && (i.estimatedValueLow || 0) > filters.maxValue) return false;
+      if (filters.needsRepair === true && !i.needsRepair) return false;
+      if (filters.needsRepair === false && i.needsRepair) return false;
+      if (filters.hasPhoto === true && (!i.photos || !i.photos.length)) return false;
+      if (filters.hasDescription === true && !i.auctionDescription && !i.description) return false;
+      return true;
+    });
+    res.json({ success: true, results, filters, count: results.length });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — AUTO AUCTION ASSIGNMENT
+// =========================
+app.post('/items/:id/auto-assign-event', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const events = readJSON(EVENTS_FILE).filter(e => e.status === 'upcoming');
+  if (!events.length) return res.json({ success: false, message: 'No upcoming events' });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `You are an estate auction curator. Match this item to the best upcoming event.
+
+Item: ${item.name} | Category: ${item.category || 'misc'} | Value: $${item.estimatedValueLow || 0}–$${item.estimatedValueHigh || 0} | Tags: ${(item.tags || []).join(', ')}
+
+Upcoming events:
+${events.map(e => `ID:${e.id} | ${e.name} | ${e.date} | Focus: ${e.category}`).join('\n')}
+
+Return ONLY valid JSON: {"eventId":"<id from list>","reason":"one sentence explanation"}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.eventId) throw new Error('Bad AI response');
+
+    const ev = events.find(e => String(e.id) === String(parsed.eventId));
+    if (!ev) return res.json({ success: false, message: 'AI chose invalid event' });
+
+    if (!ev.lots.map(String).includes(String(item.id))) ev.lots.push(String(item.id));
+    item.eventId = String(ev.id);
+    item.eventName = ev.name;
+    addLog(item, { employee: req.body.employee || 'system', action: 'auto-assigned to event', note: ev.name });
+    writeJSON(ITEMS_FILE, items);
+    const allEvents = readJSON(EVENTS_FILE);
+    const evIndex = allEvents.findIndex(e => String(e.id) === String(ev.id));
+    if (evIndex !== -1) allEvents[evIndex] = ev;
+    writeJSON(EVENTS_FILE, allEvents);
+    res.json({ success: true, event: ev, reason: parsed.reason });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — PREDICTIVE SALE PRICE
+// =========================
+app.post('/items/:id/predict-price', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  // Get historical sold data from same category
+  const historicalSold = items.filter(i =>
+    i.soldPrice && i.soldPrice > 0 &&
+    i.category === item.category &&
+    String(i.id) !== String(item.id)
+  ).slice(-20).map(i => ({
+    name: i.name, condition: i.condition, soldPrice: i.soldPrice,
+    estimatedHigh: i.estimatedValueHigh, tags: i.tags
+  }));
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 250,
+      messages: [{
+        role: 'user',
+        content: `You are an estate auction price analyst. Predict the closing sale price for this item.
+
+Item: ${item.name}
+Category: ${item.category || 'misc'}
+Condition: ${item.conditionGrade || item.condition || 'unknown'}
+Your estimated value: $${item.estimatedValueLow || 0}–$${item.estimatedValueHigh || 0}
+Tags: ${(item.tags || []).join(', ') || 'none'}
+Market comps from AI: ${item.marketPricing ? `$${item.marketPricing.marketLow}–$${item.marketPricing.marketHigh}` : 'not run'}
+
+Historical sold data from same category in this studio (last 20 items):
+${historicalSold.length ? historicalSold.map(h => `${h.name} [${h.condition}] → $${h.soldPrice}`).join('\n') : 'No history yet'}
+
+Return ONLY valid JSON: {"predictedLow":0,"predictedHigh":0,"confidence":"low"|"medium"|"high","suggestedStartingBid":0,"reasoning":"2 sentence explanation"}`
+      }]
+    });
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed) throw new Error('Bad AI response');
+    item.pricePrediction = parsed;
+    writeJSON(ITEMS_FILE, items);
+    res.json({ success: true, ...parsed });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// AI — FULL INTAKE AUTOMATION
+// =========================
+app.post('/auto-intake', upload.single('photo'), async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'Photo required' });
+
+  const voiceTranscript = req.body.voiceTranscript || '';
+  const consignerCode   = req.body.consignerCode || '';
+  const consignerName   = req.body.consignerName || '';
+  const employee        = req.body.employee || 'system';
+
+  const photoPath = `/uploads/${req.file.filename}`;
+  const photoUrl  = `${req.protocol}://${req.get('host')}${photoPath}`;
+
+  try {
+    // Single AI call: photo + voice → complete item data
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: photoUrl } },
+          { type: 'text', text: `You are an estate auction intake specialist. Analyze this item photo${voiceTranscript ? ` and this spoken description: "${voiceTranscript}"` : ''} and extract complete intake data.
+
+Category options: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc
+Condition options: excellent, good, fair, worn, vintage wear, unknown
+
+Return ONLY valid JSON:
+{"title":"","description":"2-3 sentences","category":"","condition":"","conditionReport":"specific damage notes from photo","tags":[],"estimatedValueLow":0,"estimatedValueHigh":0,"dimensions":"if visible"}` }
+        ]
+      }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.title) throw new Error('AI extraction failed');
+
+    res.json({
+      success: true,
+      photoPath,
+      title:             cleanAIText(parsed.title, ''),
+      description:       cleanAIText(parsed.description, ''),
+      category:          cleanAIText(parsed.category, 'misc'),
+      condition:         cleanAIText(parsed.condition, 'unknown'),
+      conditionReport:   cleanAIText(parsed.conditionReport, ''),
+      tags:              Array.isArray(parsed.tags) ? parsed.tags : [],
+      estimatedValueLow: parsed.estimatedValueLow  || 0,
+      estimatedValueHigh:parsed.estimatedValueHigh || 0,
+      dimensions:        parsed.dimensions || ''
+    });
+  } catch (err) {
+    console.error('Auto-intake error:', err.message);
+    res.json({ success: false, message: err.message, photoPath });
+  }
+});
+
 // =========================
 // ERROR HANDLER
 // =========================

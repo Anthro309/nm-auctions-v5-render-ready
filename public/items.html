@@ -89,6 +89,9 @@
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
     <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
 </div>
@@ -108,8 +111,10 @@
 
   <!-- Search + Sort row -->
   <div class="search-bar-row">
-    <input id="search" placeholder="Search by name, lot, or consigner" oninput="render()">
+    <input id="search" placeholder="Search or ask AI: 'jewelry over $200 not photographed'" oninput="onSearchInput()">
+    <button id="nlBtn" onclick="toggleNL()" style="width:auto;padding:10px 14px;font-size:13px;border-radius:12px;background:#7c3aed;flex-shrink:0;margin-top:0;" title="AI Natural Language Search">✨ AI</button>
   </div>
+  <div id="nlStatus" style="display:none;font-size:12px;color:#7c3aed;font-weight:600;margin-bottom:8px;padding:8px 12px;background:#f5f3ff;border-radius:8px;"></div>
 
   <!-- Filter row -->
   <div class="filter-row">
@@ -166,6 +171,9 @@
 <script>
 let allItems = [];
 let currentMode = 'consigner';
+let nlMode = false;
+let nlResults = null;
+let nlTimer = null;
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 
 function toggleMenu() {
@@ -187,6 +195,53 @@ async function load() {
   render();
 }
 
+function toggleNL() {
+  nlMode = !nlMode;
+  const btn = document.getElementById('nlBtn');
+  btn.style.background = nlMode ? '#5b21b6' : '#7c3aed';
+  btn.innerText = nlMode ? '✕ AI' : '✨ AI';
+  if (!nlMode) {
+    nlResults = null;
+    document.getElementById('nlStatus').style.display = 'none';
+    render();
+  } else {
+    document.getElementById('nlStatus').innerText = 'AI mode: type a natural language query and press Enter or wait';
+    document.getElementById('nlStatus').style.display = 'block';
+  }
+}
+
+async function runNLSearch(q) {
+  const status = document.getElementById('nlStatus');
+  status.innerText = '✨ AI is searching…';
+  try {
+    const res = await fetch('/items/search-nl', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q })
+    });
+    const data = await res.json();
+    if (data.success) {
+      nlResults = data.results;
+      const filterDesc = Object.entries(data.filters || {})
+        .filter(([, v]) => v !== null && v !== undefined)
+        .map(([k, v]) => `${k}: ${v}`).join(' · ');
+      status.innerText = `✅ Found ${data.count} items${filterDesc ? ' — ' + filterDesc : ''}`;
+    } else {
+      status.innerText = '⚠️ ' + (data.message || 'Search failed');
+    }
+  } catch { status.innerText = '⚠️ AI search failed'; }
+  render();
+}
+
+function onSearchInput() {
+  if (nlMode) {
+    clearTimeout(nlTimer);
+    const q = document.getElementById('search').value.trim();
+    if (q.length >= 3) nlTimer = setTimeout(() => runNLSearch(q), 800);
+  } else {
+    render();
+  }
+}
+
 function getFiltered() {
   const q = document.getElementById('search').value.toLowerCase();
   const stageF = document.getElementById('stageFilter').value;
@@ -202,7 +257,7 @@ function getFiltered() {
 }
 
 function render() {
-  const filtered = getFiltered();
+  const filtered = nlMode && nlResults !== null ? nlResults : getFiltered();
   document.getElementById('itemCount').innerText =
     filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
     (allItems.length !== filtered.length ? ' (filtered from ' + allItems.length + ')' : '');
