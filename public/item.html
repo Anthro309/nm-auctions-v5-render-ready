@@ -321,19 +321,11 @@
 
   <!-- AI CONDITION + DAMAGE (COMBINED) -->
   <div class="card" id="conditionCard">
-    <h3 style="margin-bottom:8px;">🔍 Condition & Damage Report</h3>
-
-    <!-- Condition report result -->
-    <div id="conditionReportDisplay" style="display:none;margin-bottom:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;font-size:13px;line-height:1.6;color:#374151;"></div>
-    <button class="btn-blue" onclick="assessCondition()">🔍 Assess Condition from Photo</button>
-    <div id="conditionMsg" class="success-msg">✅ Condition assessed</div>
-
-    <hr style="border:none;border-top:1px solid #f1f5f9;margin:14px 0;">
-
-    <!-- Damage detection result -->
-    <p style="font-size:13px;color:#6b7280;margin:0 0 10px;">AI scans for chips, cracks, stains, and wear — adds a detailed damage report.</p>
-    <button class="btn-blue" onclick="detectDamage()" id="damageBtn">✨ Scan for Damage</button>
-    <div id="damageResult" style="display:none;margin-top:12px;"></div>
+    <h3 style="margin-bottom:4px;">🔍 Condition & Damage Report</h3>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">AI assesses condition grade and scans for damage in one shot.</p>
+    <div id="conditionFullResult" style="display:none;margin-bottom:12px;"></div>
+    <button class="btn-blue" onclick="runFullCondition()" id="conditionFullBtn">🔍 Assess Condition & Damage</button>
+    <div id="conditionMsg" class="success-msg">✅ Assessment complete</div>
   </div>
   <div class="card" id="variantsCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Description Variants</h3>
@@ -893,35 +885,72 @@ async function deleteItem() {
 // =========================
 // AI — CONDITION ASSESSMENT
 // =========================
-async function assessCondition() {
-  const btn = document.querySelector('[onclick="assessCondition()"]');
-  btn.disabled = true; btn.innerText = '🔍 Analyzing…';
+// AI — COMBINED CONDITION + DAMAGE
+// =========================
+async function runFullCondition() {
+  const btn = document.getElementById('conditionFullBtn');
+  btn.disabled = true; btn.innerText = '⏳ Analyzing…';
   try {
-    const res = await fetch(`/items/${item.id}/condition-assess`, {
+    const res = await fetch(`/items/${item.id}/condition-full`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ employee: user.name })
     });
     const data = await res.json();
     if (data.success) {
-      item.conditionGrade = data.grade; item.conditionReport = data.report;
-      const d = document.getElementById('conditionReportDisplay');
-      d.innerHTML = `<strong>${data.grade}</strong> — ${data.report}`;
-      d.style.display = 'block';
-      document.getElementById('detailCondition').innerText = data.grade;
+      item.conditionGrade  = data.result.grade;
+      item.conditionReport = data.result.report;
+      item.damageReport    = data.result;
+      document.getElementById('detailCondition').innerText = data.result.grade;
+      renderConditionReport();
       const msg = document.getElementById('conditionMsg');
-      msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
-    } else { alert(data.message || 'Assessment failed. Ensure item has a photo.'); }
-  } catch { alert('Failed to assess condition'); }
-  finally { btn.disabled = false; btn.innerText = '🔍 Assess Condition from Photo'; }
+      msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 2500);
+    } else { alert(data.message || 'Assessment failed — make sure the item has a photo.'); }
+  } catch { alert('Failed to run assessment'); }
+  finally { btn.disabled = false; btn.innerText = '🔍 Assess Condition & Damage'; }
 }
 
-// Show saved condition report on load
+// Render saved condition + damage on load or after fresh run
 function renderConditionReport() {
-  if (item.conditionReport) {
-    const d = document.getElementById('conditionReportDisplay');
-    d.innerHTML = `<strong>${item.conditionGrade || 'Assessed'}</strong> — ${item.conditionReport}`;
-    d.style.display = 'block';
-  }
+  if (!item.conditionReport && !item.damageReport) return;
+  const r = item.damageReport || {};
+  const condColors = { Excellent: '#f0fdf4;color:#15803d', Good: '#f0fdf4;color:#15803d', Fair: '#fff7ed;color:#c2410c', Worn: '#fff7ed;color:#c2410c', Poor: '#fef2f2;color:#b91c1c' };
+  const condStyle = condColors[r.overallCondition || item.conditionGrade] || '#f8fafc;color:#374151';
+  const sevColor  = { minor: '#eff6ff;color:#1d4ed8', moderate: '#fff7ed;color:#c2410c', significant: '#fef2f2;color:#b91c1c' };
+  const damageRows = (r.damages || []).map(d => `
+    <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="background:${sevColor[d.severity]||'#f8fafc;color:#374151'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;">${d.severity}</span>
+        <span style="font-size:13px;font-weight:700;text-transform:capitalize;">${d.type}</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📍 ${d.location}</div>
+      <div style="font-size:13px;color:#374151;">${d.description}</div>
+    </div>
+  `).join('');
+
+  const html = `
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.6;color:#374151;">
+      <strong>${item.conditionGrade || 'Assessed'}</strong> — ${item.conditionReport || ''}
+    </div>
+    ${r.overallCondition ? `
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;background:${condStyle};border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:15px;font-weight:800;">${r.overallCondition}</div>
+        <div style="font-size:10px;text-transform:uppercase;opacity:0.7;margin-top:2px;">Overall Condition</div>
+      </div>
+      <div style="flex:1;background:#f8fafc;border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:15px;font-weight:800;">${r.damages?.length || 0}</div>
+        <div style="font-size:10px;text-transform:uppercase;color:#6b7280;margin-top:2px;">Issues Found</div>
+      </div>
+    </div>
+    ${r.damageFound && r.damages?.length ? damageRows : '<div style="color:#15803d;font-weight:700;font-size:13px;padding:10px;background:#f0fdf4;border-radius:10px;margin-bottom:8px;">✅ No significant damage detected</div>'}
+    <div style="padding:10px;background:#f5f3ff;border-radius:10px;font-size:12px;color:#5b21b6;font-weight:600;">🔧 Recommendation: ${r.repairRecommendation || 'none'}</div>
+    ${r.saleabilityNote ? `<div style="margin-top:8px;font-size:12px;color:#6b7280;line-height:1.5;font-style:italic;">"${r.saleabilityNote}"</div>` : ''}
+    ` : ''}
+  `;
+
+  const el = document.getElementById('conditionFullResult');
+  el.innerHTML = html;
+  el.style.display = 'block';
   if (item.needsRepair) document.getElementById('repairEstCard').style.display = 'block';
 }
 
@@ -1104,54 +1133,6 @@ async function identifyStyle() {
   finally { btn.disabled = false; btn.innerText = '✨ Identify Style & Era'; }
 }
 
-// =========================
-// AI — DAMAGE DETECTION
-// =========================
-async function detectDamage() {
-  const btn = document.getElementById('damageBtn');
-  btn.disabled = true; btn.innerText = '⏳ Scanning…';
-  try {
-    const res = await fetch(`/items/${item.id}/detect-damage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: user.name })
-    });
-    const data = await res.json();
-    if (data.success) {
-      const r = data.report;
-      const condColors = { Excellent: '#f0fdf4;color:#15803d', Good: '#f0fdf4;color:#15803d', Fair: '#fff7ed;color:#c2410c', Poor: '#fef2f2;color:#b91c1c' };
-      const condStyle = condColors[r.overallCondition] || '#f8fafc;color:#374151';
-      const sevColor = { minor: '#eff6ff;color:#1d4ed8', moderate: '#fff7ed;color:#c2410c', significant: '#fef2f2;color:#b91c1c' };
-      const damageRows = (r.damages || []).map(d => `
-        <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span style="background:${sevColor[d.severity]||'#f8fafc;color:#374151'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;">${d.severity}</span>
-            <span style="font-size:13px;font-weight:700;text-transform:capitalize;">${d.type}</span>
-          </div>
-          <div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📍 ${d.location}</div>
-          <div style="font-size:13px;color:#374151;">${d.description}</div>
-        </div>
-      `).join('');
-      document.getElementById('damageResult').innerHTML = `
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <div style="flex:1;background:${condStyle};border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:16px;font-weight:800;">${r.overallCondition}</div>
-            <div style="font-size:10px;text-transform:uppercase;opacity:0.7;margin-top:2px;">Overall Condition</div>
-          </div>
-          <div style="flex:1;background:#f8fafc;border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:16px;font-weight:800;">${r.damages?.length || 0}</div>
-            <div style="font-size:10px;text-transform:uppercase;color:#6b7280;margin-top:2px;">Issues Found</div>
-          </div>
-        </div>
-        ${r.damageFound && r.damages?.length ? damageRows : '<div style="color:#15803d;font-weight:700;font-size:13px;padding:10px;background:#f0fdf4;border-radius:10px;">✅ No significant damage detected</div>'}
-        <div style="margin-top:10px;padding:10px;background:#f5f3ff;border-radius:10px;font-size:12px;color:#5b21b6;font-weight:600;">🔧 Recommendation: ${r.repairRecommendation}</div>
-        <div style="margin-top:8px;font-size:12px;color:#374151;line-height:1.5;font-style:italic;">"${r.saleabilityNote}"</div>
-        <div style="margin-top:10px;font-size:12px;color:#374151;line-height:1.6;border-top:1px solid #e5e7eb;padding-top:10px;">${r.conditionSummary}</div>
-      `;
-      document.getElementById('damageResult').style.display = 'block';
-    } else { alert(data.message || 'Damage scan failed'); }
-  } catch { alert('Failed to scan for damage'); }
-  finally { btn.disabled = false; btn.innerText = '✨ Scan for Damage'; }
-}
 
 // =========================
 // AI — SOCIAL POST GENERATOR

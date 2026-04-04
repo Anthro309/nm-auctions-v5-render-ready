@@ -1131,6 +1131,76 @@ app.post('/events/:id/import-results', (req, res) => {
 });
 
 // =========================
+// AI — COMBINED CONDITION + DAMAGE ASSESSMENT
+// =========================
+app.post('/items/:id/condition-full', async (req, res) => {
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const photo = (item.photos || []).filter(Boolean)[0];
+  if (!photo) return res.json({ success: false, message: 'No photo on item' });
+
+  const photoUrl = `${req.protocol}://${req.get('host')}${photo}`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: photoUrl } },
+          {
+            type: 'text',
+            text: `You are a professional estate auction condition specialist. Examine this photo of "${item.name || 'item'}" and produce a combined condition and damage report.
+
+Return ONLY valid JSON:
+{
+  "grade": "Excellent / Good / Fair / Worn / Poor",
+  "report": "3-5 sentence overall condition report",
+  "overallCondition": "Excellent / Good / Fair / Poor",
+  "damageFound": true or false,
+  "damages": [
+    {
+      "type": "chip / crack / scratch / stain / fade / missing / repair / other",
+      "location": "where on the item",
+      "severity": "minor / moderate / significant",
+      "description": "specific description"
+    }
+  ],
+  "repairRecommendation": "none / professional cleaning / minor touch-up / full restoration",
+  "saleabilityNote": "one sentence on how condition affects auction value",
+  "conditionSummary": "2-3 sentence professional condition paragraph"
+}`
+          }
+        ]
+      }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.grade) throw new Error('Bad AI response');
+
+    // Save both condition + damage fields
+    item.conditionGrade  = parsed.grade;
+    item.conditionReport = parsed.report;
+    if (!item.condition || item.condition === 'unknown') item.condition = parsed.grade.toLowerCase();
+    item.damageReport    = parsed;
+    if (parsed.conditionSummary && !item.conditionReport) item.conditionReport = parsed.conditionSummary;
+
+    addLog(item, { employee: req.body.employee || 'system', action: 'condition + damage assessed', note: parsed.grade });
+    writeJSON(ITEMS_FILE, items);
+
+    res.json({ success: true, result: parsed });
+  } catch (err) {
+    console.error('Full condition error:', err.message);
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
 // AI — CONDITION AUTO-ASSESSMENT
 // =========================
 app.post('/items/:id/condition-assess', async (req, res) => {
