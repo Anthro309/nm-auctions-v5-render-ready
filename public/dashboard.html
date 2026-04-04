@@ -16,29 +16,30 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 14px;
     }
-    @media (max-width: 480px) {
-      .dash-grid { grid-template-columns: 1fr; }
+    @media (min-width: 600px) {
+      .dash-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
     }
     .dash-card {
       background: white;
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 22px 18px;
-      box-shadow: 0 2px 12px rgba(15,23,42,0.07);
+      box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
       cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-      border: 1px solid rgba(0,0,0,0.04);
+      transition: transform 0.18s ease, box-shadow 0.2s ease;
+      border: 1.5px solid transparent;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
     .dash-card:hover,
     .dash-card:active {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 28px rgba(15,23,42,0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(15,23,42,0.13);
+      border-color: rgba(37,99,235,0.18);
     }
     .dash-icon {
-      font-size: 28px;
-      margin-bottom: 4px;
+      font-size: 32px;
+      margin-bottom: 6px;
     }
     .dash-title {
       font-size: 16px;
@@ -50,21 +51,41 @@
       color: #6b7280;
       line-height: 1.4;
     }
+    @media (min-width: 600px) {
+      .dash-card { padding: 28px 24px; }
+      .dash-icon { font-size: 36px; }
+      .dash-title { font-size: 18px; }
+      .dash-sub { font-size: 14px; }
+    }
     .welcome-card {
-      background: linear-gradient(135deg, #0b1b2b 0%, #1a3a5c 100%);
-      border-radius: 16px;
-      padding: 22px 20px;
+      background: linear-gradient(135deg, #0b1b2b 0%, #1e3a5f 100%);
+      border-radius: 18px;
+      padding: 24px 22px;
       margin-bottom: 16px;
       color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
+    .welcome-text {}
     .welcome-name {
       font-size: 20px;
       font-weight: 800;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .welcome-sub {
       font-size: 13px;
-      opacity: 0.65;
+      opacity: 0.55;
+    }
+    .welcome-logo {
+      font-size: 40px;
+      opacity: 0.18;
+    }
+    @media (min-width: 600px) {
+      .welcome-card { padding: 28px 28px; margin-bottom: 20px; border-radius: 20px; }
+      .welcome-name { font-size: 24px; }
+      .welcome-sub { font-size: 14px; }
+      .welcome-logo { font-size: 56px; }
     }
   </style>
 </head>
@@ -72,8 +93,8 @@
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
-  <div class="nav-right" onclick="logout()">Logout</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
 </div>
 
 <div id="sidebar" class="sidebar">
@@ -94,9 +115,27 @@
 
 <div class="container">
 
-  <div id="welcomeCard" class="welcome-card" style="display:none;">
-    <div class="welcome-name" id="welcomeName"></div>
-    <div class="welcome-sub">Welcome back</div>
+  <div id="welcomeCard" class="page-header-block" style="display:none;margin-bottom:16px;">
+    <div class="page-header-icon">🏷️</div>
+    <div>
+      <div class="page-header-title" id="welcomeName"></div>
+      <div class="page-header-sub">Welcome back · Auction Legacy</div>
+    </div>
+  </div>
+
+  <div class="stat-grid" id="statsRow" style="display:none;">
+    <div class="stat-tile">
+      <div class="stat-number" id="statInStudio">—</div>
+      <div class="stat-label">Total in Inventory</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number" id="statReady">—</div>
+      <div class="stat-label">Ready to Photograph</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number" id="statToday">—</div>
+      <div class="stat-label">Photographed Today</div>
+    </div>
   </div>
 
   <div class="dash-grid">
@@ -143,11 +182,44 @@
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
   if (user && user.name) {
-    const card = document.getElementById('welcomeCard');
     document.getElementById('welcomeName').innerText = user.name;
-    card.style.display = 'block';
+    document.getElementById('welcomeCard').style.display = 'block';
   }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/items');
+      const items = await res.json();
+      const today = new Date().toLocaleDateString();
+
+      // Total in inventory = everything not picked up or missing
+      const totalInventory = items.filter(i =>
+        i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off'
+      );
+
+      // Ready to photograph = items at "Review & Cleaning" stage (next step is photograph)
+      const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
+
+      // Photographed today = items whose logs show a stage change TO 'Photograph' today
+      const photographedToday = items.filter(i =>
+        Array.isArray(i.logs) && i.logs.some(l =>
+          l.toStage === 'Photograph' &&
+          new Date(l.timestamp).toLocaleDateString() === today
+        )
+      );
+
+      document.getElementById('statInStudio').innerText = totalInventory.length;
+      document.getElementById('statReady').innerText    = readyToPhoto.length;
+      document.getElementById('statToday').innerText    = photographedToday.length;
+      document.getElementById('statsRow').style.display = 'grid';
+    } catch (err) {
+      console.warn('Stats failed to load');
+    }
+  }
+
+  loadStats();
 </script>
 
+<script src="/nav.js"></script>
 </body>
 </html>

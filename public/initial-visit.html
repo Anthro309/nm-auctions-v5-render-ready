@@ -8,66 +8,80 @@
 <link rel="stylesheet" href="/styles.css">
 <style>
 .iv-card {
-  background:#13283b;
-  padding:18px;
-  border-radius:18px;
-  margin-bottom:18px;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
 }
 
-input, textarea {
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border-radius:12px;
-  border:none;
-  box-sizing:border-box;
-  font-size:16px;
+.iv-card h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  color: #111827;
 }
 
 .iv-btn {
-  margin-top:12px;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  background:#2563eb;
-  color:white;
-  font-weight:bold;
-  width:100%;
-  font-size:16px;
-  cursor:pointer;
+  margin-top: 12px;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+  width: 100%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+  font-family: inherit;
 }
-
-.iv-btn.green { background:#16a34a; }
+.iv-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.iv-btn.green { background: #16a34a; }
+.iv-btn.green:hover { background: #15803d; }
 
 .loader {
-  margin-top:10px;
-  height:6px;
-  background:#1e3a5f;
-  border-radius:10px;
-  overflow:hidden;
-  display:none;
+  margin-top: 10px;
+  height: 5px;
+  background: #e0e7ef;
+  border-radius: 10px;
+  overflow: hidden;
+  display: none;
 }
-
 .loader-bar {
-  height:100%;
-  width:0%;
-  background:#3b82f6;
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
   animation: loading 1s infinite;
 }
-
 @keyframes loading {
-  0% { width:0% }
-  50% { width:80% }
-  100% { width:0% }
+  0%   { width: 0% }
+  50%  { width: 80% }
+  100% { width: 0% }
 }
 
 .status {
-  margin-top:12px;
-  padding:12px;
-  border-radius:12px;
-  background:#081421;
-  color:#dbeafe;
-  font-size:14px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f0f7ff;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #bfdbfe;
+}
+
+/* Tablet: 2-column layout */
+@media (min-width: 600px) {
+  .iv-card { padding: 28px; border-radius: 20px; }
+  .iv-card h2 { font-size: 19px; }
+  .iv-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .iv-layout > .iv-card { margin-bottom: 0; }
 }
 
 /* ── ON-SCREEN LABEL PREVIEW ── */
@@ -192,23 +206,39 @@ input, textarea {
 
 <div class="navbar">
   <div class="nav-left" onclick="toggleMenu()">☰</div>
-  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">Auction Legacy</div>
-  <div class="nav-right" onclick="logout()">Logout</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
 </div>
 
 <div id="sidebar" class="sidebar">
-  <div class="sidebar-title">Auction Legacy</div>
-  <a href="/dashboard.html">Dashboard</a>
-  <a href="/initial-visit.html">Initial Visit</a>
-  <a href="/scanner.html">Scanner</a>
-  <a href="/items.html">Item Library</a>
-  <a href="/reports.html">Reports</a>
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
 </div>
 
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
 
+<div class="page-header-block">
+  <div class="page-header-icon">📋</div>
+  <div>
+    <div class="page-header-title">Initial Visit</div>
+    <div class="page-header-sub">Capture consignments &amp; print labels</div>
+  </div>
+</div>
+
+<div class="iv-layout">
+
+  <div>
   <div id="visitCard" class="iv-card">
     <h2>Initial Visit</h2>
     <input id="firstInput" placeholder="First Name">
@@ -219,7 +249,11 @@ input, textarea {
 
   <div id="itemSection" class="iv-card" style="display:none;">
     <h2>Add Item</h2>
-    <input id="itemName" placeholder="Item Name">
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input id="itemName" placeholder="Item Name" style="flex:1;margin-top:0;">
+      <button id="voiceBtn" onclick="startVoice()" title="Speak to fill fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
+    </div>
+    <div id="dupWarning" style="display:none;background:#fff7ed;border:1.5px solid #f97316;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#9a3412;"></div>
     <textarea id="itemDescription" placeholder="Description" rows="3"></textarea>
     <input id="itemCategory" placeholder="Category">
     <input id="itemCondition" placeholder="Condition">
@@ -233,10 +267,15 @@ input, textarea {
     <div id="statusBox" class="status">Ready.</div>
   </div>
 
-  <!-- ON-SCREEN LABEL PREVIEWS -->
-  <div id="labels"></div>
+  </div><!-- end left column -->
 
-</div>
+  <!-- RIGHT: label previews -->
+  <div id="labelsColumn">
+    <div id="labels"></div>
+  </div>
+
+</div><!-- end iv-layout -->
+</div><!-- end container -->
 
 <!-- PRINT-ONLY SHEET -->
 <div id="printSheet"></div>
@@ -245,6 +284,9 @@ input, textarea {
 let session = null;
 let items = [];
 let currentPhotoPath = null;
+let currentTags = [];
+let currentEstValueLow = 0;
+let currentEstValueHigh = 0;
 
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -322,6 +364,10 @@ async function analyzePhoto() {
     document.getElementById('itemDescription').value = data.description || '';
     document.getElementById('itemCategory').value = data.category || '';
     document.getElementById('itemCondition').value = data.condition || '';
+    currentTags = data.tags || [];
+    currentEstValueLow  = data.estimatedValueLow  || 0;
+    currentEstValueHigh = data.estimatedValueHigh || 0;
+    checkDuplicate(data.title);
     setStatus('AI filled in the details. Review and click Add Item.');
   } catch (err) {
     setStatus('AI failed: ' + err.message);
@@ -329,6 +375,75 @@ async function analyzePhoto() {
     hideLoader();
   }
 }
+
+// ── VOICE TO ITEM ──
+let recognition = null;
+function startVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { alert('Voice input not supported on this browser'); return; }
+  if (recognition) { recognition.stop(); return; }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  const btn = document.getElementById('voiceBtn');
+  btn.innerText = '⏹️';
+  btn.style.background = '#dc2626';
+  setStatus('Listening... speak the item description');
+  recognition.onresult = async (e) => {
+    const transcript = e.results[0][0].transcript;
+    recognition = null;
+    btn.innerText = '🎙️'; btn.style.background = '#1e3a5c';
+    setStatus('Processing speech with AI...');
+    try {
+      const res = await fetch('/voice-to-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
+      const data = await safeJson(res);
+      if (data.success) {
+        if (data.title)       document.getElementById('itemName').value = data.title;
+        if (data.description) document.getElementById('itemDescription').value = data.description;
+        if (data.category)    document.getElementById('itemCategory').value = data.category;
+        if (data.condition)   document.getElementById('itemCondition').value = data.condition;
+        setStatus('Fields filled from voice. Review and click Add Item.');
+        checkDuplicate(data.title);
+      }
+    } catch (err) { setStatus('Voice processing failed'); }
+  };
+  recognition.onerror = () => { recognition = null; btn.innerText = '🎙️'; btn.style.background = '#1e3a5c'; setStatus('Voice error. Try again.'); };
+  recognition.onend   = () => { if (recognition) { recognition = null; btn.innerText = '🎙️'; btn.style.background = '#1e3a5c'; } };
+  recognition.start();
+}
+
+// ── DUPLICATE DETECTION ──
+let allExistingItems = [];
+async function loadExistingItems() {
+  try { const r = await fetch('/items'); allExistingItems = await r.json(); } catch {}
+}
+loadExistingItems();
+
+function checkDuplicate(name) {
+  if (!name || !allExistingItems.length) return;
+  const n = name.toLowerCase();
+  const matches = allExistingItems.filter(i => {
+    const sim = (i.name || '').toLowerCase();
+    return sim.includes(n.slice(0, Math.floor(n.length * 0.6))) ||
+           n.includes(sim.slice(0, Math.floor(sim.length * 0.6)));
+  });
+  const warn = document.getElementById('dupWarning');
+  if (matches.length) {
+    warn.innerHTML = `⚠️ Similar item may already exist: <strong>${matches[0].name}</strong> (Lot ${matches[0].lotNumber || '—'}, ${matches[0].consigner || 'unknown consigner'})`;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+document.getElementById('itemName').addEventListener('blur', function() {
+  checkDuplicate(this.value.trim());
+});
 
 async function addItem() {
   if (!session) { alert('Start visit first'); return; }
@@ -364,7 +479,10 @@ async function addItem() {
           consignerCode: session.code,
           lotCode,
           photo: currentPhotoPath,
-          createdBy
+          createdBy,
+          tags: currentTags,
+          estimatedValueLow: currentEstValueLow,
+          estimatedValueHigh: currentEstValueHigh
         }]
       })
     });
@@ -379,7 +497,9 @@ async function addItem() {
     document.getElementById('itemCategory').value = '';
     document.getElementById('itemCondition').value = '';
     document.getElementById('photo').value = '';
+    document.getElementById('dupWarning').style.display = 'none';
     currentPhotoPath = null;
+    currentTags = []; currentEstValueLow = 0; currentEstValueHigh = 0;
     setStatus('✅ Item added (' + items.length + ' total). Add another or print.');
   } catch (err) {
     setStatus('Failed: ' + err.message);
@@ -470,5 +590,6 @@ function escapeHtml(value) {
 }
 </script>
 
+<script src="/nav.js"></script>
 </body>
 </html>
