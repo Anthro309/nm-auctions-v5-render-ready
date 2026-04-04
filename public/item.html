@@ -328,7 +328,7 @@
   </div>
 
   <!-- AI DESCRIPTION VARIANTS -->
-  <div class="card">
+  <div class="card" id="variantsCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Description Variants</h3>
     <div id="variantsDisplay" style="display:none;margin-bottom:10px;">
       <div style="margin-bottom:8px;">
@@ -360,7 +360,7 @@
   </div>
 
   <!-- MARKET COMPARABLE PRICING -->
-  <div class="card">
+  <div class="card" id="marketCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Market Comparable Pricing</h3>
     <div id="marketDisplay" style="display:none;margin-bottom:10px;"></div>
     <button class="btn-blue" onclick="getMarketPricing()">📊 Research Market Comparables</button>
@@ -368,7 +368,7 @@
   </div>
 
   <!-- PREDICTIVE SALE PRICE -->
-  <div class="card">
+  <div class="card" id="predictCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Predicted Sale Price</h3>
     <div id="predictDisplay" style="display:none;margin-bottom:10px;"></div>
     <button class="btn-blue" onclick="predictPrice()">🎯 Predict Closing Price</button>
@@ -376,7 +376,7 @@
   </div>
 
   <!-- AUCTION EVENT ASSIGNMENT -->
-  <div class="card" id="eventCard">
+  <div class="card" id="eventCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Auction Event</h3>
     <div id="eventAssignedDisplay" style="display:none;margin-bottom:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;">
       <div style="font-size:13px;font-weight:700;color:#047857;" id="eventAssignedName"></div>
@@ -392,7 +392,7 @@
   </div>
 
   <!-- AI STYLE / ERA IDENTIFICATION -->
-  <div class="card">
+  <div class="card" id="styleCard" style="display:none;">
     <h3 style="margin-bottom:4px;">🎨 Style & Era ID</h3>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI identifies the design movement, era, and origin — then auto-tags the item.</p>
     <button class="btn-blue" onclick="identifyStyle()" id="styleBtn">✨ Identify Style & Era</button>
@@ -408,7 +408,7 @@
   </div>
 
   <!-- AI SOCIAL POST GENERATOR -->
-  <div class="card">
+  <div class="card" id="socialCard" style="display:none;">
     <h3 style="margin-bottom:4px;">📱 Social Post Generator</h3>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI writes ready-to-post Instagram, Facebook, and TikTok captions for this item.</p>
     <button class="btn-blue" onclick="generateSocialPost()" id="socialBtn">✨ Generate Social Posts</button>
@@ -484,6 +484,12 @@ async function load() {
 function render() {
   if (user && user.isAdmin) {
     document.getElementById('deleteCard').style.display = 'block';
+    document.getElementById('variantsCard').style.display = 'block';
+    document.getElementById('marketCard').style.display = 'block';
+    document.getElementById('predictCard').style.display = 'block';
+    document.getElementById('eventCard').style.display = 'block';
+    document.getElementById('styleCard').style.display = 'block';
+    document.getElementById('socialCard').style.display = 'block';
   }
   document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
   document.getElementById('detailLot').innerText = item.lotNumber || '—';
