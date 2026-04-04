@@ -304,6 +304,9 @@ app.post('/addItems', (req, res) => {
       stage: 'Home Visit',
       location: null,
       lotNumber: i.lotCode,
+      tags: Array.isArray(i.tags) ? i.tags : [],
+      estimatedValueLow:  i.estimatedValueLow  || 0,
+      estimatedValueHigh: i.estimatedValueHigh || 0,
       photographedAt: null,
       lotAssignedAt: new Date().toISOString(),
       lotAssignedBy: i.createdBy || 'system',
@@ -331,6 +334,42 @@ app.post('/addItems', (req, res) => {
 // =========================
 app.get('/items', (req, res) => {
   res.json(readJSON(ITEMS_FILE));
+});
+
+// =========================
+// SEARCH ITEMS BY NAME/LOT/CONSIGNER
+// =========================
+app.get('/items/search', (req, res) => {
+  const q = (req.query.q || '').toLowerCase().trim();
+  if (!q) return res.json([]);
+  const items = readJSON(ITEMS_FILE);
+  const results = items.filter(i =>
+    (i.name || '').toLowerCase().includes(q) ||
+    (i.lotNumber || '').toLowerCase().includes(q) ||
+    (i.consigner || '').toLowerCase().includes(q)
+  ).slice(0, 8);
+  res.json(results);
+});
+
+// =========================
+// BATCH STAGE ADVANCE
+// =========================
+app.post('/items/batch-stage', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const { ids, stage, employee } = req.body;
+  if (!validStage(stage)) return res.status(400).json({ success: false, message: 'Invalid stage' });
+  let count = 0;
+  ids.forEach(id => {
+    const item = items.find(i => String(i.id) === String(id));
+    if (item) {
+      const fromStage = item.stage;
+      item.stage = stage;
+      addLog(item, { employee: employee || 'system', action: 'stage changed', fromStage, toStage: stage });
+      count++;
+    }
+  });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, count });
 });
 
 // =========================
@@ -578,6 +617,30 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 });
 
 // =========================
+// VOICE TO ITEM
+// =========================
+app.post('/voice-to-item', async (req, res) => {
+  const { transcript } = req.body;
+  if (!transcript) return res.status(400).json({ success: false });
+  if (!client) return res.json({ success: false, message: 'AI not configured' });
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 200,
+      messages: [{
+        role: 'user',
+        content: `Extract auction item details from this spoken description. Return valid JSON only: {"title":"","description":"","category":"","condition":""}. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition: excellent, good, fair, worn, vintage wear, unknown. Spoken text: "${transcript}"`
+      }]
+    });
+    const parsed = safeJsonParse(response.choices[0].message.content || '', null);
+    if (!parsed) return res.json({ success: false });
+    res.json({ success: true, title: cleanAIText(parsed.title, ''), description: cleanAIText(parsed.description, ''), category: cleanAIText(parsed.category, ''), condition: cleanAIText(parsed.condition, '') });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
+// =========================
 // AI IMAGE ANALYSIS
 // =========================
 app.post('/analyze-image', async (req, res) => {
@@ -599,7 +662,7 @@ app.post('/analyze-image', async (req, res) => {
         content: [
           {
             type: 'text',
-            text: 'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: {"title":"","description":"","category":"","condition":""}. Make title short and auction-friendly (max 60 chars). Make description one plain useful sentence. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition must be one of: excellent, good, fair, worn, vintage wear, unknown. Return JSON only, no markdown.'
+            text: 'Look at this item photo from an estate-sale intake workflow. Return valid JSON only in this exact shape: {"title":"","description":"","category":"","condition":"","tags":[],"estimatedValueLow":0,"estimatedValueHigh":0}. Make title short and auction-friendly (max 60 chars). Make description one plain useful sentence. Category must be one of: furniture, decor, tools, art, electronics, glassware, kitchenware, books, jewelry, outdoor, collectibles, clothing, toys, misc. Condition must be one of: excellent, good, fair, worn, vintage wear, unknown. tags: array of 4-8 short searchable keyword strings describing the item. estimatedValueLow and estimatedValueHigh: realistic USD auction value range as integers (e.g. 25 and 75). Return JSON only, no markdown.'
           },
           {
             type: 'image_url',
@@ -619,10 +682,13 @@ app.post('/analyze-image', async (req, res) => {
 
     res.json({
       success: true,
-      title:       cleanAIText(parsed.title,       'Item'),
-      description: cleanAIText(parsed.description, 'No description available'),
-      category:    cleanAIText(parsed.category,    'misc'),
-      condition:   cleanAIText(parsed.condition,   'unknown')
+      title:               cleanAIText(parsed.title,       'Item'),
+      description:         cleanAIText(parsed.description, 'No description available'),
+      category:            cleanAIText(parsed.category,    'misc'),
+      condition:           cleanAIText(parsed.condition,   'unknown'),
+      tags:                Array.isArray(parsed.tags) ? parsed.tags.slice(0, 8) : [],
+      estimatedValueLow:   parseInt(parsed.estimatedValueLow)  || 0,
+      estimatedValueHigh:  parseInt(parsed.estimatedValueHigh) || 0
     });
 
   } catch (err) {
@@ -721,6 +787,19 @@ Keep it between 80-150 words. Plain prose only — no bullet points, no markdown
     console.error('AI DESC ERROR:', err.message);
     res.json({ success: false, message: 'AI description failed: ' + err.message });
   }
+});
+
+// =========================
+// DESCRIPTION FEEDBACK
+// =========================
+app.post('/items/:id/description-feedback', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+  item.descriptionFeedback = req.body.feedback;
+  addLog(item, { employee: req.body.employee || 'system', action: 'description feedback: ' + req.body.feedback });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true });
 });
 
 // =========================

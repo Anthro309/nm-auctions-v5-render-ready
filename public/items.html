@@ -5,6 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Item Library</title>
 <link rel="stylesheet" href="/styles.css">
+<style>
+.batch-bar {
+  background: #0b1b2b;
+  color: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.batch-bar.visible { display: flex; }
+.batch-count { font-size: 14px; font-weight: 700; }
+.batch-select {
+  background: #1e3a5c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 140px;
+}
+.batch-btn {
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.batch-btn:disabled { opacity: 0.5; cursor: default; }
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+.item-row:last-child { border-bottom: none; }
+.item-row input[type=checkbox] {
+  width: 18px; height: 18px; flex-shrink: 0; cursor: pointer;
+}
+.item-row-info { flex: 1; min-width: 0; }
+.item-row-name { font-size: 14px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-row-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.stage-pill {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  background: #eff6ff; color: #1d4ed8; white-space: nowrap; flex-shrink: 0;
+}
+.mode-toggle {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.mode-btn {
+  flex: 1; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #374151;
+}
+.mode-btn.active { background: #0b1b2b; color: white; border-color: #0b1b2b; }
+</style>
 </head>
 <body>
 
@@ -33,8 +98,29 @@
 <div class="container">
   <div class="card">
     <h2>Item Library</h2>
-    <input id="search" placeholder="Search by name, code, or consigner" oninput="render()">
-    <div id="list" style="margin-top:15px;"></div>
+    <input id="search" placeholder="Search by name, lot, or consigner" oninput="render()">
+
+    <div class="mode-toggle" style="margin-top:12px;">
+      <button class="mode-btn active" id="modeConsigner" onclick="setMode('consigner')">By Consigner</button>
+      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Advance</button>
+    </div>
+
+    <!-- BATCH BAR -->
+    <div class="batch-bar" id="batchBar">
+      <span class="batch-count" id="batchCount">0 selected</span>
+      <select class="batch-select" id="batchStage">
+        <option value="">Move to stage...</option>
+        <option>Received at Studio</option>
+        <option>Review & Cleaning</option>
+        <option>Photograph</option>
+        <option>Prep for Pick Up</option>
+        <option>Ready for Pick Up</option>
+        <option>Picked Up</option>
+      </select>
+      <button class="batch-btn" id="batchAdvBtn" onclick="batchAdvance()">Advance</button>
+    </div>
+
+    <div id="list" style="margin-top:8px;"></div>
   </div>
 
   <div class="card">
@@ -47,15 +133,20 @@
 
 <script>
 let allItems = [];
+let currentMode = 'consigner';
+const user = JSON.parse(localStorage.getItem('user') || 'null');
 
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
 }
 
-function logout() {
-  localStorage.removeItem('user');
-  window.location.href = '/';
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeConsigner').classList.toggle('active', mode === 'consigner');
+  document.getElementById('modeBatch').classList.toggle('active', mode === 'batch');
+  document.getElementById('batchBar').classList.toggle('visible', mode === 'batch');
+  render();
 }
 
 async function load() {
@@ -64,14 +155,22 @@ async function load() {
   render();
 }
 
-function render() {
+function getFiltered() {
   const q = document.getElementById('search').value.toLowerCase();
-  const filtered = allItems.filter(i =>
+  return allItems.filter(i =>
     (i.name || '').toLowerCase().includes(q) ||
+    (i.lotNumber || '').toLowerCase().includes(q) ||
     (i.code || '').toLowerCase().includes(q) ||
     (i.consigner || '').toLowerCase().includes(q)
   );
+}
 
+function render() {
+  currentMode === 'consigner' ? renderConsigner() : renderBatch();
+}
+
+function renderConsigner() {
+  const filtered = getFiltered();
   const grouped = {};
   filtered.forEach(i => {
     if (!grouped[i.code]) grouped[i.code] = [];
@@ -100,47 +199,127 @@ function render() {
   });
 }
 
+function renderBatch() {
+  const filtered = getFiltered();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
+    return;
+  }
+
+  // Select all row
+  const selAllRow = document.createElement('div');
+  selAllRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0 12px;border-bottom:2px solid #e5e7eb;margin-bottom:4px;';
+  const selAllChk = document.createElement('input');
+  selAllChk.type = 'checkbox';
+  selAllChk.style.cssText = 'width:18px;height:18px;cursor:pointer;';
+  selAllChk.onchange = () => {
+    document.querySelectorAll('.item-chk').forEach(c => { c.checked = selAllChk.checked; });
+    updateBatchCount();
+  };
+  const selAllLbl = document.createElement('span');
+  selAllLbl.style.cssText = 'font-size:13px;font-weight:700;color:#374151;';
+  selAllLbl.innerText = 'Select All (' + filtered.length + ')';
+  selAllRow.append(selAllChk, selAllLbl);
+  list.appendChild(selAllRow);
+
+  filtered.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'item-chk';
+    chk.dataset.id = i.id;
+    chk.onchange = updateBatchCount;
+
+    const info = document.createElement('div');
+    info.className = 'item-row-info';
+    info.innerHTML = `
+      <div class="item-row-name">${i.name || 'Unnamed'}</div>
+      <div class="item-row-meta">Lot ${i.lotNumber || '—'} · ${i.consigner || '—'}</div>
+    `;
+    info.onclick = () => { window.location.href = '/item.html?id=' + i.id; };
+
+    const pill = document.createElement('span');
+    pill.className = 'stage-pill';
+    pill.innerText = i.stage || '—';
+
+    row.append(chk, info, pill);
+    list.appendChild(row);
+  });
+
+  updateBatchCount();
+}
+
+function updateBatchCount() {
+  const checked = document.querySelectorAll('.item-chk:checked').length;
+  document.getElementById('batchCount').innerText = checked + ' selected';
+  document.getElementById('batchAdvBtn').disabled = checked === 0;
+}
+
+async function batchAdvance() {
+  const stage = document.getElementById('batchStage').value;
+  if (!stage) { alert('Select a stage to move items to'); return; }
+  const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
+  if (!ids.length) return;
+
+  if (!confirm(`Move ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${stage}"?`)) return;
+
+  const btn = document.getElementById('batchAdvBtn');
+  btn.disabled = true;
+  btn.innerText = 'Moving...';
+
+  try {
+    const res = await fetch('/items/batch-stage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, stage, employee: user?.name || 'unknown' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      await load();
+      btn.innerText = `✓ Moved ${data.count}`;
+      setTimeout(() => { btn.innerText = 'Advance'; }, 2000);
+    }
+  } catch (err) {
+    alert('Batch advance failed');
+    btn.innerText = 'Advance';
+    btn.disabled = false;
+  }
+}
+
 function exportAuctionCSV() {
   const ready = allItems.filter(i =>
     i.stage === 'Photograph' || i.stage === 'Prep for Pick Up'
   );
-
   const msgEl = document.getElementById('exportMsg');
-
   if (!ready.length) {
-    msgEl.style.background = '#fef2f2';
-    msgEl.style.color = '#b91c1c';
+    msgEl.style.background = '#fef2f2'; msgEl.style.color = '#b91c1c';
     msgEl.innerText = 'No items in Photograph or Prep for Pick Up stage.';
     msgEl.style.display = 'block';
     setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
     return;
   }
-
-  const headers = ['Lot Number', 'Item Name', 'Category', 'Condition', 'Description', 'Consigner', 'Stage'];
+  const headers = ['Lot Number','Item Name','Category','Condition','Description','Tags','Est. Value Low','Est. Value High','Consigner','Stage'];
   const rows = ready.map(i => [
-    i.lotNumber || '',
-    i.name || '',
-    i.category || '',
-    i.condition || '',
-    (i.description || '').replace(/"/g, '""').replace(/\n/g, ' '),
-    i.consigner || '',
-    i.stage || ''
+    i.lotNumber || '', i.name || '', i.category || '', i.condition || '',
+    (i.auctionDescription || i.description || '').replace(/"/g,'""').replace(/\n/g,' '),
+    (i.tags || []).join(', '),
+    i.estimatedValueLow || '', i.estimatedValueHigh || '',
+    i.consigner || '', i.stage || ''
   ]);
-
-  const csv = [headers, ...rows]
-    .map(row => row.map(v => `"${v}"`).join(','))
-    .join('\n');
-
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `auction-listings-${new Date().toLocaleDateString('en-US').replace(/\//g, '-')}.csv`;
+  a.download = `auction-listings-${new Date().toLocaleDateString('en-US').replace(/\//g,'-')}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-
-  msgEl.style.background = '#ecfdf5';
-  msgEl.style.color = '#047857';
+  msgEl.style.background = '#ecfdf5'; msgEl.style.color = '#047857';
   msgEl.innerText = `✅ Exported ${ready.length} item${ready.length !== 1 ? 's' : ''}`;
   msgEl.style.display = 'block';
   setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
@@ -148,7 +327,6 @@ function exportAuctionCSV() {
 
 load();
 </script>
-
 <script src="/nav.js"></script>
 </body>
 </html>

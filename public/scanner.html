@@ -57,6 +57,22 @@
   color: #6b7280;
   margin-top: 6px;
 }
+.search-results {
+  margin-top: 10px;
+}
+.search-result-row {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: white;
+}
+.search-result-row:active { background: #f1f5f9; }
+.search-result-name { font-size: 14px; font-weight: 700; color: #111827; }
+.search-result-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
 .scan-input {
   font-size: 18px;
   font-weight: 600;
@@ -128,8 +144,9 @@
   <div id="statusBar" class="status-bar">Ready to scan...</div>
 
   <div class="card">
-    <input id="scanInput" class="scan-input" placeholder="Scan or enter lot code" autofocus>
+    <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
     <button class="btn-camera" onclick="startCamera()">📷 Use Camera to Scan QR</button>
+    <div class="search-results" id="searchResults"></div>
   </div>
 
   <div id="cameraCard" class="card" style="display:none;">
@@ -173,11 +190,47 @@ function log(msg) {
   document.getElementById('statusBar').innerText = msg;
 }
 
-document.getElementById('scanInput').addEventListener('keypress', function(e) {
+const scanInput = document.getElementById('scanInput');
+let searchTimer = null;
+
+scanInput.addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
+    clearTimeout(searchTimer);
+    document.getElementById('searchResults').innerHTML = '';
     loadItem(this.value.trim());
   }
 });
+
+scanInput.addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  const val = this.value.trim();
+  if (val.length < 2) { document.getElementById('searchResults').innerHTML = ''; return; }
+  searchTimer = setTimeout(() => searchByName(val), 350);
+});
+
+async function searchByName(q) {
+  try {
+    const res = await fetch('/items/search?q=' + encodeURIComponent(q));
+    const results = await res.json();
+    const container = document.getElementById('searchResults');
+    container.innerHTML = '';
+    if (!results.length) return;
+    results.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'search-result-row';
+      row.innerHTML = `
+        <div class="search-result-name">${item.name || 'Unnamed'}</div>
+        <div class="search-result-meta">Lot ${item.lotNumber || '—'} · ${item.stage || '—'} · ${item.consigner || '—'}</div>
+      `;
+      row.onclick = () => {
+        container.innerHTML = '';
+        scanInput.value = item.lotNumber || '';
+        loadItem(item.lotNumber);
+      };
+      container.appendChild(row);
+    });
+  } catch (err) { /* silent */ }
+}
 
 // ── CAMERA QR SCANNING ──
 let cameraStream = null;

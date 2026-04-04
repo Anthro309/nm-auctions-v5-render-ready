@@ -240,7 +240,11 @@
 
   <div id="itemSection" class="iv-card" style="display:none;">
     <h2>Add Item</h2>
-    <input id="itemName" placeholder="Item Name">
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input id="itemName" placeholder="Item Name" style="flex:1;margin-top:0;">
+      <button id="voiceBtn" onclick="startVoice()" title="Speak to fill fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
+    </div>
+    <div id="dupWarning" style="display:none;background:#fff7ed;border:1.5px solid #f97316;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#9a3412;"></div>
     <textarea id="itemDescription" placeholder="Description" rows="3"></textarea>
     <input id="itemCategory" placeholder="Category">
     <input id="itemCondition" placeholder="Condition">
@@ -271,6 +275,9 @@
 let session = null;
 let items = [];
 let currentPhotoPath = null;
+let currentTags = [];
+let currentEstValueLow = 0;
+let currentEstValueHigh = 0;
 
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -348,6 +355,10 @@ async function analyzePhoto() {
     document.getElementById('itemDescription').value = data.description || '';
     document.getElementById('itemCategory').value = data.category || '';
     document.getElementById('itemCondition').value = data.condition || '';
+    currentTags = data.tags || [];
+    currentEstValueLow  = data.estimatedValueLow  || 0;
+    currentEstValueHigh = data.estimatedValueHigh || 0;
+    checkDuplicate(data.title);
     setStatus('AI filled in the details. Review and click Add Item.');
   } catch (err) {
     setStatus('AI failed: ' + err.message);
@@ -355,6 +366,75 @@ async function analyzePhoto() {
     hideLoader();
   }
 }
+
+// ── VOICE TO ITEM ──
+let recognition = null;
+function startVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { alert('Voice input not supported on this browser'); return; }
+  if (recognition) { recognition.stop(); return; }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  const btn = document.getElementById('voiceBtn');
+  btn.innerText = '⏹️';
+  btn.style.background = '#dc2626';
+  setStatus('Listening... speak the item description');
+  recognition.onresult = async (e) => {
+    const transcript = e.results[0][0].transcript;
+    recognition = null;
+    btn.innerText = '🎙️'; btn.style.background = '#1e3a5c';
+    setStatus('Processing speech with AI...');
+    try {
+      const res = await fetch('/voice-to-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
+      const data = await safeJson(res);
+      if (data.success) {
+        if (data.title)       document.getElementById('itemName').value = data.title;
+        if (data.description) document.getElementById('itemDescription').value = data.description;
+        if (data.category)    document.getElementById('itemCategory').value = data.category;
+        if (data.condition)   document.getElementById('itemCondition').value = data.condition;
+        setStatus('Fields filled from voice. Review and click Add Item.');
+        checkDuplicate(data.title);
+      }
+    } catch (err) { setStatus('Voice processing failed'); }
+  };
+  recognition.onerror = () => { recognition = null; btn.innerText = '🎙️'; btn.style.background = '#1e3a5c'; setStatus('Voice error. Try again.'); };
+  recognition.onend   = () => { if (recognition) { recognition = null; btn.innerText = '🎙️'; btn.style.background = '#1e3a5c'; } };
+  recognition.start();
+}
+
+// ── DUPLICATE DETECTION ──
+let allExistingItems = [];
+async function loadExistingItems() {
+  try { const r = await fetch('/items'); allExistingItems = await r.json(); } catch {}
+}
+loadExistingItems();
+
+function checkDuplicate(name) {
+  if (!name || !allExistingItems.length) return;
+  const n = name.toLowerCase();
+  const matches = allExistingItems.filter(i => {
+    const sim = (i.name || '').toLowerCase();
+    return sim.includes(n.slice(0, Math.floor(n.length * 0.6))) ||
+           n.includes(sim.slice(0, Math.floor(sim.length * 0.6)));
+  });
+  const warn = document.getElementById('dupWarning');
+  if (matches.length) {
+    warn.innerHTML = `⚠️ Similar item may already exist: <strong>${matches[0].name}</strong> (Lot ${matches[0].lotNumber || '—'}, ${matches[0].consigner || 'unknown consigner'})`;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+document.getElementById('itemName').addEventListener('blur', function() {
+  checkDuplicate(this.value.trim());
+});
 
 async function addItem() {
   if (!session) { alert('Start visit first'); return; }
@@ -390,7 +470,10 @@ async function addItem() {
           consignerCode: session.code,
           lotCode,
           photo: currentPhotoPath,
-          createdBy
+          createdBy,
+          tags: currentTags,
+          estimatedValueLow: currentEstValueLow,
+          estimatedValueHigh: currentEstValueHigh
         }]
       })
     });
@@ -405,7 +488,9 @@ async function addItem() {
     document.getElementById('itemCategory').value = '';
     document.getElementById('itemCondition').value = '';
     document.getElementById('photo').value = '';
+    document.getElementById('dupWarning').style.display = 'none';
     currentPhotoPath = null;
+    currentTags = []; currentEstValueLow = 0; currentEstValueHigh = 0;
     setStatus('✅ Item added (' + items.length + ' total). Add another or print.');
   } catch (err) {
     setStatus('Failed: ' + err.message);

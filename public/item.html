@@ -93,6 +93,49 @@
   display: none;
   border: 1px solid #a7f3d0;
 }
+.value-badge {
+  display: inline-block;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  color: #15803d;
+  font-size: 18px;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 10px;
+  margin: 8px 0 4px;
+}
+.tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+.tag-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  cursor: default;
+}
+.feedback-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.feedback-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #374151;
+  transition: background 0.15s;
+}
+.feedback-btn.good  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.feedback-btn.bad   { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 .repair-banner {
   background: #fff7ed;
   border: 2px solid #f97316;
@@ -266,6 +309,18 @@
     <div id="descMsg" class="success-msg">✅ Description generated</div>
     <div id="descResult" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:14px;line-height:1.6;color:#111827;"></div>
     <button id="copyDescBtn" class="btn-green" style="display:none;margin-top:8px;" onclick="copyDescription()">Copy Description</button>
+    <div id="feedbackRow" class="feedback-row" style="display:none;">
+      <button class="feedback-btn" id="fbGood" onclick="sendFeedback('good')">👍 Looks Great</button>
+      <button class="feedback-btn" id="fbBad"  onclick="sendFeedback('bad')">👎 Not Great</button>
+    </div>
+  </div>
+
+  <!-- TAGS & ESTIMATED VALUE -->
+  <div class="card" id="tagsCard" style="display:none;">
+    <h3 style="margin-bottom:8px;">Estimated Value</h3>
+    <div class="value-badge" id="valueBadge"></div>
+    <h3 style="margin-top:14px;margin-bottom:4px;">Tags</h3>
+    <div class="tags-wrap" id="tagsWrap"></div>
   </div>
 
   <!-- FLAG AS MISSING -->
@@ -374,6 +429,32 @@ function render() {
     r.innerText = item.auctionDescription;
     r.style.display = 'block';
     document.getElementById('copyDescBtn').style.display = 'block';
+    document.getElementById('feedbackRow').style.display = 'flex';
+    if (item.descriptionFeedback === 'good') { document.getElementById('fbGood').classList.add('good'); }
+    if (item.descriptionFeedback === 'bad')  { document.getElementById('fbBad').classList.add('bad'); }
+  }
+
+  // Tags & estimated value
+  const tagsCard = document.getElementById('tagsCard');
+  const hasValue = item.estimatedValueLow || item.estimatedValueHigh;
+  const hasTags  = item.tags && item.tags.length;
+  if (hasValue || hasTags) {
+    tagsCard.style.display = 'block';
+    if (hasValue) {
+      document.getElementById('valueBadge').innerText =
+        '$' + (item.estimatedValueLow || 0) + ' – $' + (item.estimatedValueHigh || 0);
+    } else {
+      document.getElementById('valueBadge').parentElement.querySelector('h3').style.display = 'none';
+      document.getElementById('valueBadge').style.display = 'none';
+    }
+    if (hasTags) {
+      const tagColors = ['#fef3c7','#dbeafe','#fce7f3','#d1fae5','#ede9fe','#ffedd5','#f0fdf4','#e0f2fe'];
+      const textColors= ['#92400e','#1e40af','#9d174d','#065f46','#5b21b6','#9a3412','#14532d','#0c4a6e'];
+      document.getElementById('tagsWrap').innerHTML = item.tags.map((t, idx) => {
+        const ci = idx % tagColors.length;
+        return `<span class="tag-pill" style="background:${tagColors[ci]};color:${textColors[ci]};">${escapeHtml(t)}</span>`;
+      }).join('');
+    }
   }
 
   // Photo
@@ -440,6 +521,9 @@ async function generateDescription() {
       r.innerText = data.description;
       r.style.display = 'block';
       document.getElementById('copyDescBtn').style.display = 'block';
+      document.getElementById('feedbackRow').style.display = 'flex';
+      document.getElementById('fbGood').className = 'feedback-btn';
+      document.getElementById('fbBad').className  = 'feedback-btn';
       const msg = document.getElementById('descMsg');
       msg.style.display = 'block';
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
@@ -452,6 +536,18 @@ async function generateDescription() {
     btn.disabled = false;
     btn.innerText = '✨ Generate Auction Description';
   }
+}
+
+async function sendFeedback(type) {
+  document.getElementById('fbGood').className = 'feedback-btn' + (type === 'good' ? ' good' : '');
+  document.getElementById('fbBad').className  = 'feedback-btn' + (type === 'bad'  ? ' bad'  : '');
+  try {
+    await fetch(`/items/${item.id}/description-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback: type, employee: user.name })
+    });
+  } catch {}
 }
 
 function copyDescription() {
