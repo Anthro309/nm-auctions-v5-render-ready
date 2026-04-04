@@ -28,6 +28,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 const USERS_FILE         = 'users.json';
 const ITEMS_FILE         = 'items.json';
 const REPORTS_FILE       = 'reports.json';
+const WOTD_FILE          = 'wotd.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
 const INTAKE_FILE        = 'intake.json';
 
@@ -609,6 +610,73 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 });
 
 // =========================
+// =========================
+// WORD OF THE DAY
+// =========================
+function readWOTD() {
+  try { if (fs.existsSync(WOTD_FILE)) return JSON.parse(fs.readFileSync(WOTD_FILE, 'utf8')); } catch (_) {}
+  return { date: null, word: null, used: [] };
+}
+function writeWOTD(data) {
+  try { fs.writeFileSync(WOTD_FILE, JSON.stringify(data, null, 2)); } catch (_) {}
+}
+
+app.get('/word-of-day', async (req, res) => {
+  const today = new Date().toLocaleDateString('en-US');
+  const cache = readWOTD();
+
+  // Serve cached word if it's still today's
+  if (cache.date === today && cache.word) {
+    return res.json({ success: true, ...cache.word });
+  }
+
+  if (!client) {
+    return res.json({ success: false, message: 'AI not configured' });
+  }
+
+  const usedWords = Array.isArray(cache.used) ? cache.used : [];
+  const avoidList = usedWords.slice(-60).join(', ');
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 320,
+      messages: [{
+        role: 'user',
+        content: `You are the Word of the Day generator for an estate auction studio operations team. Create ONE original made-up word (a portmanteau or pun) that is:
+- Related to: auction house work, item handling, photography, consigners, QR scanning, staging, picking, cleaning, lot numbers, bidding, or studio operations
+- Tone: silly, comical, mildly cheeky/PG-13 workplace humor — think irreverent but not offensive
+- Style examples to match: Bidgasm, Furni-turd, Lot-nesia, Scan-demonium, Crapitalism, Turdtique, Stagefright, Assetsment, Priappraisal
+
+Do NOT reuse any of these already used words: ${avoidList || 'none yet'}
+
+Return ONLY valid JSON with no markdown fences:
+{"word":"","pronunciation":"","definition":"","example":""}`
+      }]
+    });
+
+    const raw = (response.choices[0].message.content || '').trim().replace(/^```json?|```$/g, '').trim();
+    const parsed = safeJsonParse(raw, null);
+    if (!parsed || !parsed.word) throw new Error('Invalid AI response');
+
+    const wordData = {
+      word:  parsed.word,
+      pronun: parsed.pronunciation || '',
+      def:   parsed.definition || '',
+      ex:    parsed.example || ''
+    };
+
+    writeWOTD({ date: today, word: wordData, used: [...usedWords, parsed.word] });
+    return res.json({ success: true, ...wordData });
+
+  } catch (err) {
+    console.error('WOTD generation error:', err.message);
+    // Serve yesterday's word as fallback rather than nothing
+    if (cache.word) return res.json({ success: true, ...cache.word, stale: true });
+    return res.json({ success: false, message: err.message });
+  }
+});
+
 // PHOTO STUDIO — BG REMOVAL + ITEM LINK
 // =========================
 
