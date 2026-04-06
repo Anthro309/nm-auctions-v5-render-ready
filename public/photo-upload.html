@@ -327,6 +327,8 @@
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user) window.location.href = '/';
 
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
@@ -349,6 +351,8 @@ document.getElementById('fileInput').addEventListener('change', e => {
 // ── State ──
 // Each entry: { id, file, originalPath, processedPath, status, itemId, itemName, itemLot, itemThumb, saved }
 let cards = [];
+// Lookup map: cardId -> array of search result items (for safe onclick)
+let searchResultCache = {};
 
 function handleFiles(files) {
   const images = files.filter(f => f.type.startsWith('image/'));
@@ -525,15 +529,28 @@ async function searchItems(input, cardId) {
       const items = await res.json();
       if (!items.length) { resultsEl.style.display = 'none'; return; }
 
-      resultsEl.innerHTML = items.slice(0, 6).map(i => `
-        <div class="pair-result-row" onclick="selectItem('${cardId}','${i.id}','${(i.name || '').replace(/'/g,"\\'")}','${(i.lotNumber || i.code + '-' + i.number || '—').replace(/'/g,"\\'")}','${(i.photos?.[0] || '').replace(/'/g,"\\'")}')">
+      const visible = items.slice(0, 6);
+      searchResultCache[cardId] = visible;
+
+      resultsEl.innerHTML = visible.map((i, idx) => `
+        <div class="pair-result-row" data-card="${esc(String(cardId))}" data-idx="${idx}">
           ${i.photos?.[0] ? `<img class="pair-result-thumb" src="${i.photos[0]}" loading="lazy">` : '<div class="pair-result-thumb"></div>'}
           <div>
-            <div class="pair-result-name">${i.name || 'Unnamed'}</div>
-            <div class="pair-result-lot">Lot ${i.lotNumber || '—'} · ${i.stage || ''}</div>
+            <div class="pair-result-name">${esc(i.name || 'Unnamed')}</div>
+            <div class="pair-result-lot">Lot ${esc(i.lotNumber || '—')} · ${esc(i.stage || '')}</div>
           </div>
         </div>
       `).join('');
+
+      resultsEl.querySelectorAll('.pair-result-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const cId = row.dataset.card;
+          const item = (searchResultCache[cId] || [])[parseInt(row.dataset.idx, 10)];
+          if (!item) return;
+          selectItem(cId, item.id, item.name || '', item.lotNumber || item.code + '-' + item.number || '—', item.photos?.[0] || '');
+        });
+      });
+
       resultsEl.style.display = 'block';
     } catch (_) {}
   }, 300);

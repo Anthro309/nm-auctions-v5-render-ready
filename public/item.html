@@ -1209,7 +1209,7 @@ async function assignToEvent() {
   try {
     const res = await fetch(`/events/${eventId}/assign`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId: item.id })
+      body: JSON.stringify({ itemId: item.id, employee: user?.name || 'unknown' })
     });
     const data = await res.json();
     if (data.success) {

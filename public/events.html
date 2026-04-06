@@ -130,6 +130,8 @@
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user) window.location.href = '/';
 
+function escHtml(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
@@ -197,16 +199,16 @@ async function load() {
     div.innerHTML = `
       <div class="event-header">
         <div>
-          <div class="event-name">${ev.name}</div>
+          <div class="event-name">${escHtml(ev.name)}</div>
           <div class="event-date">📅 ${dateStr}</div>
         </div>
-        <span class="event-status ${ev.status}">${ev.status}</span>
+        <span class="event-status ${escHtml(ev.status)}">${escHtml(ev.status)}</span>
       </div>
       <div class="event-meta">
         <span class="event-stat"><strong>${ev.lots?.length || 0}</strong> lots assigned</span>
         <span class="event-stat"><strong>${ev.commissionRate || 35}%</strong> commission</span>
-        ${ev.category !== 'general' ? `<span class="event-stat">Focus: <strong>${ev.category}</strong></span>` : ''}
-        ${ev.description ? `<span class="event-stat">${ev.description}</span>` : ''}
+        ${ev.category !== 'general' ? `<span class="event-stat">Focus: <strong>${escHtml(ev.category)}</strong></span>` : ''}
+        ${ev.description ? `<span class="event-stat">${escHtml(ev.description)}</span>` : ''}
       </div>
     `;
     div.onclick = () => { window.location.href = '/event.html?id=' + ev.id; };

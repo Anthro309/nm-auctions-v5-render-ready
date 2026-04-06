@@ -212,7 +212,7 @@ const navAvatar = document.getElementById('navAvatar');
 if (user.photo) {
   navAvatar.innerHTML = `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 } else {
-  navAvatar.textContent = user.name[0].toUpperCase();
+  navAvatar.textContent = (user.name || '?')[0].toUpperCase();
 }
 
 function toggleMenu() {
@@ -229,7 +229,7 @@ async function load() {
   const grid = document.getElementById('employeeGrid');
 
   grid.innerHTML = employees.map(e => {
-    const initial = e.name[0].toUpperCase();
+    const initial = (e.name || '?')[0].toUpperCase();
     const avatarHtml = e.photo
       ? `<img src="${e.photo}" alt="${e.name}">`
       : initial;

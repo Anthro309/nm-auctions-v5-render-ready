@@ -131,6 +131,8 @@
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user) window.location.href = '/';
 
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 const evId = new URLSearchParams(window.location.search).get('id');
 if (!evId) window.location.href = '/events.html';
 
@@ -175,11 +177,11 @@ function renderLots() {
         ${item.photos?.[0] ? `<img src="${item.photos[0]}" loading="lazy">` : '📦'}
       </div>
       <div class="lot-info">
-        <div class="lot-name">${item.name || 'Unnamed'}</div>
-        <div class="lot-meta">Lot ${item.lotNumber || '—'} · ${item.consigner || '—'} · ${item.stage}</div>
-        ${hasSold ? `<div class="lot-sold">Sold $${item.soldPrice}</div><div class="lot-payout">Payout $${item.payoutAmount} · ${item.payoutStatus}</div>` : ''}
+        <div class="lot-name">${esc(item.name || 'Unnamed')}</div>
+        <div class="lot-meta">Lot ${esc(item.lotNumber || '—')} · ${esc(item.consigner || '—')} · ${esc(item.stage)}</div>
+        ${hasSold ? `<div class="lot-sold">Sold $${item.soldPrice}</div><div class="lot-payout">Payout $${item.payoutAmount} · ${esc(item.payoutStatus)}</div>` : ''}
       </div>
-      <button class="lot-remove" onclick="removeLot('${item.id}')" title="Remove from event">✕</button>
+      <button class="lot-remove" onclick="removeLot('${esc(item.id)}')" title="Remove from event">✕</button>
     `;
     div.querySelector('.lot-info').onclick = () => window.location.href = '/item.html?id=' + item.id;
     list.appendChild(div);
@@ -206,11 +208,11 @@ function searchToAdd(input) {
 
     if (!available.length) { resultsEl.style.display = 'none'; return; }
     resultsEl.innerHTML = available.slice(0, 6).map(i => `
-      <div class="add-lot-row" onclick="assignLot('${i.id}')">
+      <div class="add-lot-row" onclick="assignLot('${esc(i.id)}')">
         ${i.photos?.[0] ? `<img src="${i.photos[0]}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;" loading="lazy">` : '<div style="width:32px;height:32px;border-radius:6px;background:#e5e7eb;"></div>'}
         <div>
-          <div style="font-size:13px;font-weight:700;">${i.name || 'Unnamed'}</div>
-          <div style="font-size:11px;color:#6b7280;">Lot ${i.lotNumber || '—'} · ${i.stage}</div>
+          <div style="font-size:13px;font-weight:700;">${esc(i.name || 'Unnamed')}</div>
+          <div style="font-size:11px;color:#6b7280;">Lot ${esc(i.lotNumber || '—')} · ${esc(i.stage)}</div>
         </div>
       </div>`).join('');
     resultsEl.style.display = 'block';

@@ -332,6 +332,7 @@ function startVisit() {
   if (!first || !last) { alert('Enter first and last name'); return; }
   session = {
     first, last,
+    consigner: first + ' ' + last,
     code: (first.slice(0,3) + last.slice(0,3)).toUpperCase(),
     date: new Date().toLocaleDateString()
   };
@@ -483,7 +484,7 @@ function checkDuplicate(name) {
   });
   const warn = document.getElementById('dupWarning');
   if (matches.length) {
-    warn.innerHTML = `⚠️ Similar item may already exist: <strong>${matches[0].name}</strong> (Lot ${matches[0].lotNumber || '—'}, ${matches[0].consigner || 'unknown consigner'})`;
+    warn.innerHTML = `⚠️ Similar item may already exist: <strong>${escapeHtml(matches[0].name)}</strong> (Lot ${escapeHtml(matches[0].lotNumber || '—')}, ${escapeHtml(matches[0].consigner || 'unknown consigner')})`;
     warn.style.display = 'block';
   } else {
     warn.style.display = 'none';

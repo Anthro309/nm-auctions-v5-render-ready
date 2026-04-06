@@ -68,6 +68,8 @@
 const code = new URLSearchParams(window.location.search).get('code');
 let allItems = [];
 
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function toggleMenu() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
@@ -111,7 +113,7 @@ function render() {
     const lotLabel = i.lotNumber || (i.code + '-' + i.number) || '—';
 
     const imgHTML = i.photos?.[0]
-      ? `<img src="${i.photos[0]}" alt="${i.name || 'Item'}" loading="lazy">`
+      ? `<img src="${i.photos[0]}" alt="${esc(i.name || 'Item')}" loading="lazy">`
       : `<div class="photo-card-placeholder">📦</div>`;
 
     const repairHTML = i.needsRepair
@@ -126,13 +128,13 @@ function render() {
     div.innerHTML = `
       ${imgHTML}
       <div class="photo-card-overlay"></div>
-      <div class="photo-card-lot">${lotLabel}</div>
+      <div class="photo-card-lot">${esc(lotLabel)}</div>
       ${repairHTML}
       <div class="photo-card-info">
-        <div class="photo-card-name">${i.name || 'Unnamed'}</div>
+        <div class="photo-card-name">${esc(i.name || 'Unnamed')}</div>
         <div class="photo-card-bottom">
-          <span class="photo-card-stage ${stageCls}">${stageLabel}</span>
-          <span class="photo-card-consigner">${i.consigner || ''}</span>
+          <span class="photo-card-stage ${stageCls}">${esc(stageLabel)}</span>
+          <span class="photo-card-consigner">${esc(i.consigner || '')}</span>
         </div>
       </div>
     `;
