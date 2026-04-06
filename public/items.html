@@ -118,7 +118,7 @@
   <div id="nlStatus" style="display:none;font-size:12px;color:#7c3aed;font-weight:600;margin-bottom:8px;padding:8px 12px;background:#f5f3ff;border-radius:8px;"></div>
 
   <!-- Filter row -->
-  <div class="filter-row">
+  <div class="filter-row" style="align-items:center;">
     <select id="stageFilter" onchange="render()">
       <option value="">All Stages</option>
       <option>Home Visit</option>
@@ -135,6 +135,7 @@
       <option value="stage">Sort by Stage</option>
       <option value="recent">Most Recent</option>
     </select>
+    <span class="clear-filters" id="clearFiltersBtn" style="display:none;" onclick="clearFilters()">✕ Clear</span>
   </div>
 
   <div class="card" style="padding-top:14px;padding-bottom:14px;">
@@ -163,7 +164,7 @@
 
   <div class="card">
     <h2>Auction Listing Export</h2>
-    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage — ready to list.</p>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage — ready to list on the auction platform.</p>
     <button onclick="exportAuctionCSV()" style="width:100%;">📤 Export Auction Listings CSV</button>
     <div id="exportMsg" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
   </div>
@@ -191,8 +192,16 @@ function setMode(mode) {
 }
 
 async function load() {
+  document.getElementById('list').innerHTML = '<div style="padding:20px 0;color:#9ca3af;font-size:13px;text-align:center;">Loading items…</div>';
   const res = await fetch('/items');
   allItems = await res.json();
+  render();
+}
+
+function clearFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('stageFilter').value = '';
+  if (nlMode) toggleNL();
   render();
 }
 
@@ -259,9 +268,11 @@ function getFiltered() {
 
 function render() {
   const filtered = nlMode && nlResults !== null ? nlResults : getFiltered();
+  const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
+  document.getElementById('clearFiltersBtn').style.display = hasFilters ? 'inline' : 'none';
   document.getElementById('itemCount').innerText =
     filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
-    (allItems.length !== filtered.length ? ' (filtered from ' + allItems.length + ')' : '');
+    (allItems.length !== filtered.length ? ' of ' + allItems.length + ' total' : '');
   currentMode === 'consigner' ? renderConsigner() : renderBatch();
 }
 
@@ -272,7 +283,22 @@ function renderConsigner() {
   list.innerHTML = '';
 
   if (!filtered.length) {
-    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
+    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
+    if (allItems.length === 0) {
+      list.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-title">No items yet</div>
+        <div class="empty-state-sub">Start by logging a consigner's items using the Initial Visit page.</div>
+        <button class="empty-state-btn" onclick="window.location.href='/initial-visit.html'">📋 Start Initial Visit</button>
+      </div>`;
+    } else {
+      list.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title">No items match your filters</div>
+        <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or stage filter.' : 'Nothing to show.'}</div>
+        ${hasFilters ? '<button class="empty-state-btn" onclick="clearFilters()">Clear Filters</button>' : ''}
+      </div>`;
+    }
     return;
   }
 
@@ -345,7 +371,13 @@ function renderBatch() {
   list.innerHTML = '';
 
   if (!filtered.length) {
-    list.innerHTML = '<div style="color:#6b7280;font-size:14px;">No items found.</div>';
+    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">No items match your filters</div>
+      <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or stage filter.' : 'Nothing to show.'}</div>
+      ${hasFilters ? '<button class="empty-state-btn" onclick="clearFilters()">Clear Filters</button>' : ''}
+    </div>`;
     return;
   }
 

@@ -121,7 +121,7 @@
     </div>
   </div>
 
-  <div class="summary-bar" id="summaryBar" style="display:none;">
+  <div class="summary-bar" id="summaryBar">
     <div class="summary-tile urgent">
       <div class="summary-num" id="statUrgent">0</div>
       <div class="summary-label">5+ Days</div>
@@ -194,7 +194,27 @@ function render() {
   el.innerHTML = '';
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📷</div><div class="empty-title">Queue is clear!</div><div>No items waiting for photography.</div></div>`;
+    const hasSearch = document.getElementById('search').value.trim();
+    if (hasSearch) {
+      el.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title">No matches found</div>
+        <div class="empty-state-sub">Try a different name or consigner.</div>
+      </div>`;
+    } else {
+      el.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">🎉</div>
+        <div class="empty-title">Queue is clear!</div>
+        <div style="font-size:13px;color:#9ca3af;margin-top:8px;line-height:1.5;">
+          No items are waiting to be photographed.<br>
+          Items appear here once they reach the <strong>Review &amp; Cleaning</strong> stage.
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="empty-state-btn" onclick="window.location.href='/items.html'">📦 View All Items</button>
+          <button class="empty-state-btn" style="background:#16a34a;" onclick="window.location.href='/photo-upload.html'">📸 AI Photo Studio</button>
+        </div>
+      </div>`;
+    }
     return;
   }
 
@@ -271,7 +291,6 @@ async function load() {
   ).length;
 
   document.getElementById('statDoneToday').innerText = doneToday;
-  document.getElementById('summaryBar').style.display = 'flex';
   document.getElementById('queueSub').innerText = allItems.length + ' item' + (allItems.length !== 1 ? 's' : '') + ' waiting · ' + doneToday + ' shot today';
 
   updateStats();

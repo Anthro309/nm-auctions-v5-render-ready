@@ -253,23 +253,68 @@
 
   <div id="itemSection" class="iv-card" style="display:none;">
     <h2>Add Item</h2>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <input id="itemName" placeholder="Item Name" style="flex:1;margin-top:0;">
-      <button id="voiceBtn" onclick="startVoice()" title="Speak to fill fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
+    <div class="info-hint" style="margin-top:0;">
+      <span class="info-hint-icon">💡</span>
+      <span>Take a photo first, then tap <strong>AI Auto-Fill</strong> to have AI name, describe, and value the item automatically.</span>
     </div>
+
+    <label class="field-label" style="margin-top:12px;">Item Name</label>
+    <div style="display:flex;gap:8px;">
+      <input id="itemName" placeholder="e.g. Victorian oak dresser with mirror" style="flex:1;margin-top:0;">
+      <button id="voiceBtn" onclick="startVoice()" title="Tap and describe the item out loud — AI will fill the fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
+    </div>
+    <p class="help-text" style="margin-top:4px;">Or tap 🎙️ and speak a description — AI will fill the fields automatically</p>
+
     <div id="dupWarning" style="display:none;background:#fff7ed;border:1.5px solid #f97316;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#9a3412;"></div>
-    <textarea id="itemDescription" placeholder="Description" rows="3"></textarea>
-    <input id="itemCategory" placeholder="Category">
-    <input id="itemCondition" placeholder="Condition">
-    <input type="file" id="photo" accept="image/*" capture="environment" style="margin-top:12px;">
+
+    <label class="field-label">Description</label>
+    <textarea id="itemDescription" placeholder="Dimensions, materials, notable features, any damage..." rows="3" style="margin-top:0;"></textarea>
+
+    <label class="field-label">Category</label>
+    <input id="itemCategory" list="categoryList" placeholder="e.g. Furniture, Jewelry, Art…" style="margin-top:0;">
+    <datalist id="categoryList">
+      <option>Furniture</option>
+      <option>Art</option>
+      <option>Jewelry</option>
+      <option>Collectibles</option>
+      <option>Electronics</option>
+      <option>Clothing &amp; Accessories</option>
+      <option>Tools &amp; Equipment</option>
+      <option>Kitchenware</option>
+      <option>Books &amp; Media</option>
+      <option>Outdoor &amp; Garden</option>
+      <option>Decor</option>
+      <option>Other</option>
+    </datalist>
+
+    <label class="field-label">Condition</label>
+    <input id="itemCondition" list="conditionList" placeholder="e.g. Good, Fair, Excellent…" style="margin-top:0;">
+    <datalist id="conditionList">
+      <option>Excellent</option>
+      <option>Good</option>
+      <option>Fair</option>
+      <option>Poor</option>
+      <option>As-Is / For Parts</option>
+    </datalist>
+
+    <label class="field-label">Photo</label>
+    <input type="file" id="photo" accept="image/*" capture="environment" style="margin-top:0;">
+
     <div class="loader" id="loader">
       <div class="loader-bar"></div>
     </div>
-    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);" onclick="autoIntake()">✨ AI Auto-Fill Everything</button>
-    <button class="iv-btn" onclick="analyzePhoto()">📷 Analyze Photo Only</button>
+
+    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);margin-top:14px;" onclick="autoIntake()">✨ AI Auto-Fill — Name, Description &amp; Value</button>
+    <p class="help-text" style="text-align:center;">Requires a photo. AI will analyze and fill all fields.</p>
+
+    <button class="iv-btn" onclick="analyzePhoto()" style="background:#1e3a5c;">📷 Analyze Photo Only</button>
+    <p class="help-text" style="text-align:center;">Suggests a name and description without full auto-fill.</p>
+
     <div id="autoIntakeStatus" style="display:none;margin-top:8px;padding:10px 14px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
-    <button class="iv-btn" onclick="addItem()">Add Item</button>
-    <button class="iv-btn green" onclick="endVisit()">🖨️ End Visit & Print Labels</button>
+
+    <hr style="border:none;border-top:1px solid #f1f5f9;margin:16px 0 4px;">
+    <button class="iv-btn" onclick="addItem()">+ Add Item to Visit</button>
+    <button class="iv-btn green" onclick="endVisit()" style="margin-top:8px;">🖨️ End Visit &amp; Print Labels</button>
     <div id="statusBox" class="status">Ready.</div>
   </div>
 

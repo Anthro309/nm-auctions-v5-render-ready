@@ -153,11 +153,16 @@
     </div>
   </div>
 
-  <div id="statusBar" class="status-bar">Ready to scan...</div>
+  <div id="statusBar" class="status-bar">📡 Ready — scan a QR code or enter a lot number</div>
+
+  <div class="info-hint">
+    <span class="info-hint-icon">💡</span>
+    <span>Scan the QR label on any item to log who handled it and advance its workflow stage. You can also search by item name below.</span>
+  </div>
 
   <div class="card">
     <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
-    <button class="btn-camera" onclick="startCamera()">📷 Use Camera to Scan QR</button>
+    <button class="btn-camera" onclick="startCamera()">📷 Use Camera to Scan QR Code</button>
     <div class="search-results" id="searchResults"></div>
   </div>
 
@@ -228,7 +233,10 @@ async function searchByName(q) {
     const results = await res.json();
     const container = document.getElementById('searchResults');
     container.innerHTML = '';
-    if (!results.length) return;
+    if (!results.length) {
+      container.innerHTML = '<div style="padding:14px;font-size:13px;color:#9ca3af;text-align:center;">No items found — check the lot code or spelling</div>';
+      return;
+    }
     results.forEach(item => {
       const row = document.createElement('div');
       row.className = 'search-result-row';

@@ -107,7 +107,8 @@
     </div>
 
     <div id="autoAssignRow" style="margin-bottom:12px;display:none;">
-      <button onclick="autoAssignAll()" style="width:100%;background:#7c3aed;font-size:13px;padding:11px;">✨ AI: Auto-Assign Ready Items to This Event</button>
+      <button onclick="autoAssignAll()" style="width:100%;background:#7c3aed;font-size:13px;padding:11px;">✨ AI Auto-Assign — Add All Ready Items</button>
+      <p class="help-text" style="text-align:center;">Automatically adds items at Photograph, Prep for Pick Up, or Ready for Pick Up stage that aren't assigned to another event.</p>
       <div id="autoAssignMsg" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;color:#5b21b6;border-radius:10px;font-size:13px;font-weight:600;"></div>
     </div>
 
@@ -189,7 +190,9 @@ function renderLots() {
 }
 
 async function removeLot(itemId) {
-  if (!confirm('Remove this lot from the event?')) return;
+  const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
+  const name = item ? (item.name || 'this item') : 'this item';
+  if (!confirm(`Remove "${name}" from this event?\n\nThis won't delete the item — it just unassigns it from the event.`)) return;
   await fetch(`/events/${evId}/lots/${itemId}`, { method: 'DELETE' });
   await load();
 }

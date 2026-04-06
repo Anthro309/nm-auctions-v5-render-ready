@@ -221,7 +221,10 @@
   <div class="item-top-row">
 
   <!-- PHOTO -->
-  <div id="imageBox" class="image-box">No Image</div>
+  <div id="imageBox" class="image-box" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#9ca3af;">
+    <span style="font-size:48px;opacity:0.3;">📦</span>
+    <span style="font-size:12px;font-weight:600;">No photo yet</span>
+  </div>
 
   <!-- DETAILS -->
   <div class="card" style="margin-top:0;">
@@ -277,9 +280,9 @@
 
   <!-- ADVANCE STAGE -->
   <div class="card" id="stageCard" style="display:none;">
-    <h3 style="margin-bottom:8px;">Move to Next Stage</h3>
-    <div id="nextStageName" style="font-size:15px;color:#6b7280;margin-bottom:12px;"></div>
-    <button class="btn-green" onclick="advanceStage()">Advance Stage →</button>
+    <h3 style="margin-bottom:4px;">Workflow Stage</h3>
+    <div id="nextStageName" style="font-size:13px;color:#6b7280;margin-bottom:14px;"></div>
+    <button class="btn-green" id="advanceStageBtn" onclick="advanceStage()">→ Advance Stage</button>
     <div id="stageMsg" class="success-msg">✅ Stage updated</div>
   </div>
 
@@ -517,7 +520,10 @@ function render() {
   const stageOrder = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
   const idx = stageOrder.indexOf(item.stage);
   if (idx !== -1 && idx < stageOrder.length - 1) {
-    document.getElementById('nextStageName').innerText = item.stage + '  →  ' + stageOrder[idx + 1];
+    const nextStage = stageOrder[idx + 1];
+    document.getElementById('nextStageName').innerText = 'Current: ' + item.stage + '  →  Next: ' + nextStage;
+    const advBtn = document.getElementById('advanceStageBtn');
+    if (advBtn) advBtn.innerText = '→ Move to ' + nextStage;
     document.getElementById('stageCard').style.display = 'block';
   }
 
@@ -759,7 +765,7 @@ async function advanceStage() {
     if (!confirm('⚠️ This item is flagged for repair.\n\n' + (item.repairNote || '') + '\n\nAdvance the stage anyway?')) return;
   }
 
-  const btn = document.querySelector('[onclick="advanceStage()"]');
+  const btn = document.getElementById('advanceStageBtn') || document.querySelector('[onclick="advanceStage()"]');
   btn.disabled = true;
 
   try {
@@ -772,7 +778,11 @@ async function advanceStage() {
     if (data.success) {
       item = data.item;
       document.getElementById('detailStage').innerText = item.stage;
-      document.getElementById('nextStageName').innerText = item.stage + '  →  ' + (stageOrder[idx + 2] || '');
+      const newNext = stageOrder[idx + 2];
+      if (newNext) {
+        document.getElementById('nextStageName').innerText = 'Current: ' + item.stage + '  →  Next: ' + newNext;
+        btn.innerText = '→ Move to ' + newNext;
+      }
       if (idx + 2 >= stageOrder.length) document.getElementById('stageCard').style.display = 'none';
       const msg = document.getElementById('stageMsg');
       msg.style.display = 'block';

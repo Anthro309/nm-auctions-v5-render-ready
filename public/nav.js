@@ -16,6 +16,14 @@
     }
   }
 
+  // Highlight active sidebar link based on current page
+  var links = document.querySelectorAll('#sidebar nav a');
+  var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+  links.forEach(function(link) {
+    var href = link.getAttribute('href').replace(/\/$/, '') || '/';
+    if (href === currentPath) link.classList.add('active');
+  });
+
   // Inject Admin link into sidebar for admin users
   if (u.isAdmin) {
     var nav = document.querySelector('#sidebar nav');
