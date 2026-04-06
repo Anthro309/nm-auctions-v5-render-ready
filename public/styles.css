@@ -997,11 +997,13 @@ video {
 }
 .onboarding-step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-size: 13px;
   opacity: 0.85;
+  line-height: 1.5;
 }
+.onboarding-step span { flex: 1; }
 .onboarding-step-num {
   width: 22px;
   height: 22px;
