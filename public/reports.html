@@ -73,7 +73,7 @@
   <!-- DAILY REPORT -->
   <!-- AI PERFORMANCE NARRATIVE -->
   <div class="card">
-    <h2 style="margin-bottom:4px;">✨ AI Performance Narrative</h2>
+    <h2 style="margin-bottom:4px;">✨ AI Performance Narrative <button class="help-btn" onclick="showTip(this,'Pick a month and AI reads all the sales data, photos logged, and stage activity to write a plain-English summary — what sold well, who was most productive, and what to focus on next.')">?</button></h2>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI analyzes your sales data and writes a plain-English performance debrief for the team.</p>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <input type="month" id="narrativeMonth" style="flex:1;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;">
@@ -83,7 +83,7 @@
   </div>
 
   <div class="card">
-    <h2>Daily Report</h2>
+    <h2>Daily Report <button class="help-btn" onclick="showTip(this,'Generates a printable summary of all items processed today — photos taken, stages advanced, and items received. Use this for end-of-day team records.')">?</button></h2>
     <button onclick="generateReport()" style="width:100%;margin-bottom:8px;">Generate Today's Full Report</button>
     <button onclick="window.print()" style="width:100%;background:#6b7280;">🖨️ Print</button>
   </div>

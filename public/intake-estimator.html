@@ -130,7 +130,7 @@
   <div class="page-header-block">
     <div class="page-header-icon">💰</div>
     <div>
-      <div class="page-header-title">Intake Value Estimator</div>
+      <div class="page-header-title">Intake Value Estimator <button class="help-btn" onclick="showTip(this,'Use this before accepting an item from a consigner. Upload a photo and AI will tell you whether it\'s worth consigning (YES / MAYBE / NO), the estimated sale range, and how hot the market is for that type of item right now.')">?</button></div>
       <div class="page-header-sub">AI pre-screen — is this item worth bringing in?</div>
     </div>
   </div>
@@ -150,7 +150,10 @@
     <div class="section-label">Description <span style="font-weight:500;text-transform:none;letter-spacing:0;font-size:12px;color:#9ca3af;">(optional)</span></div>
     <textarea id="descInput" placeholder="e.g. old wooden dresser with brass handles, 6 drawers, some scratches on top, about 4 feet tall…" rows="3" style="margin-top:0;"></textarea>
 
-    <button class="btn-purple" onclick="runEstimate()" id="estimateBtn">✨ AI Pre-Screen This Item</button>
+    <button class="btn-purple" onclick="runEstimate()" id="estimateBtn">
+      ✨ AI Pre-Screen This Item
+      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'AI reads the photo (and optional description) and returns: a YES/MAYBE/NO verdict, confidence level, estimated sale price range, estimated consigner payout, and market hotness for this item category.')">?</button>
+    </button>
     <div id="estimateStatus" style="display:none;text-align:center;padding:16px;color:#6b7280;font-size:14px;font-weight:600;margin-top:8px;">⏳ Analyzing item…</div>
   </div>
 

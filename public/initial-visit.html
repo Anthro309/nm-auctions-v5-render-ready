@@ -258,12 +258,15 @@
       <span>Take a photo first, then tap <strong>AI Auto-Fill</strong> to have AI name, describe, and value the item automatically.</span>
     </div>
 
-    <label class="field-label" style="margin-top:12px;">Item Name</label>
+    <label class="field-label" style="margin-top:12px;">
+      Item Name
+      <button class="help-btn" onclick="showTip(this,'Type a short name or use the voice button. You can also leave it blank and let AI Auto-Fill name it from the photo.')">?</button>
+    </label>
     <div style="display:flex;gap:8px;">
       <input id="itemName" placeholder="e.g. Victorian oak dresser with mirror" style="flex:1;margin-top:0;">
       <button id="voiceBtn" onclick="startVoice()" title="Tap and describe the item out loud — AI will fill the fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
     </div>
-    <p class="help-text" style="margin-top:4px;">Or tap 🎙️ and speak a description — AI will fill the fields automatically</p>
+    <p class="help-text" style="margin-top:4px;">Or tap 🎙️ and speak — say something like "old wooden dresser with brass handles, some scratches"</p>
 
     <div id="dupWarning" style="display:none;background:#fff7ed;border:1.5px solid #f97316;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;color:#9a3412;"></div>
 
@@ -304,11 +307,15 @@
       <div class="loader-bar"></div>
     </div>
 
-    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);margin-top:14px;" onclick="autoIntake()">✨ AI Auto-Fill — Name, Description &amp; Value</button>
-    <p class="help-text" style="text-align:center;">Requires a photo. AI will analyze and fill all fields.</p>
+    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);margin-top:14px;" onclick="autoIntake()">
+      ✨ AI Auto-Fill — Name, Description &amp; Value
+      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Requires a photo. AI reads the image and fills in the item name, description, category, condition, and estimated value range — all in one tap.')">?</button>
+    </button>
 
-    <button class="iv-btn" onclick="analyzePhoto()" style="background:#1e3a5c;">📷 Analyze Photo Only</button>
-    <p class="help-text" style="text-align:center;">Suggests a name and description without full auto-fill.</p>
+    <button class="iv-btn" onclick="analyzePhoto()" style="background:#1e3a5c;">
+      📷 Analyze Photo Only
+      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Quickly suggests a name and short description from the photo. Faster than full AI Auto-Fill but does not estimate value or fill all fields.')">?</button>
+    </button>
 
     <div id="autoIntakeStatus" style="display:none;margin-top:8px;padding:10px 14px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
 

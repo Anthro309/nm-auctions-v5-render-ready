@@ -1,3 +1,43 @@
+// ── HELP TOOLTIP SYSTEM ──
+(function () {
+  var tip = null;
+
+  function showTip(btn, text) {
+    if (tip) { tip.remove(); tip = null; }
+
+    tip = document.createElement('div');
+    tip.className = 'help-tooltip';
+    tip.textContent = text;
+    document.body.appendChild(tip);
+
+    var r = btn.getBoundingClientRect();
+    var maxW = 280;
+    var left = Math.min(r.left, window.innerWidth - maxW - 12);
+    if (left < 12) left = 12;
+    var top = r.bottom + 10;
+    tip.style.cssText = 'left:' + left + 'px;top:' + top + 'px;max-width:' + maxW + 'px;';
+
+    // Flip above if too close to bottom
+    var h = tip.offsetHeight;
+    if (top + h > window.innerHeight - 16) {
+      tip.style.top = (r.top - h - 10) + 'px';
+    }
+
+    // Arrow offset relative to button center
+    var arrowLeft = Math.min(Math.max(r.left + r.width / 2 - left - 6, 10), maxW - 22);
+    tip.style.setProperty('--arrow-left', arrowLeft + 'px');
+
+    setTimeout(function () {
+      document.addEventListener('click', function dismiss() {
+        if (tip) { tip.remove(); tip = null; }
+        document.removeEventListener('click', dismiss);
+      });
+    }, 0);
+  }
+
+  window.showTip = showTip;
+}());
+
 // Shared navbar avatar initializer — included on every page
 (function () {
   var u = JSON.parse(localStorage.getItem('user') || 'null');

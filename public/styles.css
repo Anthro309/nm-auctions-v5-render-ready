@@ -1032,6 +1032,67 @@ video {
   color: #1d4ed8;
 }
 
+/* ── HELP BUTTON ── */
+.help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+  vertical-align: middle;
+  margin-left: 5px;
+  font-family: inherit;
+  line-height: 1;
+  position: relative;
+  top: -1px;
+  transition: background 0.15s, color 0.15s;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.help-btn:hover, .help-btn:active {
+  background: #2563eb;
+  color: white;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── HELP TOOLTIP ── */
+.help-tooltip {
+  position: fixed;
+  background: #0f172a;
+  color: rgba(255,255,255,0.92);
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  pointer-events: none;
+  font-weight: 500;
+}
+.help-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: var(--arrow-left, 16px);
+  width: 10px;
+  height: 10px;
+  background: #0f172a;
+  transform: rotate(45deg);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
 /* ── CLEAR FILTERS LINK ── */
 .clear-filters {
   font-size: 12px;

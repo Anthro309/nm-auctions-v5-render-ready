@@ -299,7 +299,7 @@
   <div class="page-header-block">
     <div class="page-header-icon">📸</div>
     <div>
-      <div class="page-header-title">AI Photo Studio</div>
+      <div class="page-header-title">AI Photo Studio <button class="help-btn" onclick="showTip(this,'Upload your photos here. AI removes the background to give you clean white-background shots. Then pair each photo with an item to save it to that item\'s record.')">?</button></div>
       <div class="page-header-sub">Remove backgrounds &amp; pair shots with items</div>
     </div>
   </div>
@@ -315,6 +315,7 @@
   <!-- Batch process button -->
   <button class="process-all-btn" id="processAllBtn" onclick="processAll()">
     ✨ Remove Backgrounds on All Photos
+    <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Sends each photo to AI which removes the background, giving you a clean product shot on white. Works best with clear photos on a non-cluttered background.')">?</button>
   </button>
   <div class="upload-progress" id="uploadProgress"></div>
 

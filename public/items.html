@@ -114,6 +114,7 @@
   <div class="search-bar-row">
     <input id="search" placeholder="Search or ask AI: 'jewelry over $200 not photographed'" oninput="onSearchInput()">
     <button id="nlBtn" onclick="toggleNL()" style="width:auto;padding:10px 14px;font-size:13px;border-radius:12px;background:#7c3aed;flex-shrink:0;margin-top:0;" title="AI Natural Language Search">✨ AI</button>
+    <button class="help-btn" onclick="showTip(this,'Tap ✨ AI then type a plain-English query. Examples: \"jewelry not yet photographed\", \"items from Smith received this week\", \"furniture estimated over $200\".')" style="margin-left:4px;flex-shrink:0;">?</button>
   </div>
   <div id="nlStatus" style="display:none;font-size:12px;color:#7c3aed;font-weight:600;margin-bottom:8px;padding:8px 12px;background:#f5f3ff;border-radius:8px;"></div>
 
@@ -141,7 +142,7 @@
   <div class="card" style="padding-top:14px;padding-bottom:14px;">
     <div class="mode-toggle">
       <button class="mode-btn active" id="modeConsigner" onclick="setMode('consigner')">By Consigner</button>
-      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Advance</button>
+      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Advance <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Select multiple items using checkboxes, then move them all to the same workflow stage in one tap. Useful for processing a batch that arrived together.')">?</button></button>
     </div>
 
     <!-- BATCH BAR -->
@@ -163,7 +164,7 @@
   </div>
 
   <div class="card">
-    <h2>Auction Listing Export</h2>
+    <h2>Auction Listing Export <button class="help-btn" onclick="showTip(this,'Downloads a spreadsheet of all items that are photographed and ready to list. Import this CSV into your auction platform. Includes name, category, condition, description, tags, and estimated value.')">?</button></h2>
     <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage — ready to list on the auction platform.</p>
     <button onclick="exportAuctionCSV()" style="width:100%;">📤 Export Auction Listings CSV</button>
     <div id="exportMsg" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>

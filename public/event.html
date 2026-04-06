@@ -99,7 +99,7 @@
 
   <!-- Assign lots -->
   <div class="card">
-    <h3 style="margin-bottom:8px;">Assigned Lots <span id="lotCount" style="font-weight:400;color:#6b7280;"></span></h3>
+    <h3 style="margin-bottom:8px;">Assigned Lots <span id="lotCount" style="font-weight:400;color:#6b7280;"></span> <button class="help-btn" onclick="showTip(this,'Search for an item by name or lot number to add it to this event. Each assigned item becomes a numbered lot in the auction.')">?</button></h3>
 
     <div class="add-lot-wrap" style="margin-bottom:14px;">
       <input id="addLotSearch" placeholder="Search item to add…" oninput="searchToAdd(this)" autocomplete="off" style="margin-top:0;">
@@ -117,7 +117,7 @@
 
   <!-- Auction Results Import -->
   <div class="card" id="importCard">
-    <h3 style="margin-bottom:4px;">Import Auction Results</h3>
+    <h3 style="margin-bottom:4px;">Import Auction Results <button class="help-btn" onclick="showTip(this,'After your auction ends, paste the sold prices in LotNumber,SoldPrice format — one per line. The system matches each lot, records the sale price, and calculates what each consigner is owed based on the commission rate.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin:0 0 10px;">Paste CSV: <code>LotNumber,SoldPrice</code> — one per line. Automatically calculates payouts at <span id="commRate">35</span>% commission.</p>
     <textarea class="csv-area" id="csvInput" rows="6" placeholder="NM-001-A,250.00&#10;NM-002-B,45.00&#10;NM-003-C,120.00"></textarea>
     <button onclick="previewImport()" style="width:100%;margin-top:10px;">Preview Results</button>

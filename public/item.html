@@ -280,7 +280,7 @@
 
   <!-- ADVANCE STAGE -->
   <div class="card" id="stageCard" style="display:none;">
-    <h3 style="margin-bottom:4px;">Workflow Stage</h3>
+    <h3 style="margin-bottom:4px;">Workflow Stage <button class="help-btn" onclick="showTip(this,'Items move through stages: Home Visit → Received at Studio → Review &amp; Cleaning → Photograph → Prep for Pick Up → Ready for Pick Up → Picked Up. Tap the button to advance to the next stage.')">?</button></h3>
     <div id="nextStageName" style="font-size:13px;color:#6b7280;margin-bottom:14px;"></div>
     <button class="btn-green" id="advanceStageBtn" onclick="advanceStage()">→ Advance Stage</button>
     <div id="stageMsg" class="success-msg">✅ Stage updated</div>
@@ -324,7 +324,7 @@
 
   <!-- AI CONDITION + DAMAGE (COMBINED) -->
   <div class="card" id="conditionCard">
-    <h3 style="margin-bottom:4px;">🔍 Condition & Damage Report</h3>
+    <h3 style="margin-bottom:4px;">🔍 Condition & Damage Report <button class="help-btn" onclick="showTip(this,'AI analyzes the item photos to assign a condition grade (Excellent/Good/Fair/Poor), identify specific damage, and recommend repairs. Requires at least one photo on the item.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">AI assesses condition grade and scans for damage in one shot.</p>
     <div id="conditionFullResult" style="display:none;margin-bottom:12px;"></div>
     <button class="btn-blue" onclick="runFullCondition()" id="conditionFullBtn">🔍 Assess Condition & Damage</button>
@@ -395,7 +395,7 @@
 
   <!-- AI STYLE / ERA IDENTIFICATION -->
   <div class="card" id="styleCard" style="display:none;">
-    <h3 style="margin-bottom:4px;">🎨 Style & Era ID</h3>
+    <h3 style="margin-bottom:4px;">🎨 Style & Era ID <button class="help-btn" onclick="showTip(this,'AI looks at the item photos and identifies the design period (e.g. Mid-Century Modern, Victorian, Art Deco), likely origin, and notable style markers. Results are added as searchable tags.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI identifies the design movement, era, and origin — then auto-tags the item.</p>
     <button class="btn-blue" onclick="identifyStyle()" id="styleBtn">✨ Identify Style & Era</button>
     <div id="styleResult" style="display:none;margin-top:12px;"></div>
@@ -403,7 +403,7 @@
 
   <!-- AI SOCIAL POST GENERATOR -->
   <div class="card" id="socialCard" style="display:none;">
-    <h3 style="margin-bottom:4px;">📱 Social Post Generator</h3>
+    <h3 style="margin-bottom:4px;">📱 Social Post Generator <button class="help-btn" onclick="showTip(this,'Generates platform-specific captions and hashtags for Instagram, Facebook, and TikTok. Copy the post and paste directly into your social media app.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">AI writes ready-to-post Instagram, Facebook, and TikTok captions for this item.</p>
     <button class="btn-blue" onclick="generateSocialPost()" id="socialBtn">✨ Generate Social Posts</button>
     <div id="socialResult" style="display:none;margin-top:12px;"></div>

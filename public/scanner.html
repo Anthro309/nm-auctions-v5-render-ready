@@ -162,7 +162,10 @@
 
   <div class="card">
     <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
-    <button class="btn-camera" onclick="startCamera()">📷 Use Camera to Scan QR Code</button>
+    <button class="btn-camera" onclick="startCamera()">
+      📷 Use Camera to Scan QR Code
+      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Point your camera at the QR code printed on the item label. The app will find the item automatically and log your scan.')">?</button>
+    </button>
     <div class="search-results" id="searchResults"></div>
   </div>
 
