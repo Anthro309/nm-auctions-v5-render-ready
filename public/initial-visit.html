@@ -39,6 +39,8 @@
 .iv-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
 .iv-btn.green { background: #16a34a; }
 .iv-btn.green:hover { background: #15803d; }
+.iv-btn.secondary { background: #475569; }
+.iv-btn.secondary:hover { background: #334155; }
 
 .loader {
   margin-top: 10px;
@@ -322,6 +324,7 @@
     <hr style="border:none;border-top:1px solid #f1f5f9;margin:16px 0 4px;">
     <button class="iv-btn" onclick="addItem()">+ Add Item to Visit</button>
     <button class="iv-btn green" onclick="endVisit()" style="margin-top:8px;">🖨️ End Visit &amp; Print Labels</button>
+    <button class="iv-btn secondary" onclick="printIntakeSummary()" style="margin-top:8px;">🧾 Print Intake Summary Sheet</button>
     <div id="statusBox" class="status">Ready.</div>
   </div>
 
@@ -527,16 +530,29 @@ async function loadExistingItems() {
 loadExistingItems();
 
 function checkDuplicate(name) {
-  if (!name || !allExistingItems.length) return;
+  const warn = document.getElementById('dupWarning');
+  if (!name) { warn.style.display = 'none'; return; }
+
   const n = name.toLowerCase();
+  const sessionDupes = items.filter(i => (i.name || '').trim().toLowerCase() === n);
   const matches = allExistingItems.filter(i => {
     const sim = (i.name || '').toLowerCase();
-    return sim.includes(n.slice(0, Math.floor(n.length * 0.6))) ||
-           n.includes(sim.slice(0, Math.floor(sim.length * 0.6)));
+    if (!sim) return false;
+    const namePrefix = n.slice(0, Math.max(3, Math.floor(n.length * 0.6)));
+    const simPrefix = sim.slice(0, Math.max(3, Math.floor(sim.length * 0.6)));
+    return sim.includes(namePrefix) || n.includes(simPrefix);
   });
-  const warn = document.getElementById('dupWarning');
+
+  const messages = [];
+  if (sessionDupes.length) {
+    messages.push(`⚠️ This name already exists in this visit: <strong>${escapeHtml(sessionDupes[0].name)}</strong>.`);
+  }
   if (matches.length) {
-    warn.innerHTML = `⚠️ Similar item may already exist: <strong>${escapeHtml(matches[0].name)}</strong> (Lot ${escapeHtml(matches[0].lotNumber || '—')}, ${escapeHtml(matches[0].consigner || 'unknown consigner')})`;
+    messages.push(`⚠️ Similar item may already exist in inventory: <strong>${escapeHtml(matches[0].name)}</strong> (Lot ${escapeHtml(matches[0].lotNumber || '—')}, ${escapeHtml(matches[0].consigner || 'unknown consigner')})`);
+  }
+
+  if (messages.length) {
+    warn.innerHTML = messages.join('<br>');
     warn.style.display = 'block';
   } else {
     warn.style.display = 'none';
@@ -554,6 +570,8 @@ async function addItem() {
   const category = document.getElementById('itemCategory').value.trim();
   const condition = document.getElementById('itemCondition').value.trim();
   if (!name) { alert('Enter item name'); return; }
+  const isSessionDuplicate = items.some(i => (i.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (isSessionDuplicate && !confirm(`"${name}" already exists in this visit. Add anyway?`)) return;
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const createdBy = user.name || 'unknown';
@@ -680,6 +698,61 @@ async function buildPrint() {
     );
   }
   setStatus('Labels ready — printing...');
+}
+
+function printIntakeSummary() {
+  if (!session || !items.length) { alert('Add at least one item first.'); return; }
+  const win = window.open('', '_blank', 'width=900,height=1100');
+  const rows = items.map((i, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(i.lotCode || '—')}</td>
+      <td>${escapeHtml(i.name || '')}</td>
+      <td>${escapeHtml(i.category || '—')}</td>
+      <td>${escapeHtml(i.condition || '—')}</td>
+    </tr>
+  `).join('');
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>Intake Summary - ${escapeHtml(session.code)}</title>
+        <style>
+          body { font-family: Inter, Arial, sans-serif; padding: 20px; color: #111827; }
+          h1 { margin: 0 0 8px; font-size: 24px; }
+          .meta { margin-bottom: 18px; color: #374151; font-size: 14px; line-height: 1.5; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+          th { background: #f3f4f6; font-weight: 700; }
+          .footer { margin-top: 16px; font-size: 12px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <h1>Intake Summary Sheet</h1>
+        <div class="meta">
+          <div><strong>Consigner:</strong> ${escapeHtml(session.consigner)}</div>
+          <div><strong>Consigner Code:</strong> ${escapeHtml(session.code)}</div>
+          <div><strong>Date:</strong> ${escapeHtml(session.date)}</div>
+          <div><strong>Total Items:</strong> ${items.length}</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Lot</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Condition</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">Auction Legacy · Internal Workflow Intake Summary</div>
+        <script>window.onload = () => window.print();<\/script>
+      </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function escapeHtml(value) {
