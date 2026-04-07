@@ -4,8 +4,6 @@ Internal studio operations platform for NM Estate Auctions. Manages the full lif
 
 Deployed on Render. Built mobile-first as a PWA (installable on home screen).
 
-> Product scope: this system is intentionally focused on internal inventory/workflow operations and is not coupled to external auction-site or post-sale systems.
-
 ---
 
 ## Tech Stack

@@ -1,3 +1,4 @@
+<script>
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 
 let consignerCode = null;
@@ -301,3 +302,4 @@ async function endVisitAndPrint() {
 
   printLabelsOnly();
 }
+</script>
