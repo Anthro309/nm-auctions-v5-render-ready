@@ -1014,6 +1014,37 @@ app.get('/intake', (req, res) => {
   res.json(result);
 });
 
+// =========================
+// INTAKE — SAVE SESSION SNAPSHOT
+// =========================
+app.post('/intake', (req, res) => {
+  const { code, consigner, items } = req.body || {};
+  if (!code || !consigner || !Array.isArray(items)) {
+    return res.status(400).json({ success: false, message: 'code, consigner, and items[] are required' });
+  }
+
+  const intake = readJSON(INTAKE_FILE);
+  const session = {
+    id: `${code}__${new Date().toISOString()}`,
+    code,
+    consigner,
+    createdAt: new Date().toISOString(),
+    itemCount: items.length,
+    items: items.map(i => ({
+      id: i.id,
+      lotNumber: i.lotNumber || null,
+      name: i.name || '',
+      category: i.category || '',
+      condition: i.condition || '',
+      stage: i.stage || 'Home Visit'
+    }))
+  };
+
+  intake.push(session);
+  writeJSON(INTAKE_FILE, intake);
+  res.json({ success: true, session });
+});
+
 
 // =========================
 // EVENTS — AUCTION SALES
@@ -1853,7 +1884,7 @@ app.post('/reports/performance-narrative', async (req, res) => {
     return dateStr && dateStr.startsWith(month);
   };
 
-  const soldItems = items.filter(i => i.soldPrice && i.soldPrice > 0 && filterMonth(i.soldDate || i.updatedAt));
+  const soldItems = items.filter(i => i.soldPrice && i.soldPrice > 0 && filterMonth(i.soldAt || i.createdAt));
   const allMonthItems = items.filter(i => filterMonth(i.createdAt));
   const monthEvents = events.filter(e => filterMonth(e.date));
 
