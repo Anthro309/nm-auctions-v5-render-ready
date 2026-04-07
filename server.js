@@ -278,6 +278,42 @@ app.get('/next-lot-code', (req, res) => {
 // =========================
 // ADD ITEMS (INTAKE)
 // =========================
+app.post('/items', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const { name, description, category, condition, consigner, code, number, part, photos, employee } = req.body || {};
+
+  if (!name || !code) {
+    return res.status(400).json({ success: false, message: 'name and code are required' });
+  }
+
+  const item = {
+    id: Date.now() + Math.floor(Math.random() * 100000),
+    name: String(name).trim(),
+    description: description || '',
+    category: category || '',
+    condition: condition || '',
+    consigner: consigner || '',
+    code: String(code).trim().toUpperCase(),
+    number: Number(number) || 1,
+    part: Number(part) || 1,
+    photos: Array.isArray(photos) ? photos.filter(Boolean) : [],
+    stage: 'Home Visit',
+    location: null,
+    lotNumber: null,
+    tags: [],
+    estimatedValueLow: 0,
+    estimatedValueHigh: 0,
+    photographedAt: null,
+    createdAt: new Date().toISOString(),
+    logs: []
+  };
+
+  addLog(item, { employee: employee || 'system', action: 'item created', toStage: 'Home Visit' });
+  items.push(item);
+  writeJSON(ITEMS_FILE, items);
+  res.status(201).json({ success: true, item });
+});
+
 app.post('/addItems', (req, res) => {
   const items = readJSON(ITEMS_FILE);
   const incoming = Array.isArray(req.body.items) ? req.body.items : [];
