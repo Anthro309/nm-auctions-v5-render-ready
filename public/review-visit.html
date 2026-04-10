@@ -442,11 +442,25 @@ function renderReview() {
         </div>
       `;
     } else {
+      const currentAssignee = item.assignedTo || '';
+      const empOptions = employees.map(e =>
+        `<option value="${esc(e.name)}" ${currentAssignee === e.name ? 'selected' : ''}>${esc(e.name)}</option>`
+      ).join('');
       actionsHtml = `
         <div class="review-actions">
           <button class="btn-undo" onclick="undoItem('${item.id}')">↩ Undo</button>
           ${status === 'accepted' ? `<a href="/item.html?id=${item.id}" style="flex:1;text-align:center;padding:9px 12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;text-decoration:none;">View Item →</a>` : ''}
         </div>
+        ${status === 'accepted' ? `
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <select id="assign-sel-${item.id}" style="flex:1;margin:0;font-size:13px;padding:8px 10px;" onchange="">
+            <option value="">— Assign to employee —</option>
+            ${empOptions}
+          </select>
+          <button onclick="assignFromReview('${item.id}')" style="padding:9px 14px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
+        </div>
+        ${currentAssignee ? `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:5px;">👤 Assigned to ${esc(currentAssignee)}</div>` : `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#9ca3af;margin-top:5px;display:none;"></div>`}
+        ` : ''}
       `;
     }
 
@@ -578,6 +592,39 @@ async function refreshSession() {
   if (currentSession) {
     currentSession = sessions.find(s => s.id === currentSession.id) || currentSession;
   }
+}
+
+// =====================
+// ASSIGN FROM REVIEW
+// =====================
+async function assignFromReview(itemId) {
+  const sel = document.getElementById('assign-sel-' + itemId);
+  if (!sel) return;
+  const assignedTo = sel.value;
+  try {
+    const res = await fetch('/items/' + itemId + '/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignedTo: assignedTo || null, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const confirm = document.getElementById('assign-confirm-' + itemId);
+      if (confirm) {
+        confirm.style.display = 'block';
+        confirm.textContent = assignedTo ? '👤 Assigned to ' + assignedTo : 'Assignment cleared';
+        confirm.style.color = assignedTo ? '#7c3aed' : '#9ca3af';
+        confirm.style.fontWeight = '600';
+        confirm.style.fontSize = '12px';
+        confirm.style.marginTop = '5px';
+      }
+      // Update local session data so re-render shows current assignee
+      if (currentSession && currentSession.items) {
+        const it = currentSession.items.find(function(i) { return i.id === itemId; });
+        if (it) it.assignedTo = assignedTo || null;
+      }
+    }
+  } catch (err) { alert('Failed to assign item. Please try again.'); }
 }
 
 // =====================

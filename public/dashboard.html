@@ -337,16 +337,22 @@
       <div class="dash-sub">Browse & search all consigned items</div>
     </div>
 
-    <div class="dash-card" onclick="window.location.href='/reports.html'">
+    <div class="dash-card" id="reportsGridCard" onclick="window.location.href='/reports.html'">
       <div class="dash-icon">📊</div>
       <div class="dash-title">Reports</div>
       <div class="dash-sub">Generate & view daily lot reports</div>
     </div>
 
+    <div class="dash-card" id="eventsGridCard" style="display:none;" onclick="window.location.href='/events.html'">
+      <div class="dash-icon">🏷️</div>
+      <div class="dash-title">Auction Events</div>
+      <div class="dash-sub">View & manage upcoming auction events</div>
+    </div>
+
   </div>
 
   <!-- AI Photo Studio shortcut -->
-  <div class="photo-studio-card" onclick="window.location.href='/photo-upload.html'">
+  <div class="photo-studio-card" id="photoStudioShortcut" onclick="window.location.href='/photo-upload.html'">
     <div class="photo-studio-icon">📸</div>
     <div class="photo-studio-text">
       <div class="photo-studio-title">AI Photo Studio</div>
@@ -379,6 +385,13 @@
 
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
+
+  // Gate admin-only dashboard elements
+  if (user && !user.isAdmin) {
+    document.getElementById('reportsGridCard').style.display = 'none';
+    document.getElementById('eventsGridCard').style.display = 'flex';
+    document.getElementById('photoStudioShortcut').style.display = 'none';
+  }
 
   // Welcome banner
   if (user && user.name) {

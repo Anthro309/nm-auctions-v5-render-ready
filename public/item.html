@@ -275,10 +275,16 @@
   <div class="card">
     <h3 style="margin-bottom:8px;">Reference Images <button class="help-btn" onclick="showTip(this,'Upload supplemental reference photos — close-ups of markings, damage, labels, or any detail useful for pricing and cataloging. These are separate from the main listing photos.')">?</button></h3>
     <div id="refPhotoGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
-    <label style="display:block;padding:10px 14px;background:#f3f4f6;border-radius:10px;border:1.5px dashed #d1d5db;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:#374151;">
-      📎 Add Reference Photo
-      <input type="file" accept="image/*" multiple style="display:none;" onchange="uploadRefPhotos(this)">
-    </label>
+    <div style="display:flex;gap:8px;">
+      <label style="flex:1;display:block;padding:10px 14px;background:#f3f4f6;border-radius:10px;border:1.5px dashed #d1d5db;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:#374151;">
+        📎 Upload Photo
+        <input type="file" accept="image/*" multiple style="display:none;" onchange="uploadRefPhotos(this)">
+      </label>
+      <label style="flex:1;display:block;padding:10px 14px;background:#eff6ff;border-radius:10px;border:1.5px dashed #93c5fd;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:#1d4ed8;">
+        📷 Take Photo
+        <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="uploadRefPhotos(this)">
+      </label>
+    </div>
     <div id="refPhotoMsg" class="success-msg">✅ Photo added</div>
   </div>
 
@@ -291,7 +297,7 @@
   </div>
 
   <!-- ASSIGN TO EMPLOYEE -->
-  <div class="card" id="assignCard">
+  <div class="card" id="assignCard" style="display:none;">
     <h3 style="margin-bottom:8px;">Assign to Employee <button class="help-btn" onclick="showTip(this,'Assign this item to a specific employee for processing. The assigned employee will be responsible for moving this item through the workflow.')">?</button></h3>
     <div id="currentAssignee" style="font-size:13px;color:#6b7280;margin-bottom:10px;">Currently unassigned</div>
     <select id="assignSelect" style="margin-top:0;">
@@ -373,7 +379,7 @@
   </div>
 
   <!-- AI AUCTION DESCRIPTION (optional tool) -->
-  <div class="card" id="aiDescCard">
+  <div class="card" id="aiDescCard" style="display:none;">
     <h3 style="margin-bottom:4px;">✨ AI Auction Description <button class="help-btn" onclick="showTip(this,'AI generates a polished auction listing description from the item details and photos. Use this as a starting point, then edit the description above.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">Generate a listing description with AI, then copy it into Description above.</p>
     <button class="btn-blue" onclick="generateDescription()" id="genDescBtn">✨ Generate Description</button>
@@ -387,7 +393,7 @@
   </div>
 
   <!-- AI CONDITION + DAMAGE (COMBINED) -->
-  <div class="card" id="conditionCard">
+  <div class="card" id="conditionCard" style="display:none;">
     <h3 style="margin-bottom:4px;">🔍 Condition & Damage Report <button class="help-btn" onclick="showTip(this,'AI analyzes the item photos to assign a condition grade (Excellent/Good/Fair/Poor), identify specific damage, and recommend repairs. Requires at least one photo on the item.')">?</button></h3>
     <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">AI assesses condition grade and scans for damage in one shot.</p>
     <div id="conditionFullResult" style="display:none;margin-bottom:12px;"></div>
@@ -556,6 +562,9 @@ function render() {
     document.getElementById('eventCard').style.display = 'block';
     document.getElementById('styleCard').style.display = 'block';
     document.getElementById('socialCard').style.display = 'block';
+    document.getElementById('aiDescCard').style.display = 'block';
+    document.getElementById('conditionCard').style.display = 'block';
+    document.getElementById('assignCard').style.display = 'block';
   }
   document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
   document.getElementById('detailLot').innerText = item.lotNumber || '—';
