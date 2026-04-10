@@ -87,6 +87,7 @@
   <nav>
     <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/review-visit.html"><span class="sidebar-icon">✅</span> Review Visit</a>
     <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
@@ -130,6 +131,7 @@
       <option>Ready for Pick Up</option>
       <option>Picked Up</option>
       <option>Missing at Drop Off</option>
+      <option>Archived</option>
     </select>
     <select id="sortFilter" onchange="render()">
       <option value="consigner">Group by Consigner</option>
@@ -156,8 +158,13 @@
         <option>Prep for Pick Up</option>
         <option>Ready for Pick Up</option>
         <option>Picked Up</option>
+        <option>Archived</option>
       </select>
       <button class="batch-btn" id="batchAdvBtn" onclick="batchAdvance()">Advance</button>
+      <select class="batch-select" id="batchAssignSelect" style="min-width:130px;">
+        <option value="">Assign to...</option>
+      </select>
+      <button class="batch-btn" id="batchAssignBtn" onclick="batchAssign()" style="background:#7c3aed;">Assign</button>
     </div>
 
     <div id="list" style="margin-top:4px;"></div>
@@ -194,8 +201,17 @@ function setMode(mode) {
 
 async function load() {
   document.getElementById('list').innerHTML = '<div style="padding:20px 0;color:#9ca3af;font-size:13px;text-align:center;">Loading items…</div>';
-  const res = await fetch('/items');
-  allItems = await res.json();
+  const [itemsRes, empRes] = await Promise.all([fetch('/items'), fetch('/employees')]);
+  allItems = await itemsRes.json();
+  const emps = await empRes.json();
+  const sel = document.getElementById('batchAssignSelect');
+  sel.innerHTML = '<option value="">Assign to...</option><option value="__unassign__">— Remove Assignment —</option>';
+  emps.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.name;
+    opt.textContent = e.name;
+    sel.appendChild(opt);
+  });
   render();
 }
 
@@ -460,6 +476,39 @@ async function batchAdvance() {
   } catch (err) {
     alert('Batch advance failed');
     btn.innerText = 'Advance';
+    btn.disabled = false;
+  }
+}
+
+async function batchAssign() {
+  const raw = document.getElementById('batchAssignSelect').value;
+  if (!raw) { alert('Select an employee to assign to'); return; }
+  const assignedTo = raw === '__unassign__' ? null : raw;
+  const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
+  if (!ids.length) return;
+
+  const label = assignedTo ? `Assign ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${assignedTo}"?` : `Remove assignment from ${ids.length} item${ids.length !== 1 ? 's' : ''}?`;
+  if (!confirm(label)) return;
+
+  const btn = document.getElementById('batchAssignBtn');
+  btn.disabled = true;
+  btn.innerText = 'Assigning...';
+
+  try {
+    const res = await fetch('/items/batch-assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, assignedTo, employee: user?.name || 'unknown' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      await load();
+      btn.innerText = `✓ Assigned ${data.count}`;
+      setTimeout(() => { btn.innerText = 'Assign'; btn.disabled = false; }, 2000);
+    }
+  } catch (err) {
+    alert('Batch assign failed');
+    btn.innerText = 'Assign';
     btn.disabled = false;
   }
 }

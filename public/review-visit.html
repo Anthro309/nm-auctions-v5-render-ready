@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Visit</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.session-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.session-card:last-child { border-bottom: none; }
+.session-card:hover { background: #f8fafc; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
+.session-card.active { background: #eff6ff; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
+.session-title { font-size: 15px; font-weight: 700; color: #111827; }
+.session-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.session-badge { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.session-badge.done { background: #ecfdf5; color: #047857; }
+.session-badge.partial { background: #fef3c7; color: #92400e; }
+
+.review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.review-title { font-size: 17px; font-weight: 700; color: #111827; }
+.review-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+.review-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.review-stat {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.stat-pending  { background: #f3f4f6; color: #374151; }
+.stat-accepted { background: #ecfdf5; color: #047857; }
+.stat-rejected { background: #fef2f2; color: #b91c1c; }
+
+.item-review-card {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s, background 0.2s;
+  background: white;
+}
+.item-review-card.accepted { border-color: #16a34a; background: #f0fdf4; }
+.item-review-card.rejected { border-color: #dc2626; background: #fef2f2; opacity: 0.75; }
+
+.item-review-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.item-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f3f4f6;
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+}
+.item-thumb-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 24px;
+  border: 1px solid #e5e7eb;
+}
+.item-review-info { flex: 1; min-width: 0; }
+.item-review-name { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.item-review-meta { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+.item-review-value { font-size: 13px; font-weight: 600; color: #374151; }
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.btn-accept {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  min-width: 90px;
+}
+.btn-accept:hover { background: #15803d; }
+.btn-accept.done { background: #166534; cursor: default; }
+
+.btn-reject {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #dc2626;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  min-width: 90px;
+}
+.btn-reject:hover { background: #b91c1c; }
+.btn-reject.done { background: #7f1d1d; cursor: default; }
+
+.btn-undo {
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  background: white;
+  color: #374151;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-undo:hover { background: #f3f4f6; }
+
+.reason-row {
+  margin-top: 8px;
+  display: none;
+}
+.reason-row.visible { display: flex; gap: 8px; align-items: center; }
+.reason-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  margin-top: 0;
+}
+.reason-row input:focus { outline: none; border-color: #dc2626; }
+.reason-confirm {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.chip-accepted { background: #dcfce7; color: #166534; }
+.chip-rejected { background: #fee2e2; color: #991b1b; }
+.chip-pending  { background: #f3f4f6; color: #6b7280; }
+.chip-archived { background: #fee2e2; color: #991b1b; }
+
+.bulk-bar {
+  background: #0b1b2b;
+  color: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.bulk-btn {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.bulk-accept { background: #16a34a; color: white; }
+.bulk-accept:hover { background: #15803d; }
+
+.empty-session {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+.empty-session .empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+@media (min-width: 700px) {
+  .rv-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .rv-sessions-panel { position: sticky; top: 72px; }
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/review-visit.html" class="active"><span class="sidebar-icon">✅</span> Review Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">✅</div>
+    <div>
+      <div class="page-header-title">Review Visit</div>
+      <div class="page-header-sub">Accept or archive items photographed during initial visits</div>
+    </div>
+  </div>
+
+  <div class="rv-layout">
+
+    <!-- LEFT: Session list -->
+    <div class="rv-sessions-panel">
+      <div class="card" style="padding-top:14px;padding-bottom:8px;">
+        <h2 style="margin-bottom:10px;">Intake Sessions</h2>
+        <input id="search" placeholder="Search consigner..." oninput="renderSessions()" style="margin-bottom:10px;">
+        <div id="sessionList"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Item review -->
+    <div id="reviewPanel">
+      <div class="card">
+        <div class="empty-session">
+          <div class="empty-icon">👈</div>
+          <div>Select a session to review its items</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+let sessions = [];
+let currentSession = null;
+// Local override for reviewStatus per item (id -> 'accepted'|'rejected'|null)
+let localStatus = {};
+let employees = [];
+
+async function load() {
+  const [intakeRes, empRes] = await Promise.all([
+    fetch('/intake'),
+    fetch('/employees')
+  ]);
+  sessions = await intakeRes.json();
+  employees = await empRes.json();
+  renderSessions();
+}
+
+// =====================
+// SESSIONS PANEL
+// =====================
+function renderSessions() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const el = document.getElementById('sessionList');
+  const filtered = sessions.filter(s =>
+    (s.consigner || '').toLowerCase().includes(q) ||
+    (s.code || '').toLowerCase().includes(q)
+  );
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">No sessions found.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  filtered.forEach(s => {
+    const items = s.items || [];
+    const accepted = items.filter(i => effectiveStatus(i) === 'accepted').length;
+    const rejected = items.filter(i => effectiveStatus(i) === 'rejected').length;
+    const pending  = items.filter(i => effectiveStatus(i) === null).length;
+    const allDone  = pending === 0;
+    const partial  = (accepted + rejected) > 0 && pending > 0;
+    const badgeClass = allDone ? 'done' : partial ? 'partial' : '';
+    const badgeText  = allDone ? 'Done' : partial ? `${pending} left` : `${items.length} items`;
+
+    const div = document.createElement('div');
+    div.className = 'session-card' + (currentSession && currentSession.id === s.id ? ' active' : '');
+    div.innerHTML = `
+      <div>
+        <div class="session-title">${esc(s.consigner)}</div>
+        <div class="session-sub">${new Date(s.createdAt).toLocaleDateString()} · ${esc(s.code)}</div>
+      </div>
+      <span class="session-badge ${badgeClass}">${badgeText}</span>
+    `;
+    div.onclick = () => openSession(s);
+    el.appendChild(div);
+  });
+}
+
+// =====================
+// OPEN SESSION
+// =====================
+function openSession(s) {
+  currentSession = s;
+  renderSessions();
+  renderReview();
+}
+
+// =====================
+// EFFECTIVE STATUS
+// =====================
+function effectiveStatus(item) {
+  if (localStatus[item.id] !== undefined) return localStatus[item.id];
+  if (item.stage === 'Archived') return 'rejected';
+  if (item.reviewStatus === 'accepted') return 'accepted';
+  if (item.reviewStatus === 'rejected') return 'rejected';
+  return null;
+}
+
+// =====================
+// RENDER REVIEW PANEL
+// =====================
+function renderReview() {
+  const panel = document.getElementById('reviewPanel');
+  if (!currentSession) {
+    panel.innerHTML = `<div class="card"><div class="empty-session"><div class="empty-icon">👈</div><div>Select a session to review its items</div></div></div>`;
+    return;
+  }
+  const items = currentSession.items || [];
+  const accepted = items.filter(i => effectiveStatus(i) === 'accepted').length;
+  const rejected = items.filter(i => effectiveStatus(i) === 'rejected').length;
+  const pending  = items.filter(i => effectiveStatus(i) === null).length;
+
+  let html = `
+    <div class="card">
+      <div class="review-header">
+        <div>
+          <div class="review-title">${esc(currentSession.consigner)}</div>
+          <div class="review-sub">${new Date(currentSession.createdAt).toLocaleDateString()} · Code: ${esc(currentSession.code)}</div>
+        </div>
+        <div class="review-stats">
+          <span class="review-stat stat-pending">${pending} pending</span>
+          <span class="review-stat stat-accepted">${accepted} accepted</span>
+          <span class="review-stat stat-rejected">${rejected} archived</span>
+        </div>
+      </div>
+  `;
+
+  if (pending > 0) {
+    html += `
+      <div class="bulk-bar">
+        <span style="font-size:13px;font-weight:600;">${pending} item${pending !== 1 ? 's' : ''} awaiting review</span>
+        <button class="bulk-btn bulk-accept" onclick="acceptAll()">Accept All Pending</button>
+      </div>
+    `;
+  }
+
+  if (!items.length) {
+    html += `<div class="empty-session"><div class="empty-icon">📭</div><div>No items in this session.</div></div>`;
+  }
+
+  items.forEach(item => {
+    const status = effectiveStatus(item);
+    const photo  = (item.photos && item.photos.length) ? item.photos[0] : null;
+    const valStr = item.estimatedValueLow || item.estimatedValueHigh
+      ? `$${item.estimatedValueLow}–$${item.estimatedValueHigh}`
+      : 'No estimate';
+
+    let chipHtml = '';
+    if (status === 'accepted') chipHtml = `<span class="status-chip chip-accepted">✓ Accepted</span>`;
+    else if (status === 'rejected') chipHtml = `<span class="status-chip chip-rejected">✕ Archived</span>`;
+    else chipHtml = `<span class="status-chip chip-pending">Pending</span>`;
+
+    let actionsHtml = '';
+    if (status === null) {
+      actionsHtml = `
+        <div class="review-actions">
+          <button class="btn-accept" onclick="acceptItem('${item.id}')">✓ Accept</button>
+          <button class="btn-reject" onclick="showRejectInput('${item.id}')">✕ Archive</button>
+        </div>
+        <div class="reason-row" id="reason-${item.id}">
+          <input id="reason-input-${item.id}" placeholder="Reason (optional)..." onkeydown="if(event.key==='Enter')confirmReject('${item.id}')">
+          <button class="reason-confirm" onclick="confirmReject('${item.id}')">Confirm</button>
+        </div>
+      `;
+    } else {
+      actionsHtml = `
+        <div class="review-actions">
+          <button class="btn-undo" onclick="undoItem('${item.id}')">↩ Undo</button>
+          ${status === 'accepted' ? `<a href="/item.html?id=${item.id}" style="flex:1;text-align:center;padding:9px 12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;text-decoration:none;">View Item →</a>` : ''}
+        </div>
+      `;
+    }
+
+    const thumbHtml = photo
+      ? `<img class="item-thumb" src="${esc(photo)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" alt=""><div class="item-thumb-placeholder" style="display:none;">📦</div>`
+      : `<div class="item-thumb-placeholder">📦</div>`;
+
+    html += `
+      <div class="item-review-card ${status || ''}" id="card-${item.id}">
+        <div class="item-review-inner">
+          ${thumbHtml}
+          <div class="item-review-info">
+            <div class="item-review-name">${esc(item.name || 'Unnamed Item')}</div>
+            <div class="item-review-meta">${esc(item.category || '—')} · ${esc(item.condition || '—')} · Lot ${esc(item.lotNumber || '—')}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="item-review-value">${valStr}</div>
+              ${chipHtml}
+            </div>
+          </div>
+        </div>
+        ${actionsHtml}
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+// =====================
+// ACCEPT ITEM
+// =====================
+async function acceptItem(itemId) {
+  localStatus[itemId] = 'accepted';
+  renderReview();
+  renderSessions();
+  await fetch(`/items/${itemId}/review-accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employee: user.name })
+  });
+  await refreshSession();
+}
+
+// =====================
+// REJECT / ARCHIVE ITEM
+// =====================
+function showRejectInput(itemId) {
+  const row = document.getElementById(`reason-${itemId}`);
+  if (row) {
+    row.classList.add('visible');
+    const input = document.getElementById(`reason-input-${itemId}`);
+    if (input) input.focus();
+  }
+}
+
+async function confirmReject(itemId) {
+  const input = document.getElementById(`reason-input-${itemId}`);
+  const reason = input ? input.value.trim() : '';
+  localStatus[itemId] = 'rejected';
+  renderReview();
+  renderSessions();
+  await fetch(`/items/${itemId}/archive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employee: user.name, reason })
+  });
+  await refreshSession();
+}
+
+// =====================
+// UNDO
+// =====================
+async function undoItem(itemId) {
+  delete localStatus[itemId];
+  // Restore via review-accept then undo (we just restore server state by reloading)
+  // Re-fetch the session items to get fresh server state
+  await fetch(`/items/${itemId}/review-accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employee: user.name })
+  });
+  // Now set back to null on server side by resetting via stage back to Home Visit if was archived
+  const itemRes = await fetch(`/items/${itemId}`);
+  const itemData = await itemRes.json();
+  if (itemData.stage === 'Archived') {
+    await fetch(`/items/${itemId}/stage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage: 'Home Visit', employee: user.name })
+    });
+    // Also clear reviewStatus
+    await fetch(`/items/${itemId}/review-accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    });
+  }
+  await refreshSession();
+  renderReview();
+  renderSessions();
+}
+
+// =====================
+// ACCEPT ALL PENDING
+// =====================
+async function acceptAll() {
+  const items = (currentSession.items || []).filter(i => effectiveStatus(i) === null);
+  if (!items.length) return;
+  items.forEach(i => { localStatus[i.id] = 'accepted'; });
+  renderReview();
+  renderSessions();
+  await Promise.all(items.map(i =>
+    fetch(`/items/${i.id}/review-accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name })
+    })
+  ));
+  await refreshSession();
+}
+
+// =====================
+// REFRESH SESSION DATA
+// =====================
+async function refreshSession() {
+  const res = await fetch('/intake');
+  sessions = await res.json();
+  if (currentSession) {
+    currentSession = sessions.find(s => s.id === currentSession.id) || currentSession;
+  }
+}
+
+// =====================
+// HELPERS
+// =====================
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+load();
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>
