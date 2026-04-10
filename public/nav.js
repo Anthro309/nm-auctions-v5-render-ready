@@ -75,6 +75,17 @@
     }
   }
 
+  // Hide admin-only sidebar links for regular employees
+  if (!u.isAdmin) {
+    var sidebarNav = document.querySelector('#sidebar nav');
+    if (sidebarNav) {
+      var photoLink = sidebarNav.querySelector('a[href="/photo-upload.html"]');
+      if (photoLink) photoLink.style.display = 'none';
+      var reportsLink = sidebarNav.querySelector('a[href="/reports.html"]');
+      if (reportsLink) reportsLink.style.display = 'none';
+    }
+  }
+
   // ── NOTIFICATION BELL ──
   injectNotificationBell(u);
 }());
