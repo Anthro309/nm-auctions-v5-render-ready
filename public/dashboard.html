@@ -302,15 +302,8 @@
 
   <!-- Onboarding banner — shown only when inventory is empty -->
   <div id="onboardingBanner" class="onboarding-banner" style="display:none;">
-    <div class="onboarding-title">👋 Welcome to Auction Legacy — here's how it works</div>
-    <div class="onboarding-steps">
-      <div class="onboarding-step"><div class="onboarding-step-num">1</div><span><strong>Initial Visit</strong> — log a consigner's items, AI generates titles &amp; price estimates, print QR labels</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">2</div><span><strong>Review Visit</strong> — accept items to keep in workflow or archive ones that aren't worth processing</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">3</div><span><strong>Scanner</strong> — scan QR labels (or any camera app) to check items in, log scans, and move them between stages</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">4</div><span><strong>Assign to employees</strong> — assign items to team members from any item detail page or in batch from Item Library</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">5</div><span><strong>Photo Queue</strong> — shoot and upload photos, remove backgrounds with AI Photo Studio</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">6</div><span><strong>Auction Events</strong> — create events below, add items, and import results after the auction</span></div>
-    </div>
+    <div class="onboarding-title" id="onboardingTitle"></div>
+    <div class="onboarding-steps" id="onboardingSteps"></div>
   </div>
 
   <!-- MY ASSIGNMENTS (notification card) -->
@@ -479,9 +472,34 @@
       statReady.classList.remove('skeleton');
       statToday.classList.remove('skeleton');
 
-      // Show onboarding if nothing in inventory yet
+      // Show role-specific onboarding tips when inventory is empty
       if (totalInventory.length === 0) {
-        document.getElementById('onboardingBanner').style.display = 'block';
+        const banner = document.getElementById('onboardingBanner');
+        const adminTips = [
+          ['Initial Visit', 'Log a consigner\'s items — AI generates titles &amp; price estimates, then print QR labels'],
+          ['Review Visit', 'Accept items to keep in the workflow or archive ones that aren\'t worth processing'],
+          ['Assign to Employees', 'Assign items to team members from any item page, in batch from Item Library, or directly in Review Visit'],
+          ['Scanner', 'Scan QR labels from any camera app to check items in and move them through workflow stages'],
+          ['AI Photo Studio', 'Remove backgrounds from photos and pair today\'s shots with the right items automatically'],
+          ['Auction Events', 'Create events at /events.html, add items to lots, and import auction results when done'],
+          ['Reports', 'Generate daily lot reports and track consigner activity from the Reports page'],
+        ];
+        const employeeTips = [
+          ['Check My Assignments', 'Items assigned to you appear above — tap any item to open it and start working'],
+          ['Scanner', 'Use the Scanner to scan a QR label and move an item to the next workflow stage'],
+          ['Add Reference Photos', 'Open any item and tap "Upload Photo" or "Take Photo" to add close-up reference images'],
+          ['Update Item Details', 'Edit title, description, dimensions, condition, and notes directly on any item page'],
+          ['Item Library', 'Browse and search all consigned items — filter by stage, consigner, or category'],
+          ['Auction Events', 'View upcoming auction events and see which lots have been added'],
+        ];
+        const tips = user && user.isAdmin ? adminTips : employeeTips;
+        document.getElementById('onboardingTitle').innerHTML = user && user.isAdmin
+          ? '👋 Welcome to Auction Legacy — here\'s how it works'
+          : '👋 Here\'s how to get started';
+        document.getElementById('onboardingSteps').innerHTML = tips.map((t, i) =>
+          `<div class="onboarding-step"><div class="onboarding-step-num">${i + 1}</div><span><strong>${t[0]}</strong> — ${t[1]}</span></div>`
+        ).join('');
+        banner.style.display = 'block';
       }
     } catch (err) {
       console.warn('Stats failed to load');
