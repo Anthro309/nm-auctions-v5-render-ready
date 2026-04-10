@@ -626,7 +626,8 @@ function renderLabels() {
   `).join('');
 
   items.forEach(i => {
-    QRCode.toCanvas(document.getElementById(`qr-${i.lotCode}`), i.lotCode, { width: 70 });
+    const qrUrl = window.location.origin + '/item.html?lot=' + encodeURIComponent(i.lotCode);
+    QRCode.toCanvas(document.getElementById(`qr-${i.lotCode}`), qrUrl, { width: 70 });
   });
 }
 
@@ -674,9 +675,10 @@ async function buildPrint() {
     </div>
   `;
   for (const i of items) {
+    const qrUrl = window.location.origin + '/item.html?lot=' + encodeURIComponent(i.lotCode);
     await QRCode.toCanvas(
       document.getElementById(`pqr-${i.lotCode}`),
-      i.lotCode,
+      qrUrl,
       { width: 75 }
     );
   }

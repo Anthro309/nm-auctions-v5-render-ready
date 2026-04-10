@@ -8,13 +8,13 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 .item-name {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: #111827;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .item-lot {
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7280;
   margin-bottom: 6px;
 }
@@ -22,44 +22,99 @@
   display: inline-block;
   background: #eff6ff;
   color: #1d4ed8;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
-.btn-checkin {
+.item-last-handled {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+.item-assigned {
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.btn-view {
+  flex: 1;
+  padding: 12px;
+  border: 1.5px solid #2563eb;
+  background: white;
+  color: #2563eb;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.btn-view:hover { background: #eff6ff; }
+.btn-view.consigner { border-color: #7c3aed; color: #7c3aed; }
+.btn-view.consigner:hover { background: #f5f3ff; }
+
+.stage-mover {
+  background: #f8fafc;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 4px;
+}
+.stage-mover-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.stage-mover select {
+  width: 100%;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+.btn-move {
   width: 100%;
   background: #16a34a;
   color: white;
-  padding: 16px;
+  padding: 13px;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 10px;
+  font-family: inherit;
 }
-.btn-checkin:active { background: #15803d; }
+.btn-move:hover { background: #15803d; }
+.btn-move:disabled { opacity: 0.5; cursor: default; }
+
 .scan-recorded {
   width: 100%;
   background: #16a34a;
   color: white;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 15px;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 700;
   text-align: center;
   display: none;
+  margin-top: 8px;
 }
-.item-last-handled {
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 6px;
-}
-.search-results {
-  margin-top: 10px;
-}
+.search-results { margin-top: 10px; }
 .search-result-row {
   display: flex;
   flex-direction: column;
@@ -150,7 +205,7 @@
     <div class="page-header-icon">📷</div>
     <div>
       <div class="page-header-title">Scanner</div>
-      <div class="page-header-sub">Scan items &amp; advance workflow stages</div>
+      <div class="page-header-sub">Scan QR codes or search by name</div>
     </div>
   </div>
 
@@ -158,14 +213,14 @@
 
   <div class="info-hint">
     <span class="info-hint-icon">💡</span>
-    <span>Scan the QR label on any item to log who handled it and advance its workflow stage. You can also search by item name below.</span>
+    <span>QR codes now link directly — scan with any camera app to open an item. Use the scanner here to log scans and move items through the workflow.</span>
   </div>
 
   <div class="card">
     <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
     <button class="btn-camera" onclick="startCamera()">
       📷 Use Camera to Scan QR Code
-      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Point your camera at the QR code printed on the item label. The app will find the item automatically and log your scan.')">?</button>
+      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Point your camera at the QR code on the item label. The app will find the item automatically.')">?</button>
     </button>
     <div class="search-results" id="searchResults"></div>
   </div>
@@ -181,8 +236,35 @@
     <div class="item-lot" id="lotDisplay"></div>
     <div class="item-stage" id="stageDisplay"></div>
     <div class="item-last-handled" id="lastHandledDisplay"></div>
-    <button class="btn-checkin" id="checkInBtn" style="display:none;" onclick="checkInToStudio()">Check In to Studio →</button>
+    <div class="item-assigned" id="assignedDisplay" style="display:none;"></div>
+
+    <!-- View buttons -->
+    <div class="action-row">
+      <a id="viewItemBtn" href="#" class="btn-view" target="_blank">🔍 View Item</a>
+      <a id="viewConsignerBtn" href="#" class="btn-view consigner" target="_blank">👤 All Consigner Items</a>
+    </div>
+
+    <!-- Stage mover -->
+    <div class="stage-mover">
+      <div class="stage-mover-title">Move to Stage</div>
+      <select id="stagePicker">
+        <option value="">— Select stage —</option>
+        <option>Home Visit</option>
+        <option>Received at Studio</option>
+        <option>Review &amp; Cleaning</option>
+        <option>Photograph</option>
+        <option>Prep for Pick Up</option>
+        <option>Ready for Pick Up</option>
+        <option>Picked Up</option>
+        <option>Missing at Drop Off</option>
+        <option>Archived</option>
+      </select>
+      <button class="btn-move" id="moveBtn" onclick="moveToStage()">Move Item</button>
+    </div>
+
     <div class="scan-recorded" id="scanRecorded">✓ Scan Recorded</div>
+
+    <button onclick="resetScanner()" style="width:100%;margin-top:10px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;">✕ Clear / Scan Another</button>
   </div>
 
 </div>
@@ -190,12 +272,10 @@
 <script>
 let currentItem = null;
 
-function getEmployee() {
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || 'null');
-    return (u && u.name) ? u.name : 'unknown';
-  } catch { return 'unknown'; }
-}
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user) window.location.href = '/';
+
+function getEmployee() { return user?.name || 'unknown'; }
 
 function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -204,13 +284,18 @@ function toggleMenu() {
   document.getElementById('overlay').classList.toggle('show');
 }
 
-function logout() {
-  localStorage.removeItem('user');
-  window.location.href = '/';
-}
-
 function log(msg) {
   document.getElementById('statusBar').innerText = msg;
+}
+
+// ── Extract lot code from a scanned value (handles full URLs or bare lot codes) ──
+function extractLotCode(raw) {
+  try {
+    const url = new URL(raw);
+    return url.searchParams.get('lot') || url.searchParams.get('id') || raw;
+  } catch {
+    return raw; // not a URL, treat as bare lot code
+  }
 }
 
 const scanInput = document.getElementById('scanInput');
@@ -220,7 +305,8 @@ scanInput.addEventListener('keypress', function(e) {
   if (e.key === 'Enter') {
     clearTimeout(searchTimer);
     document.getElementById('searchResults').innerHTML = '';
-    loadItem(this.value.trim());
+    const val = this.value.trim();
+    loadItemByLot(extractLotCode(val));
   }
 });
 
@@ -251,7 +337,7 @@ async function searchByName(q) {
       row.onclick = () => {
         container.innerHTML = '';
         scanInput.value = item.lotNumber || '';
-        loadItem(item.lotNumber);
+        loadItemByLot(item.lotNumber);
       };
       container.appendChild(row);
     });
@@ -279,8 +365,9 @@ async function startCamera() {
           const codes = await detector.detect(video);
           if (codes.length) {
             stopCamera();
-            document.getElementById('scanInput').value = codes[0].rawValue;
-            loadItem(codes[0].rawValue);
+            const lotCode = extractLotCode(codes[0].rawValue);
+            document.getElementById('scanInput').value = lotCode;
+            loadItemByLot(lotCode);
           }
         } catch {}
       }, 400);
@@ -297,8 +384,9 @@ async function startCamera() {
         const code = jsQR(img.data, img.width, img.height);
         if (code) {
           stopCamera();
-          document.getElementById('scanInput').value = code.data;
-          loadItem(code.data);
+          const lotCode = extractLotCode(code.data);
+          document.getElementById('scanInput').value = lotCode;
+          loadItemByLot(lotCode);
         }
       }, 400);
     }
@@ -313,66 +401,92 @@ function stopCamera() {
   document.getElementById('cameraCard').style.display = 'none';
 }
 
-async function loadItem(lotCode) {
+async function loadItemByLot(lotCode) {
   if (!lotCode) { log('No code entered'); return; }
-
   log('Looking up...');
-
   try {
-    const res = await fetch(`/items/by-lot/${lotCode}`);
+    const res = await fetch(`/items/by-lot/${encodeURIComponent(lotCode)}`);
     const item = await res.json();
-
-    if (!item) { log('Item not found'); return; }
-
-    currentItem = item;
-
-    document.getElementById('itemBox').style.display = 'block';
-    document.getElementById('itemName').innerText = item.name || 'No name';
-    document.getElementById('stageDisplay').innerText = item.stage;
-    document.getElementById('lotDisplay').innerText = 'Lot: ' + item.lotNumber;
-
-    const lastEl = document.getElementById('lastHandledDisplay');
-    if (item.lastHandledBy) {
-      lastEl.innerText = 'Last handled by: ' + item.lastHandledBy;
-    } else {
-      lastEl.innerText = '';
-    }
-
-    document.getElementById('scanRecorded').style.display = 'none';
-    document.getElementById('checkInBtn').style.display =
-      item.stage === 'Home Visit' ? 'block' : 'none';
-    log('Loaded: ' + (item.name || item.lotNumber));
-
-    // Auto-record this employee's scan
+    if (!item || !item.id) { log('Item not found — check lot code'); return; }
+    showItem(item);
     recordScan(item.id);
-
   } catch (err) {
     log('Error loading item');
   }
 }
 
-async function checkInToStudio() {
+async function loadItemById(itemId) {
+  try {
+    const res = await fetch(`/items/${itemId}`);
+    const item = await res.json();
+    if (!item || !item.id) return;
+    showItem(item);
+  } catch {}
+}
+
+function showItem(item) {
+  currentItem = item;
+
+  document.getElementById('itemBox').style.display = 'block';
+  document.getElementById('itemName').innerText = item.name || 'No name';
+  document.getElementById('stageDisplay').innerText = item.stage || '—';
+  document.getElementById('lotDisplay').innerText = 'Lot: ' + (item.lotNumber || '—') + ' · ' + (item.consigner || '—');
+
+  const lastEl = document.getElementById('lastHandledDisplay');
+  lastEl.innerText = item.lastHandledBy ? 'Last handled by: ' + item.lastHandledBy : '';
+
+  const assignEl = document.getElementById('assignedDisplay');
+  if (item.assignedTo) {
+    assignEl.style.display = 'block';
+    assignEl.innerText = '👤 Assigned to: ' + item.assignedTo;
+  } else {
+    assignEl.style.display = 'none';
+  }
+
+  // View links
+  document.getElementById('viewItemBtn').href = '/item.html?id=' + item.id;
+  const consignerCode = item.code || '';
+  document.getElementById('viewConsignerBtn').href = '/items.html?consigner=' + encodeURIComponent(item.consigner || consignerCode);
+
+  // Pre-select current stage in picker
+  const picker = document.getElementById('stagePicker');
+  picker.value = '';
+
+  document.getElementById('scanRecorded').style.display = 'none';
+  log('Loaded: ' + (item.name || item.lotNumber));
+}
+
+// ── MOVE TO STAGE ──
+async function moveToStage() {
   if (!currentItem) return;
-  document.getElementById('checkInBtn').disabled = true;
+  const stage = document.getElementById('stagePicker').value;
+  if (!stage) { alert('Select a stage to move this item to'); return; }
+  if (stage === currentItem.stage) { alert('Item is already in that stage'); return; }
+
+  const btn = document.getElementById('moveBtn');
+  btn.disabled = true;
+  btn.innerText = 'Moving...';
+
   try {
     const res = await fetch(`/items/${currentItem.id}/stage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage: 'Received at Studio', employee: getEmployee() })
+      body: JSON.stringify({ stage, employee: getEmployee() })
     });
     const data = await res.json();
     if (data.success) {
       currentItem = data.item;
-      document.getElementById('stageDisplay').innerText = 'Received at Studio';
-      document.getElementById('checkInBtn').style.display = 'none';
-      document.getElementById('scanRecorded').innerText = '✓ Checked In to Studio';
+      document.getElementById('stageDisplay').innerText = stage;
+      document.getElementById('scanRecorded').innerText = `✓ Moved to: ${stage}`;
       document.getElementById('scanRecorded').style.display = 'block';
-      log('Checked in: ' + (currentItem.name || currentItem.lotNumber));
-      setTimeout(resetScanner, 2000);
+      document.getElementById('stagePicker').value = '';
+      btn.innerText = '✓ Moved';
+      setTimeout(() => { btn.innerText = 'Move Item'; btn.disabled = false; }, 2000);
     }
   } catch (err) {
-    log('Check-in failed');
-    document.getElementById('checkInBtn').disabled = false;
+    log('Move failed');
+    btn.innerText = 'Move Item';
+    btn.disabled = false;
   }
 }
 
@@ -380,30 +494,31 @@ function resetScanner() {
   document.getElementById('scanInput').value = '';
   document.getElementById('itemBox').style.display = 'none';
   document.getElementById('scanRecorded').style.display = 'none';
-  document.getElementById('scanRecorded').innerText = '✓ Scan Recorded';
+  document.getElementById('searchResults').innerHTML = '';
   currentItem = null;
   log('Ready to scan...');
+  document.getElementById('scanInput').focus();
 }
 
 async function recordScan(itemId) {
   try {
-    const res = await fetch(`/items/${itemId}/scan`, {
+    await fetch(`/items/${itemId}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ employee: getEmployee() })
     });
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
-      if (!currentItem || currentItem.stage !== 'Home Visit') {
-        document.getElementById('scanRecorded').style.display = 'block';
-        setTimeout(resetScanner, 1800);
-      }
-    }
-  } catch (err) {
-    log('Error recording scan');
-  }
+    document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
+  } catch {}
 }
+
+// ── Auto-load from ?lot= param (e.g. opened from external QR scan on mobile) ──
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const lot = p.get('lot');
+  if (lot) {
+    loadItemByLot(lot);
+  }
+})();
 </script>
 
 <script src="/nav.js"></script>

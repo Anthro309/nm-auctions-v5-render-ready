@@ -828,6 +828,67 @@ app.post('/items/:id/add-photo', (req, res) => {
 });
 
 // =========================
+// ADD REFERENCE PHOTO (supplemental, non-primary)
+// =========================
+app.post('/items/:id/add-reference-photo', (req, res) => {
+  const { photoPath } = req.body;
+  if (!photoPath) return res.status(400).json({ success: false, message: 'No photoPath provided' });
+
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  if (!Array.isArray(item.referencePhotos)) item.referencePhotos = [];
+  item.referencePhotos.push(photoPath);
+
+  addLog(item, { employee: req.body.employee || 'system', action: 'reference photo added', note: photoPath });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// DELETE REFERENCE PHOTO
+// =========================
+app.post('/items/:id/delete-reference-photo', (req, res) => {
+  const { photoPath } = req.body;
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  item.referencePhotos = (item.referencePhotos || []).filter(p => p !== photoPath);
+  addLog(item, { employee: req.body.employee || 'system', action: 'reference photo removed' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// UPDATE ITEM DETAILS (title, description, dimensions, condition, notes)
+// =========================
+app.post('/items/:id/update-details', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const { name, description, dimensions, condition, notes, category, employee } = req.body;
+  const emp = employee || 'system';
+  const changes = [];
+
+  if (name       !== undefined && name !== item.name)            { item.name = name;               changes.push('title'); }
+  if (description!== undefined && description !== item.description) { item.description = description; changes.push('description'); }
+  if (dimensions !== undefined)                                  { item.dimensions = dimensions;   if (!changes.includes('dimensions')) changes.push('dimensions'); }
+  if (condition  !== undefined && condition && condition !== item.condition) { item.condition = condition; changes.push('condition'); }
+  if (notes      !== undefined)                                  { item.additionalNotes = notes;   changes.push('notes'); }
+  if (category   !== undefined && category && category !== item.category) { item.category = category; changes.push('category'); }
+
+  if (changes.length) {
+    addLog(item, { employee: emp, action: `updated: ${changes.join(', ')}` });
+  }
+
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
 // VOICE TO ITEM
 // =========================
 app.post('/voice-to-item', async (req, res) => {
