@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const OpenAI = require('openai');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -83,6 +84,23 @@ function requireAdmin(reqBody) {
 
 function monthLetterForDate(date = new Date()) {
   return 'ABCDEFGHIJKL'[date.getMonth()];
+}
+
+// Collision-resistant ID: timestamp + 8 random hex chars
+function generateId() {
+  return Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
+}
+
+// Returns a unique consigner code that doesn't collide with existing codes.
+// Base: first3 + last3 uppercase. On collision: append 2, 3, 4...
+function uniqueConsignerCode(first, last, existingCodes) {
+  const base = ((first || '').slice(0, 3) + (last || '').slice(0, 3)).toUpperCase().replace(/[^A-Z]/g, 'X').padEnd(6, 'X');
+  if (!existingCodes.has(base)) return base;
+  for (let i = 2; i < 100; i++) {
+    const candidate = base + i;
+    if (!existingCodes.has(candidate)) return candidate;
+  }
+  return base + crypto.randomBytes(2).toString('hex').toUpperCase();
 }
 
 function addLog(item, entry) {
@@ -277,6 +295,51 @@ app.get('/next-lot-code', (req, res) => {
 });
 
 // =========================
+// UNIQUE CONSIGNER CODE
+// =========================
+app.get('/consigner-code', (req, res) => {
+  const { first, last } = req.query;
+  if (!first || !last) return res.status(400).json({ success: false, message: 'first and last required' });
+  const items = readJSON(ITEMS_FILE);
+  // Collect all consigner codes already in use, per consigner full name
+  const existingCodes = new Set(items.map(i => i.code).filter(Boolean));
+  // Also check if this exact consigner already has a code — reuse it
+  const consignerName = (first.trim() + ' ' + last.trim()).toLowerCase();
+  const existing = items.find(i => (i.consigner || '').toLowerCase() === consignerName && i.code);
+  if (existing) return res.json({ success: true, code: existing.code, reused: true });
+  const code = uniqueConsignerCode(first.trim(), last.trim(), existingCodes);
+  res.json({ success: true, code, reused: false });
+});
+
+// =========================
+// NOTIFICATIONS — derived from assigned items + explicit notifications
+// =========================
+app.get('/notifications', (req, res) => {
+  const employee = req.query.employee;
+  if (!employee) return res.json([]);
+  const items = readJSON(ITEMS_FILE);
+  // Items assigned to this employee that are still active
+  const assigned = items.filter(i => i.assignedTo === employee && i.stage !== 'Archived' && i.stage !== 'Picked Up');
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+  const myNotifs = notifications.filter(n => n.employee === employee && !n.dismissed);
+  res.json({ assigned: assigned.map(i => ({ id: i.id, name: i.name, lotNumber: i.lotNumber, stage: i.stage, assignedAt: i.assignedAt, assignedBy: i.assignedBy })), notifications: myNotifs });
+});
+
+app.post('/notifications/dismiss', (req, res) => {
+  const { employee, notificationId } = req.body;
+  const notifications = readJSON(NOTIFICATIONS_FILE);
+  if (notificationId) {
+    const n = notifications.find(n => String(n.id) === String(notificationId) && n.employee === employee);
+    if (n) n.dismissed = true;
+  } else if (employee) {
+    // Dismiss all for this employee
+    notifications.filter(n => n.employee === employee).forEach(n => { n.dismissed = true; });
+  }
+  writeJSON(NOTIFICATIONS_FILE, notifications);
+  res.json({ success: true });
+});
+
+// =========================
 // ADD ITEMS (INTAKE)
 // =========================
 app.post('/items', (req, res) => {
@@ -288,7 +351,7 @@ app.post('/items', (req, res) => {
   }
 
   const item = {
-    id: Date.now() + Math.floor(Math.random() * 100000),
+    id: generateId(),
     name: String(name).trim(),
     description: description || '',
     category: category || '',
@@ -329,7 +392,7 @@ app.post('/addItems', (req, res) => {
       return res.status(400).json({ success: false, message: `Duplicate lot code: ${i.lotCode}` });
     }
     const item = {
-      id: Date.now() + Math.floor(Math.random() * 100000),
+      id: generateId(),
       name: i.title || '',
       description: i.description || '',
       category: i.category || '',
@@ -606,6 +669,12 @@ app.post('/items/:id/assign', (req, res) => {
 
   addLog(item, { employee, action: assignedTo ? `assigned to ${assignedTo}` : 'unassigned', note: assignedTo ? `Assigned to ${assignedTo}` : 'Assignment removed' });
   writeJSON(ITEMS_FILE, items);
+  // Push a notification for the assignee
+  if (assignedTo) {
+    const notifications = readJSON(NOTIFICATIONS_FILE);
+    notifications.push({ id: generateId(), employee: assignedTo, type: 'assignment', itemId: String(item.id), itemName: item.name, lotNumber: item.lotNumber, assignedBy: employee, at: new Date().toISOString(), dismissed: false });
+    writeJSON(NOTIFICATIONS_FILE, notifications);
+  }
   res.json({ success: true, item });
 });
 
@@ -1141,7 +1210,7 @@ app.post('/closeout', (req, res) => {
   });
 
   const report = {
-    id: Date.now(),
+    id: generateId(),
     date: today,
     photographedCount: photographedToday.length,
     photographedItems: photographedToday.sort((a, b) => a.lotNumber.localeCompare(b.lotNumber)),
@@ -1250,7 +1319,7 @@ app.post('/events', (req, res) => {
   if (!name || !date) return res.status(400).json({ success: false, message: 'name and date required' });
   const events = readJSON(EVENTS_FILE);
   const ev = {
-    id: Date.now() + Math.floor(Math.random() * 10000),
+    id: generateId(),
     name, date,
     description: description || '',
     category: category || 'general',
@@ -1315,6 +1384,40 @@ app.delete('/events/:id/lots/:itemId', (req, res) => {
   if (item) { item.eventId = null; item.eventName = null; writeJSON(ITEMS_FILE, items); }
   writeJSON(EVENTS_FILE, events);
   res.json({ success: true });
+});
+
+// Move item from one event to another (or remove from current)
+app.post('/items/:id/move-event', (req, res) => {
+  const { toEventId, employee } = req.body;
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const events = readJSON(EVENTS_FILE);
+  const emp = employee || 'system';
+
+  // Remove from current event
+  if (item.eventId) {
+    const fromEv = events.find(e => String(e.id) === String(item.eventId));
+    if (fromEv) fromEv.lots = fromEv.lots.filter(l => String(l) !== String(item.id));
+  }
+
+  if (toEventId) {
+    const toEv = events.find(e => String(e.id) === String(toEventId));
+    if (!toEv) return res.status(404).json({ success: false, message: 'Target event not found' });
+    if (!toEv.lots.map(String).includes(String(item.id))) toEv.lots.push(String(item.id));
+    item.eventId   = String(toEv.id);
+    item.eventName = toEv.name;
+    addLog(item, { employee: emp, action: `moved to event: ${toEv.name}` });
+  } else {
+    item.eventId   = null;
+    item.eventName = null;
+    addLog(item, { employee: emp, action: 'removed from event' });
+  }
+
+  writeJSON(EVENTS_FILE, events);
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
 });
 
 // Import auction results — CSV body: [{lotNumber, soldPrice}]

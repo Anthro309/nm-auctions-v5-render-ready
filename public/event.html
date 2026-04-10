@@ -138,12 +138,14 @@ const evId = new URLSearchParams(window.location.search).get('id');
 if (!evId) window.location.href = '/events.html';
 
 let ev = null;
+let allEvents = [];
 let parsedResults = [];
 let searchTimer = null;
 
 async function load() {
-  const res = await fetch('/events/' + evId);
-  ev = await res.json();
+  const [evRes, eventsRes] = await Promise.all([fetch('/events/' + evId), fetch('/events')]);
+  ev = await evRes.json();
+  allEvents = await eventsRes.json();
 
   document.getElementById('evName').innerText = ev.name;
   const dateStr = new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
@@ -169,20 +171,33 @@ function renderLots() {
   }
 
   list.innerHTML = '';
+  const otherEvents = allEvents.filter(e => String(e.id) !== String(evId));
   lots.forEach(item => {
     const div = document.createElement('div');
     div.className = 'lot-card';
+    div.style.flexWrap = 'wrap';
     const hasSold = item.soldPrice && item.soldPrice > 0;
+    const moveOptions = otherEvents.map(e =>
+      `<option value="${esc(e.id)}">${esc(e.name)}</option>`
+    ).join('');
     div.innerHTML = `
       <div class="lot-thumb">
         ${item.photos?.[0] ? `<img src="${item.photos[0]}" loading="lazy">` : '📦'}
       </div>
-      <div class="lot-info">
+      <div class="lot-info" style="cursor:pointer;">
         <div class="lot-name">${esc(item.name || 'Unnamed')}</div>
         <div class="lot-meta">Lot ${esc(item.lotNumber || '—')} · ${esc(item.consigner || '—')} · ${esc(item.stage)}</div>
         ${hasSold ? `<div class="lot-sold">Sold $${item.soldPrice}</div><div class="lot-payout">Payout $${item.payoutAmount} · ${esc(item.payoutStatus)}</div>` : ''}
       </div>
       <button class="lot-remove" onclick="removeLot('${esc(item.id)}')" title="Remove from event">✕</button>
+      ${otherEvents.length ? `
+      <div style="width:100%;display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;align-items:center;">
+        <select id="move-${esc(item.id)}" style="flex:1;margin:0;font-size:12px;padding:6px 10px;" onclick="event.stopPropagation()">
+          <option value="">Move to another event…</option>
+          ${moveOptions}
+        </select>
+        <button onclick="event.stopPropagation();moveLot('${esc(item.id)}')" style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;">Move</button>
+      </div>` : ''}
     `;
     div.querySelector('.lot-info').onclick = () => window.location.href = '/item.html?id=' + item.id;
     list.appendChild(div);
@@ -194,6 +209,22 @@ async function removeLot(itemId) {
   const name = item ? (item.name || 'this item') : 'this item';
   if (!confirm(`Remove "${name}" from this event?\n\nThis won't delete the item — it just unassigns it from the event.`)) return;
   await fetch(`/events/${evId}/lots/${itemId}`, { method: 'DELETE' });
+  await load();
+}
+
+async function moveLot(itemId) {
+  const sel = document.getElementById('move-' + itemId);
+  if (!sel || !sel.value) { alert('Select an event to move this item to'); return; }
+  const toEventId = sel.value;
+  const toEvent = allEvents.find(e => String(e.id) === String(toEventId));
+  const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
+  const name = item ? (item.name || 'this item') : 'this item';
+  if (!confirm(`Move "${name}" to "${toEvent ? toEvent.name : 'selected event'}"?`)) return;
+  await fetch(`/items/${itemId}/move-event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ toEventId, employee: user?.name || 'system' })
+  });
   await load();
 }
 

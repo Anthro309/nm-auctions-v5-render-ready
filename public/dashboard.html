@@ -286,15 +286,15 @@
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile">
+    <div class="stat-tile" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="View all active inventory">
       <div class="stat-number skeleton" id="statInStudio" style="min-height:34px;">—</div>
       <div class="stat-label">Total in Inventory</div>
     </div>
-    <div class="stat-tile">
+    <div class="stat-tile" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" style="cursor:pointer;" title="View items ready to photograph">
       <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
       <div class="stat-label">Ready to Photograph</div>
     </div>
-    <div class="stat-tile">
+    <div class="stat-tile" onclick="window.location.href='/photography-queue.html'" style="cursor:pointer;" title="View photography queue">
       <div class="stat-number skeleton" id="statToday" style="min-height:34px;">—</div>
       <div class="stat-label">Photographed Today</div>
     </div>
@@ -304,11 +304,22 @@
   <div id="onboardingBanner" class="onboarding-banner" style="display:none;">
     <div class="onboarding-title">👋 Welcome to Auction Legacy — here's how it works</div>
     <div class="onboarding-steps">
-      <div class="onboarding-step"><div class="onboarding-step-num">1</div><span>Use <strong>Initial Visit</strong> to log a consigner's items and print QR labels</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">2</div><span>Use the <strong>Scanner</strong> to check items in at the studio when they arrive</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">3</div><span>Work through the <strong>Photo Queue</strong> — shoot and upload photos</span></div>
-      <div class="onboarding-step"><div class="onboarding-step-num">4</div><span>Create an <strong>Auction Event</strong>, assign lots, and import results</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">1</div><span><strong>Initial Visit</strong> — log a consigner's items, AI generates titles &amp; price estimates, print QR labels</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">2</div><span><strong>Review Visit</strong> — accept items to keep in workflow or archive ones that aren't worth processing</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">3</div><span><strong>Scanner</strong> — scan QR labels (or any camera app) to check items in, log scans, and move them between stages</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">4</div><span><strong>Assign to employees</strong> — assign items to team members from any item detail page or in batch from Item Library</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">5</div><span><strong>Photo Queue</strong> — shoot and upload photos, remove backgrounds with AI Photo Studio</span></div>
+      <div class="onboarding-step"><div class="onboarding-step-num">6</div><span><strong>Auction Events</strong> — create events below, add items, and import results after the auction</span></div>
     </div>
+  </div>
+
+  <!-- MY ASSIGNMENTS (notification card) -->
+  <div id="assignmentsCard" class="card" style="display:none;margin-bottom:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h2 style="margin:0;">🔔 My Assignments</h2>
+      <span id="assignBadge" style="background:#dc2626;color:white;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:none;"></span>
+    </div>
+    <div id="assignmentsList"></div>
   </div>
 
   <div class="dash-grid">
@@ -343,6 +354,30 @@
       <div class="dash-sub">Generate & view daily lot reports</div>
     </div>
 
+  </div>
+
+  <!-- AUCTION EVENTS CARD -->
+  <div class="card" id="eventsCard" style="margin-top:6px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <h2 style="margin:0;">🏷️ Auction Events</h2>
+      <button onclick="toggleCreateEvent()" id="createEventToggle" style="padding:8px 14px;background:#2563eb;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">+ New Event</button>
+    </div>
+
+    <!-- Create event form (hidden by default) -->
+    <div id="createEventForm" style="display:none;background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;border:1.5px solid #e5e7eb;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin-bottom:8px;">New Event</div>
+      <input id="newEventName" placeholder="Event name (e.g. Spring Estate Auction)" style="margin-bottom:8px;">
+      <input id="newEventDate" type="date" style="margin-bottom:8px;margin-top:0;">
+      <div style="display:flex;gap:8px;">
+        <input id="newEventCommission" type="number" placeholder="Commission %" value="35" style="width:120px;flex-shrink:0;margin-top:0;">
+        <button onclick="createEvent()" style="flex:1;padding:11px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Create Event</button>
+        <button onclick="toggleCreateEvent()" style="padding:11px 14px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Cancel</button>
+      </div>
+      <div id="createEventMsg" style="display:none;margin-top:8px;padding:8px 12px;background:#ecfdf5;color:#047857;border-radius:8px;font-size:13px;font-weight:600;"></div>
+    </div>
+
+    <div id="eventsList"><div style="font-size:13px;color:#9ca3af;padding:8px 0;">Loading events…</div></div>
+    <a href="/events.html" style="display:block;text-align:center;margin-top:10px;font-size:13px;color:#2563eb;font-weight:600;text-decoration:none;">View All Events →</a>
   </div>
 
   <!-- AI Photo Studio shortcut -->
@@ -470,6 +505,119 @@
   }
 
   loadStats();
+
+  // =========================
+  // ASSIGNMENTS (notification section)
+  // =========================
+  async function loadAssignments() {
+    if (!user) return;
+    try {
+      const res = await fetch('/notifications?employee=' + encodeURIComponent(user.name));
+      const data = await res.json();
+      const assigned = data.assigned || [];
+      const card = document.getElementById('assignmentsCard');
+      const list = document.getElementById('assignmentsList');
+      const badge = document.getElementById('assignBadge');
+
+      if (!assigned.length) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
+      badge.style.display = 'inline-block';
+      badge.textContent = assigned.length;
+
+      list.innerHTML = assigned.map(i => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;" onclick="window.location.href='/item.html?id=${escDash(i.id)}'" style="cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">${escDash(i.name || 'Unnamed')}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">Lot ${escDash(i.lotNumber || '—')} · ${escDash(i.stage || '—')}</div>
+            ${i.assignedBy ? `<div style="font-size:11px;color:#7c3aed;margin-top:1px;">Assigned by ${escDash(i.assignedBy)}</div>` : ''}
+          </div>
+          <span style="font-size:18px;color:#9ca3af;flex-shrink:0;">›</span>
+        </div>
+      `).join('');
+      // Make rows clickable
+      list.querySelectorAll('div[onclick]').forEach(row => { row.style.cursor = 'pointer'; });
+    } catch {}
+  }
+
+  function escDash(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  loadAssignments();
+
+  // =========================
+  // AUCTION EVENTS CARD
+  // =========================
+  let allEvents = [];
+
+  async function loadEvents() {
+    try {
+      const res = await fetch('/events');
+      allEvents = await res.json();
+      renderEvents();
+    } catch {}
+  }
+
+  function renderEvents() {
+    const el = document.getElementById('eventsList');
+    const upcoming = allEvents.filter(e => e.status !== 'completed').sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (!upcoming.length) {
+      el.innerHTML = '<div style="font-size:13px;color:#9ca3af;padding:8px 0;">No upcoming events. Create one above.</div>';
+      return;
+    }
+    el.innerHTML = upcoming.slice(0, 5).map(ev => {
+      const d = new Date(ev.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const itemCount = (ev.lots || []).length;
+      const isPast = new Date(ev.date) < new Date();
+      return `
+        <div onclick="window.location.href='/event.html?id=${escDash(ev.id)}'" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">${escDash(ev.name)}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">${dateStr} · ${itemCount} item${itemCount !== 1 ? 's' : ''}</div>
+          </div>
+          <span style="background:${isPast ? '#fef3c7' : '#ecfdf5'};color:${isPast ? '#92400e' : '#047857'};font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">${isPast ? 'Past' : 'Upcoming'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function toggleCreateEvent() {
+    const form = document.getElementById('createEventForm');
+    const btn  = document.getElementById('createEventToggle');
+    const open = form.style.display === 'none';
+    form.style.display = open ? 'block' : 'none';
+    btn.textContent = open ? '✕ Cancel' : '+ New Event';
+    btn.style.background = open ? '#6b7280' : '#2563eb';
+    if (open) document.getElementById('newEventName').focus();
+  }
+
+  async function createEvent() {
+    const name       = document.getElementById('newEventName').value.trim();
+    const date       = document.getElementById('newEventDate').value;
+    const commission = parseFloat(document.getElementById('newEventCommission').value) || 35;
+    if (!name || !date) { alert('Enter event name and date'); return; }
+    try {
+      const res = await fetch('/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, date, commissionRate: commission, createdBy: user?.name || 'system' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const msg = document.getElementById('createEventMsg');
+        msg.textContent = `✅ "${name}" created!`;
+        msg.style.display = 'block';
+        document.getElementById('newEventName').value = '';
+        document.getElementById('newEventDate').value = '';
+        setTimeout(() => { msg.style.display = 'none'; toggleCreateEvent(); }, 1800);
+        await loadEvents();
+      }
+    } catch { alert('Failed to create event'); }
+  }
+
+  loadEvents();
 </script>
 
 <script src="/nav.js"></script>

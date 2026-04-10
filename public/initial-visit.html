@@ -382,14 +382,25 @@ function truncate(str, max) {
   return str && str.length > max ? str.slice(0, max) + '..' : str || '';
 }
 
-function startVisit() {
+async function startVisit() {
   const first = document.getElementById('firstInput').value.trim();
   const last = document.getElementById('lastInput').value.trim();
   if (!first || !last) { alert('Enter first and last name'); return; }
+  // Get a unique consigner code from the server (prevents collisions)
+  let code;
+  try {
+    const res = await fetch('/consigner-code?first=' + encodeURIComponent(first) + '&last=' + encodeURIComponent(last));
+    const data = await res.json();
+    code = data.code;
+    if (data.reused) setStatus('Returning consigner — using existing code ' + code);
+  } catch {
+    // fallback: local generation
+    code = (first.slice(0,3) + last.slice(0,3)).toUpperCase();
+  }
   session = {
     first, last,
     consigner: first + ' ' + last,
-    code: (first.slice(0,3) + last.slice(0,3)).toUpperCase(),
+    code,
     date: new Date().toLocaleDateString()
   };
   document.getElementById('visitCard').style.display = 'none';

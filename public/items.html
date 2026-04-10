@@ -547,7 +547,25 @@ function exportAuctionCSV() {
   setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
 }
 
-load();
+load().then(() => {
+  // Support ?stage= and ?consigner= URL params (e.g. from clickable dashboard tiles)
+  const p = new URLSearchParams(window.location.search);
+  const stageParam = p.get('stage');
+  const consignerParam = p.get('consigner');
+  if (stageParam) {
+    const sel = document.getElementById('stageFilter');
+    // Match HTML-decoded value
+    const decoded = stageParam;
+    for (const opt of sel.options) {
+      if (opt.value === decoded || opt.text === decoded) { sel.value = opt.value; break; }
+    }
+    render();
+  }
+  if (consignerParam) {
+    document.getElementById('search').value = consignerParam;
+    render();
+  }
+});
 </script>
 <script src="/nav.js"></script>
 </body>
