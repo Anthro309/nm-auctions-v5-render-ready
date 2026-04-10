@@ -83,6 +83,8 @@
       if (photoLink) photoLink.style.display = 'none';
       var reportsLink = sidebarNav.querySelector('a[href="/reports.html"]');
       if (reportsLink) reportsLink.style.display = 'none';
+      var reviewLink = sidebarNav.querySelector('a[href="/review-visit.html"]');
+      if (reviewLink) reviewLink.style.display = 'none';
     }
   }
 

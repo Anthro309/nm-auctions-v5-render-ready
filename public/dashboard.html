@@ -330,7 +330,7 @@
       <div class="dash-sub">Capture consignments & print labels</div>
     </div>
 
-    <div class="dash-card" onclick="window.location.href='/review-visit.html'">
+    <div class="dash-card" id="reviewVisitCard" onclick="window.location.href='/review-visit.html'">
       <div class="dash-icon">✅</div>
       <div class="dash-title">Review Visit</div>
       <div class="dash-sub">Accept or archive post-visit items</div>
@@ -424,7 +424,9 @@
   // Gate admin-only dashboard elements
   if (user && !user.isAdmin) {
     document.getElementById('reportsGridCard').style.display = 'none';
+    document.getElementById('reviewVisitCard').style.display = 'none';
     document.getElementById('eventsGridCard').style.display = 'flex';
+    document.getElementById('eventsCard').style.display = 'none';
     document.getElementById('photoStudioShortcut').style.display = 'none';
   }
 
