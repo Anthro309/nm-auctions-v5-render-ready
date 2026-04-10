@@ -271,6 +271,17 @@
     <button class="btn-green" onclick="printLabel()">🖨️ Print Label</button>
   </div>
 
+  <!-- REFERENCE PHOTOS -->
+  <div class="card">
+    <h3 style="margin-bottom:8px;">Reference Images <button class="help-btn" onclick="showTip(this,'Upload supplemental reference photos — close-ups of markings, damage, labels, or any detail useful for pricing and cataloging. These are separate from the main listing photos.')">?</button></h3>
+    <div id="refPhotoGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+    <label style="display:block;padding:10px 14px;background:#f3f4f6;border-radius:10px;border:1.5px dashed #d1d5db;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:#374151;">
+      📎 Add Reference Photo
+      <input type="file" accept="image/*" multiple style="display:none;" onchange="uploadRefPhotos(this)">
+    </label>
+    <div id="refPhotoMsg" class="success-msg">✅ Photo added</div>
+  </div>
+
   <!-- SAVE LOCATION -->
   <div class="card">
     <h3 style="margin-bottom:4px;">Location</h3>
@@ -311,23 +322,64 @@
     <button class="btn-red" onclick="deleteItem()">Delete Item</button>
   </div>
 
-  <!-- AUCTION DESCRIPTION GENERATOR -->
+  <!-- EDIT ITEM DETAILS -->
   <div class="card">
-    <h3 style="margin-bottom:4px;">Auction Description</h3>
-    <input id="dimInput" placeholder='Dimensions (e.g. 24" H × 18" W × 12" D)'>
-    <select id="conditionSelect" style="margin-top:10px;">
-      <option value="">-- Update Condition --</option>
+    <h3 style="margin-bottom:12px;">Edit Item Details <button class="help-btn" onclick="showTip(this,'Update the item title, description, dimensions, condition, category, and notes at any time. All changes are logged.')">?</button></h3>
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Title</label>
+    <input id="editTitle" placeholder="Item title / name" style="margin-bottom:10px;">
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Description</label>
+    <textarea id="editDescription" rows="3" placeholder="Describe the item — provenance, style, markings, history..." style="width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;margin-bottom:10px;font-family:inherit;"></textarea>
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Dimensions</label>
+    <input id="dimInput" placeholder='e.g. 24" H × 18" W × 12" D' style="margin-bottom:10px;">
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Condition</label>
+    <select id="conditionSelect" style="margin-bottom:10px;margin-top:0;">
+      <option value="">— Select condition —</option>
       <option>Excellent</option>
       <option>Good</option>
       <option>Fair</option>
       <option>Worn</option>
       <option>Vintage Wear</option>
+      <option>Unknown</option>
     </select>
-    <textarea id="notesInput" placeholder="Additional notes (provenance, markings, repairs, etc.)" rows="3" style="margin-top:10px;width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;"></textarea>
-    <button class="btn-blue" onclick="generateDescription()">✨ Generate Auction Description</button>
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Category</label>
+    <select id="categorySelect" style="margin-bottom:10px;margin-top:0;">
+      <option value="">— Select category —</option>
+      <option>furniture</option>
+      <option>decor</option>
+      <option>tools</option>
+      <option>art</option>
+      <option>electronics</option>
+      <option>glassware</option>
+      <option>kitchenware</option>
+      <option>books</option>
+      <option>jewelry</option>
+      <option>outdoor</option>
+      <option>collectibles</option>
+      <option>clothing</option>
+      <option>toys</option>
+      <option>misc</option>
+    </select>
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Notes</label>
+    <textarea id="notesInput" rows="3" placeholder="Additional notes (provenance, markings, repairs, etc.)" style="width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;margin-bottom:10px;font-family:inherit;"></textarea>
+
+    <button class="btn-blue" onclick="saveItemDetails()">Save Details</button>
+    <div id="detailsMsg" class="success-msg">✅ Details saved</div>
+  </div>
+
+  <!-- AI AUCTION DESCRIPTION (optional tool) -->
+  <div class="card" id="aiDescCard">
+    <h3 style="margin-bottom:4px;">✨ AI Auction Description <button class="help-btn" onclick="showTip(this,'AI generates a polished auction listing description from the item details and photos. Use this as a starting point, then edit the description above.')">?</button></h3>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">Generate a listing description with AI, then copy it into Description above.</p>
+    <button class="btn-blue" onclick="generateDescription()" id="genDescBtn">✨ Generate Description</button>
     <div id="descMsg" class="success-msg">✅ Description generated</div>
     <div id="descResult" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:14px;line-height:1.6;color:#111827;"></div>
-    <button id="copyDescBtn" class="btn-green" style="display:none;margin-top:8px;" onclick="copyDescription()">Copy Description</button>
+    <button id="copyDescBtn" class="btn-green" style="display:none;margin-top:8px;" onclick="copyDescription()">Copy to Description Field</button>
     <div id="feedbackRow" class="feedback-row" style="display:none;">
       <button class="feedback-btn" id="fbGood" onclick="sendFeedback('good')">👍 Looks Great</button>
       <button class="feedback-btn" id="fbBad"  onclick="sendFeedback('bad')">👎 Not Great</button>
@@ -453,6 +505,7 @@ if (!user) window.location.href = '/';
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
+const lotParam = params.get('lot');
 let item = null;
 
 function toggleMenu() {
@@ -469,12 +522,18 @@ function logout() {
 // LOAD ITEM
 // =========================
 async function load() {
-  if (!id) {
+  if (!id && !lotParam) {
     window.location.href = '/items.html';
     return;
   }
   try {
-    const res = await fetch('/items/' + id);
+    // Support ?lot= param (from QR code scan via external camera)
+    let res;
+    if (id) {
+      res = await fetch('/items/' + id);
+    } else {
+      res = await fetch('/items/by-lot/' + encodeURIComponent(lotParam));
+    }
     if (!res.ok) throw new Error('Item not found');
     item = await res.json();
     if (!item) throw new Error('Item not found');
@@ -509,9 +568,14 @@ function render() {
 
   renderAssignment();
 
-  if (item.location)   document.getElementById('locationInput').value = item.location;
-  if (item.dimensions) document.getElementById('dimInput').value = item.dimensions;
-  if (item.condition)  document.getElementById('conditionSelect').value = item.condition;
+  if (item.location)     document.getElementById('locationInput').value = item.location;
+  // Populate edit details fields
+  document.getElementById('editTitle').value       = item.name        || '';
+  document.getElementById('editDescription').value = item.description || '';
+  document.getElementById('dimInput').value        = item.dimensions  || '';
+  document.getElementById('notesInput').value      = item.additionalNotes || '';
+  if (item.condition) document.getElementById('conditionSelect').value = item.condition;
+  if (item.category)  document.getElementById('categorySelect').value  = item.category;
 
   // Repair banner
   const banner = document.getElementById('repairBanner');
@@ -581,11 +645,14 @@ function render() {
     imageBox.innerHTML = `<img src="${item.photos[0]}" alt="${item.name}">`;
   }
 
-  // QR
-  const qrValue = item.lotNumber || (item.code + '-' + item.number);
+  // QR — encode full URL so any camera app can open the item directly
+  const qrLot = item.lotNumber || (item.code + '-' + item.number);
+  const qrValue = window.location.origin + '/item.html?lot=' + encodeURIComponent(qrLot);
   QRCode.toCanvas(document.getElementById('qrCanvas'), qrValue, { width: 180 });
-  document.getElementById('qrLabel').innerText = qrValue;
+  document.getElementById('qrLabel').innerText = qrLot;
 
+  // Reference photos
+  renderRefPhotos();
   // History
   renderHistory();
   // New AI features
@@ -610,6 +677,59 @@ function render() {
     document.getElementById('predictDisplay').innerHTML = `<div style="font-size:18px;font-weight:800;color:#1d4ed8;margin-bottom:4px;">$${d.predictedLow}–$${d.predictedHigh} <span style="font-size:12px;color:#6b7280;">· Start: $${d.suggestedStartingBid}</span></div><div style="font-size:12px;color:#6b7280;">${d.reasoning}</div>`;
     document.getElementById('predictDisplay').style.display = 'block';
   }
+}
+
+// =========================
+// REFERENCE PHOTOS
+// =========================
+function renderRefPhotos() {
+  const grid = document.getElementById('refPhotoGrid');
+  const photos = item.referencePhotos || [];
+  if (!photos.length) { grid.innerHTML = '<div style="font-size:12px;color:#9ca3af;">No reference images yet.</div>'; return; }
+  grid.innerHTML = photos.map(p => `
+    <div style="position:relative;display:inline-block;">
+      <img src="${escapeHtml(p)}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;" onclick="window.open('${escapeHtml(p)}','_blank')" onerror="this.parentElement.style.display='none'">
+      <button onclick="deleteRefPhoto('${escapeHtml(p)}')" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;">✕</button>
+    </div>
+  `).join('');
+}
+
+async function uploadRefPhotos(input) {
+  const files = [...input.files];
+  if (!files.length) return;
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('photo', file);
+    try {
+      const uploadRes = await fetch('/upload', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.path) continue;
+      const res = await fetch(`/items/${item.id}/add-reference-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoPath: uploadData.path, employee: user.name })
+      });
+      const data = await res.json();
+      if (data.success) { item = data.item; renderRefPhotos(); }
+    } catch (err) { /* ignore */ }
+  }
+  const msg = document.getElementById('refPhotoMsg');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  input.value = '';
+}
+
+async function deleteRefPhoto(photoPath) {
+  if (!confirm('Remove this reference photo?')) return;
+  try {
+    const res = await fetch(`/items/${item.id}/delete-reference-photo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoPath, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) { item = data.item; renderRefPhotos(); }
+  } catch (err) { alert('Failed to remove photo'); }
 }
 
 // =========================
@@ -665,6 +785,40 @@ async function saveAssignment() {
 }
 
 // =========================
+// SAVE ITEM DETAILS
+// =========================
+async function saveItemDetails() {
+  const name        = document.getElementById('editTitle').value.trim();
+  const description = document.getElementById('editDescription').value.trim();
+  const dimensions  = document.getElementById('dimInput').value.trim();
+  const condition   = document.getElementById('conditionSelect').value;
+  const category    = document.getElementById('categorySelect').value;
+  const notes       = document.getElementById('notesInput').value.trim();
+
+  try {
+    const res = await fetch(`/items/${item.id}/update-details`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, dimensions, condition, category, notes, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      item = data.item;
+      // Update display
+      document.getElementById('itemTitle').innerText     = item.name || 'Unnamed Item';
+      document.getElementById('detailDescription').innerText = item.description || '—';
+      document.getElementById('detailCondition').innerText   = item.condition   || '—';
+      document.getElementById('detailCategory').innerText    = item.category    || '—';
+      const msg = document.getElementById('detailsMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    }
+  } catch (err) {
+    alert('Failed to save details');
+  }
+}
+
+// =========================
 // SAVE LOCATION
 // =========================
 async function saveLocation() {
@@ -696,7 +850,7 @@ async function generateDescription() {
   const condition      = document.getElementById('conditionSelect').value;
   const additionalNotes = document.getElementById('notesInput').value.trim();
 
-  const btn = document.querySelector('[onclick="generateDescription()"]');
+  const btn = document.getElementById('genDescBtn');
   btn.disabled = true;
   btn.innerText = '⏳ Generating...';
 
@@ -726,7 +880,7 @@ async function generateDescription() {
     alert('Failed to generate description');
   } finally {
     btn.disabled = false;
-    btn.innerText = '✨ Generate Auction Description';
+    btn.innerText = '✨ Generate Description';
   }
 }
 
@@ -744,11 +898,13 @@ async function sendFeedback(type) {
 
 function copyDescription() {
   const text = document.getElementById('descResult').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyDescBtn');
-    btn.innerText = '✅ Copied!';
-    setTimeout(() => { btn.innerText = 'Copy Description'; }, 2000);
-  });
+  // Paste into the editable description field
+  document.getElementById('editDescription').value = text;
+  const btn = document.getElementById('copyDescBtn');
+  btn.innerText = '✅ Copied to Description Field!';
+  setTimeout(() => { btn.innerText = 'Copy to Description Field'; }, 2500);
+  // Scroll to edit card
+  document.getElementById('editDescription').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // =========================
@@ -756,7 +912,8 @@ function copyDescription() {
 // =========================
 async function printLabel() {
   const sheet = document.getElementById('printSheet');
-  const qrValue = item.lotNumber || (item.code + '-' + item.number);
+  const qrLot = item.lotNumber || (item.code + '-' + item.number);
+  const qrValue = window.location.origin + '/item.html?lot=' + encodeURIComponent(qrLot);
   const name = (item.name || '').slice(0, 50);
   const date = new Date().toLocaleDateString();
   const code = item.code || '';
