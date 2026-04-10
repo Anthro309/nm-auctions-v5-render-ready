@@ -107,7 +107,8 @@ function validStage(stage) {
     'Photograph',
     'Prep for Pick Up',
     'Ready for Pick Up',
-    'Picked Up'
+    'Picked Up',
+    'Archived'
   ].includes(stage);
 }
 
@@ -443,7 +444,7 @@ app.post('/items/:id/sell', (req, res) => {
 // =========================
 app.get('/analytics/overview', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const stageCounts = { 'Home Visit': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0 };
+  const stageCounts = { 'Home Visit': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0, 'Archived': 0 };
   const categoryCounts = {};
   items.forEach(i => {
     if (stageCounts.hasOwnProperty(i.stage)) stageCounts[i.stage]++;
@@ -509,6 +510,91 @@ app.post('/items/:id/stage', (req, res) => {
   addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
+});
+
+// =========================
+// ARCHIVE ITEM (reject during post-visit review)
+// =========================
+app.post('/items/:id/archive', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const employee = req.body.employee || 'system';
+  const reason = req.body.reason || '';
+  const fromStage = item.stage;
+
+  item.stage = 'Archived';
+  item.reviewStatus = 'rejected';
+  item.archivedAt = new Date().toISOString();
+  item.archivedBy = employee;
+  item.archiveReason = reason;
+
+  addLog(item, { employee, action: 'archived (rejected)', fromStage, toStage: 'Archived', reason });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// REVIEW ACCEPT (accept item during post-visit review)
+// =========================
+app.post('/items/:id/review-accept', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const employee = req.body.employee || 'system';
+  item.reviewStatus = 'accepted';
+  item.reviewedAt = new Date().toISOString();
+  item.reviewedBy = employee;
+
+  addLog(item, { employee, action: 'accepted in review', note: 'Item accepted post-visit' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// ASSIGN ITEM TO EMPLOYEE
+// =========================
+app.post('/items/:id/assign', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+  const employee = req.body.employee || 'system';
+  const assignedTo = req.body.assignedTo || null;
+
+  item.assignedTo = assignedTo;
+  item.assignedAt = new Date().toISOString();
+  item.assignedBy = employee;
+
+  addLog(item, { employee, action: assignedTo ? `assigned to ${assignedTo}` : 'unassigned', note: assignedTo ? `Assigned to ${assignedTo}` : 'Assignment removed' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
+// BATCH ASSIGN ITEMS TO EMPLOYEE
+// =========================
+app.post('/items/batch-assign', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const { ids, assignedTo, employee } = req.body;
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ success: false, message: 'No item IDs provided' });
+
+  let count = 0;
+  ids.forEach(id => {
+    const item = items.find(i => String(i.id) === String(id));
+    if (item) {
+      item.assignedTo = assignedTo || null;
+      item.assignedAt = new Date().toISOString();
+      item.assignedBy = employee || 'system';
+      addLog(item, { employee: employee || 'system', action: assignedTo ? `assigned to ${assignedTo}` : 'unassigned' });
+      count++;
+    }
+  });
+
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, count });
 });
 
 // =========================
@@ -1004,7 +1090,13 @@ app.get('/intake', (req, res) => {
       name: item.name,
       lotNumber: item.lotNumber,
       category: item.category,
-      condition: item.condition
+      condition: item.condition,
+      stage: item.stage,
+      photos: item.photos || [],
+      estimatedValueLow: item.estimatedValueLow || 0,
+      estimatedValueHigh: item.estimatedValueHigh || 0,
+      reviewStatus: item.reviewStatus || null,
+      assignedTo: item.assignedTo || null
     });
   });
 
@@ -1363,7 +1455,7 @@ app.post('/items/search-nl', async (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ success: false });
 
-  const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off'];
+  const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off','Archived'];
   const categories = ['furniture','decor','tools','art','electronics','glassware','kitchenware','books','jewelry','outdoor','collectibles','clothing','toys','misc'];
 
   try {
