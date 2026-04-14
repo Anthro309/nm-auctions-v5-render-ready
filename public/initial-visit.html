@@ -651,13 +651,13 @@ function resetForm() {
 
 async function getLotCodes(count) {
   const month = 'ABCDEFGHIJKL'[new Date().getMonth()];
-  const codes = await Promise.all(
-    Array.from({ length: count }, () =>
-      fetch(`/next-lot-code?month=${month}`)
-        .then(r => safeJson(r))
-        .then(d => { if (!d.success || !d.lotCode) throw new Error('No lot code'); return d.lotCode; })
-    )
-  );
+  const codes = [];
+  for (let i = 0; i < count; i++) {
+    const r = await fetch(`/next-lot-code?month=${month}`);
+    const d = await safeJson(r);
+    if (!d.success || !d.lotCode) throw new Error('No lot code');
+    codes.push(d.lotCode);
+  }
   return codes;
 }
 
