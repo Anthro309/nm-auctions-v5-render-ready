@@ -169,11 +169,17 @@ function injectNotificationBell(u) {
       if (!total) {
         html += '<div class="nav-bell-empty">No new notifications</div>';
       } else {
-        // Explicit assignment notifications first
+        // Explicit notifications first
         notifications.forEach(function(n) {
+          var isMissing = n.type === 'missing';
           html += '<div class="nav-bell-item" onclick="window.location.href=\'/item.html?id=' + encStr(n.itemId) + '\'">';
-          html += '<div class="nav-bell-item-name">📦 ' + encStr(n.itemName || 'Item assigned') + '</div>';
-          html += '<div class="nav-bell-item-meta">Assigned by ' + encStr(n.assignedBy || '—') + ' · Lot ' + encStr(n.lotNumber || '—') + '</div>';
+          if (isMissing) {
+            html += '<div class="nav-bell-item-name" style="color:#dc2626;">🚨 ' + encStr(n.itemName || 'Item') + ' — Missing</div>';
+            html += '<div class="nav-bell-item-meta">Flagged by ' + encStr(n.flaggedBy || '—') + ' · Lot ' + encStr(n.lotNumber || '—') + '</div>';
+          } else {
+            html += '<div class="nav-bell-item-name">📦 ' + encStr(n.itemName || 'Item assigned') + '</div>';
+            html += '<div class="nav-bell-item-meta">Assigned by ' + encStr(n.assignedBy || '—') + ' · Lot ' + encStr(n.lotNumber || '—') + '</div>';
+          }
           html += '</div>';
         });
         // Assigned items not already shown above

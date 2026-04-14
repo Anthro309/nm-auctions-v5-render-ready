@@ -649,6 +649,29 @@ app.post('/items/:id/stage', (req, res) => {
   item.stage = newStage;
   addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
   writeJSON(ITEMS_FILE, items);
+
+  // Notify all admins when an item is flagged missing
+  if (newStage === 'Missing at Drop Off') {
+    try {
+      const users = readJSON(USERS_FILE);
+      const notifications = readJSON(NOTIFICATIONS_FILE);
+      users.filter(u => u.isAdmin).forEach(admin => {
+        notifications.push({
+          id: generateId(),
+          employee: admin.name,
+          type: 'missing',
+          itemId: String(item.id),
+          itemName: item.name,
+          lotNumber: item.lotNumber,
+          flaggedBy: employee,
+          at: new Date().toISOString(),
+          dismissed: false
+        });
+      });
+      writeJSON(NOTIFICATIONS_FILE, notifications);
+    } catch {}
+  }
+
   res.json({ success: true, item });
 });
 

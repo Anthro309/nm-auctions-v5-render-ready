@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Photo Studio | Auction Legacy</title>
+<title>Photo Studio | Auction Legacy</title>
 <link rel="stylesheet" href="/styles.css">
 <style>
 /* Drop zone */
@@ -287,7 +287,7 @@
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
     <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
-    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
     <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
@@ -300,9 +300,13 @@
   <div class="page-header-block">
     <div class="page-header-icon">📸</div>
     <div>
-      <div class="page-header-title">AI Photo Studio <button class="help-btn" onclick="showTip(this,'Upload your photos here. AI removes the background to give you clean white-background shots. Then pair each photo with an item to save it to that item\'s record.')">?</button></div>
-      <div class="page-header-sub">Remove backgrounds &amp; pair shots with items</div>
+      <div class="page-header-title">Photo Studio</div>
+      <div class="page-header-sub">Upload today's photos and pair them with items</div>
     </div>
+  </div>
+
+  <div id="bgNotice" style="display:none;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#92400e;">
+    <strong>Background removal not configured.</strong> Photos will be saved as-is. To enable AI background removal, add a <code>REMOVE_BG_API_KEY</code> in your Render environment settings.
   </div>
 
   <!-- Drop zone -->
@@ -315,8 +319,7 @@
 
   <!-- Batch process button -->
   <button class="process-all-btn" id="processAllBtn" onclick="processAll()">
-    ✨ Remove Backgrounds on All Photos
-    <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Sends each photo to AI which removes the background, giving you a clean product shot on white. Works best with clear photos on a non-cluttered background.')">?</button>
+    📤 Upload &amp; Save All Photos
   </button>
   <div class="upload-progress" id="uploadProgress"></div>
 
@@ -353,8 +356,19 @@ document.getElementById('fileInput').addEventListener('change', e => {
 // ── State ──
 // Each entry: { id, file, originalPath, processedPath, status, itemId, itemName, itemLot, itemThumb, saved }
 let cards = [];
+let bgRemovalAvailable = false;
 // Lookup map: cardId -> array of search result items (for safe onclick)
 let searchResultCache = {};
+
+// Check if BG removal is available on this server
+(async function checkBgStatus() {
+  try {
+    const fd = new FormData();
+    // We can't pre-check without a file — infer from first upload response
+    // For now show the notice; it will hide automatically after first successful BG removal
+    document.getElementById('bgNotice').style.display = 'block';
+  } catch {}
+})();
 
 function handleFiles(files) {
   const images = files.filter(f => f.type.startsWith('image/'));
@@ -483,7 +497,7 @@ async function processAll() {
 
   prog.innerText = `✅ All ${unprocessed.length} photo${unprocessed.length !== 1 ? 's' : ''} processed`;
   btn.disabled = false;
-  btn.innerHTML = '✨ Process New Photos';
+  btn.innerHTML = '📤 Upload &amp; Save All Photos';
   setTimeout(() => { prog.style.display = 'none'; }, 3000);
 }
 
@@ -505,8 +519,12 @@ async function processCard(id) {
     if (!data.success) throw new Error(data.message || 'Upload failed');
 
     c.originalPath = data.path;
-    c.status = data.processed ? 'done' : 'done';
     c.processedPath = data.path;
+    c.status = 'done';
+    if (data.processed) {
+      bgRemovalAvailable = true;
+      document.getElementById('bgNotice').style.display = 'none';
+    }
     renderCard(id);
   } catch (err) {
     c.status = 'error';

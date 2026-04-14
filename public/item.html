@@ -203,7 +203,7 @@
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
     <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
-    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
     <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
@@ -378,20 +378,6 @@
     <div id="detailsMsg" class="success-msg">✅ Details saved</div>
   </div>
 
-  <!-- AI AUCTION DESCRIPTION (optional tool) -->
-  <div class="card" id="aiDescCard" style="display:none;">
-    <h3 style="margin-bottom:4px;">✨ AI Auction Description <button class="help-btn" onclick="showTip(this,'AI generates a polished auction listing description from the item details and photos. Use this as a starting point, then edit the description above.')">?</button></h3>
-    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">Generate a listing description with AI, then copy it into Description above.</p>
-    <button class="btn-blue" onclick="generateDescription()" id="genDescBtn">✨ Generate Description</button>
-    <div id="descMsg" class="success-msg">✅ Description generated</div>
-    <div id="descResult" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;font-size:14px;line-height:1.6;color:#111827;"></div>
-    <button id="copyDescBtn" class="btn-green" style="display:none;margin-top:8px;" onclick="copyDescription()">Copy to Description Field</button>
-    <div id="feedbackRow" class="feedback-row" style="display:none;">
-      <button class="feedback-btn" id="fbGood" onclick="sendFeedback('good')">👍 Looks Great</button>
-      <button class="feedback-btn" id="fbBad"  onclick="sendFeedback('bad')">👎 Not Great</button>
-    </div>
-  </div>
-
   <!-- AUCTION EVENT ASSIGNMENT -->
   <div class="card" id="eventCard" style="display:none;">
     <h3 style="margin-bottom:4px;">Auction Event</h3>
@@ -402,10 +388,8 @@
     <div id="eventSelectWrap">
       <select id="eventSelect" style="margin-top:0;margin-bottom:10px;"><option value="">Loading events…</option></select>
       <button class="btn-green" onclick="assignToEvent()">Assign to Event</button>
-      <button class="btn-blue" style="margin-top:8px;" onclick="autoAssignEvent()">✨ AI Auto-Assign</button>
     </div>
     <div id="eventMsg" class="success-msg">✅ Assigned to event</div>
-    <div id="autoAssignResult" style="display:none;margin-top:8px;padding:10px;background:#f5f3ff;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
   </div>
 
   <!-- TAGS & ESTIMATED VALUE -->
@@ -486,7 +470,6 @@ function render() {
   if (user && user.isAdmin) {
     document.getElementById('deleteCard').style.display = 'block';
     document.getElementById('eventCard').style.display = 'block';
-    document.getElementById('aiDescCard').style.display = 'block';
     document.getElementById('assignCard').style.display = 'block';
   }
   document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
@@ -536,16 +519,6 @@ function render() {
     const advBtn = document.getElementById('advanceStageBtn');
     if (advBtn) advBtn.innerText = '→ Move to ' + nextStage;
     document.getElementById('stageCard').style.display = 'block';
-  }
-
-  if (item.auctionDescription) {
-    const r = document.getElementById('descResult');
-    r.innerText = item.auctionDescription;
-    r.style.display = 'block';
-    document.getElementById('copyDescBtn').style.display = 'block';
-    document.getElementById('feedbackRow').style.display = 'flex';
-    if (item.descriptionFeedback === 'good') { document.getElementById('fbGood').classList.add('good'); }
-    if (item.descriptionFeedback === 'bad')  { document.getElementById('fbBad').classList.add('bad'); }
   }
 
   // Tags & estimated value
@@ -751,71 +724,6 @@ async function saveLocation() {
   } catch (err) {
     alert('Failed to save location');
   }
-}
-
-// =========================
-// GENERATE AUCTION DESCRIPTION
-// =========================
-async function generateDescription() {
-  const dimensions     = document.getElementById('dimInput').value.trim();
-  const condition      = document.getElementById('conditionSelect').value;
-  const additionalNotes = document.getElementById('notesInput').value.trim();
-
-  const btn = document.getElementById('genDescBtn');
-  btn.disabled = true;
-  btn.innerText = '⏳ Generating...';
-
-  try {
-    const res = await fetch(`/items/${item.id}/auction-description`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dimensions, condition, additionalNotes, employee: user.name })
-    });
-    const data = await res.json();
-    if (data.success) {
-      item.auctionDescription = data.description;
-      const r = document.getElementById('descResult');
-      r.innerText = data.description;
-      r.style.display = 'block';
-      document.getElementById('copyDescBtn').style.display = 'block';
-      document.getElementById('feedbackRow').style.display = 'flex';
-      document.getElementById('fbGood').className = 'feedback-btn';
-      document.getElementById('fbBad').className  = 'feedback-btn';
-      const msg = document.getElementById('descMsg');
-      msg.style.display = 'block';
-      setTimeout(() => { msg.style.display = 'none'; }, 2500);
-    } else {
-      alert(data.message || 'Description generation failed');
-    }
-  } catch (err) {
-    alert('Failed to generate description');
-  } finally {
-    btn.disabled = false;
-    btn.innerText = '✨ Generate Description';
-  }
-}
-
-async function sendFeedback(type) {
-  document.getElementById('fbGood').className = 'feedback-btn' + (type === 'good' ? ' good' : '');
-  document.getElementById('fbBad').className  = 'feedback-btn' + (type === 'bad'  ? ' bad'  : '');
-  try {
-    await fetch(`/items/${item.id}/description-feedback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ feedback: type, employee: user.name })
-    });
-  } catch {}
-}
-
-function copyDescription() {
-  const text = document.getElementById('descResult').innerText;
-  // Paste into the editable description field
-  document.getElementById('editDescription').value = text;
-  const btn = document.getElementById('copyDescBtn');
-  btn.innerText = '✅ Copied to Description Field!';
-  setTimeout(() => { btn.innerText = 'Copy to Description Field'; }, 2500);
-  // Scroll to edit card
-  document.getElementById('editDescription').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // =========================
@@ -1069,26 +977,6 @@ async function assignToEvent() {
     }
   } catch { alert('Failed to assign event'); }
   finally { btn.disabled = false; }
-}
-
-async function autoAssignEvent() {
-  const btn = document.querySelector('[onclick="autoAssignEvent()"]');
-  btn.disabled = true; btn.innerText = '⏳ AI Assigning…';
-  try {
-    const res = await fetch(`/items/${item.id}/auto-assign-event`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: user.name })
-    });
-    const data = await res.json();
-    const result = document.getElementById('autoAssignResult');
-    if (data.success) {
-      result.innerText = `✅ Assigned to "${data.event.name}" — ${data.reason}`;
-      result.style.display = 'block';
-      item.eventId = data.event.id;
-      await loadEvents();
-    } else { result.innerText = '⚠️ ' + (data.message || 'Auto-assign failed'); result.style.display = 'block'; }
-  } catch { alert('Auto-assign failed'); }
-  finally { btn.disabled = false; btn.innerText = '✨ AI Auto-Assign'; }
 }
 
 function escapeHtml(v) {

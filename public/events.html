@@ -65,7 +65,7 @@
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
     <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
-    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
     <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
@@ -118,7 +118,7 @@
     <span class="form-label">Description (optional)</span>
     <textarea id="newDesc" rows="2" placeholder="Notes about this sale..." style="margin-top:4px;"></textarea>
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button onclick="createEvent()" style="flex:1;">Create Event</button>
+      <button id="createSubmitBtn" onclick="createEvent()" style="flex:1;">Create Event</button>
       <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
     </div>
     <div id="createMsg" style="display:none;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
@@ -151,8 +151,10 @@ async function createEvent() {
   const date = document.getElementById('newDate').value;
   if (!name || !date) { alert('Event name and date are required'); return; }
 
-  const btn = document.querySelector('#createForm button');
+  const btn = document.getElementById('createSubmitBtn');
+  const msg = document.getElementById('createMsg');
   btn.disabled = true;
+  msg.style.display = 'none';
   try {
     const res = await fetch('/events', {
       method: 'POST',
@@ -165,8 +167,8 @@ async function createEvent() {
         createdBy: user.name
       })
     });
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
-    const msg = document.getElementById('createMsg');
     if (data.success) {
       msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
       msg.innerText = '✅ Event created!';
@@ -178,8 +180,12 @@ async function createEvent() {
       msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
       msg.innerText = '❌ ' + (data.message || 'Failed to create event');
     }
-  } catch { alert('Failed to create event'); }
-  btn.disabled = false;
+  } catch (err) {
+    msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '❌ ' + (err.message || 'Network error — please try again');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function load() {

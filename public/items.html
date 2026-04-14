@@ -100,7 +100,7 @@
     <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
     <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
     <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
-    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> AI Photo Studio</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
     <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
   </nav>
@@ -236,7 +236,8 @@ async function load() {
     sel.appendChild(opt);
   });
 
-  // Populate category filter from actual item data
+  // Populate category filter from actual item data (preserve current selection)
+  const prevCat = document.getElementById('categoryFilter').value;
   const cats = [...new Set(allItems.map(i => i.category).filter(Boolean))].sort();
   const catSel = document.getElementById('categoryFilter');
   catSel.innerHTML = '<option value="">All Categories</option>';
@@ -245,8 +246,10 @@ async function load() {
     o.value = c; o.textContent = c;
     catSel.appendChild(o);
   });
+  if (prevCat) catSel.value = prevCat;
 
-  // Populate assigned filter from employees
+  // Populate assigned filter from employees (preserve current selection)
+  const prevAssigned = document.getElementById('assignedFilter').value;
   const assignedSel = document.getElementById('assignedFilter');
   assignedSel.innerHTML = '<option value="">Any Assignment</option><option value="__unassigned__">Unassigned</option>';
   emps.forEach(e => {
@@ -254,6 +257,7 @@ async function load() {
     o.value = e.name; o.textContent = e.name;
     assignedSel.appendChild(o);
   });
+  if (prevAssigned) assignedSel.value = prevAssigned;
 
   render();
 }
@@ -344,6 +348,9 @@ function getFiltered() {
   const catF = document.getElementById('categoryFilter').value;
   const assignedF = document.getElementById('assignedFilter').value;
   return allItems.filter(i => {
+    // Hide prospects (Home Visit) from default library view — they're not yet in inventory.
+    // Only show them when the stage filter is explicitly set to 'Home Visit'.
+    if (i.stage === 'Home Visit' && stageF !== 'Home Visit') return false;
     const matchQ = !q ||
       (i.name || '').toLowerCase().includes(q) ||
       (i.lotNumber || '').toLowerCase().includes(q) ||
@@ -640,11 +647,14 @@ load().then(() => {
   const consignerParam = p.get('consigner');
   if (stageParam) {
     const sel = document.getElementById('stageFilter');
-    // Match HTML-decoded value
-    const decoded = stageParam;
     for (const opt of sel.options) {
-      if (opt.value === decoded || opt.text === decoded) { sel.value = opt.value; break; }
+      if (opt.value === stageParam || opt.text === stageParam) { sel.value = opt.value; break; }
     }
+    // Open filter panel so the active filter is visible
+    document.getElementById('filterPanel').style.display = 'block';
+    const btn = document.getElementById('filterToggleBtn');
+    btn.style.background = '#0b1b2b'; btn.style.color = 'white'; btn.style.borderColor = '#0b1b2b';
+    updateFilterBadge();
     render();
   }
   if (consignerParam) {
