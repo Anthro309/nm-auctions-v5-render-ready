@@ -154,6 +154,26 @@ ensureArrayFile(INTAKE_FILE);
 ensureUsersExist();
 
 // =========================
+// STARTUP MIGRATION: advance accepted items out of Home Visit
+// =========================
+(function migrateAcceptedItems() {
+  try {
+    const items = readJSON(ITEMS_FILE);
+    let fixed = 0;
+    items.forEach(i => {
+      if (i.stage === 'Home Visit' && i.reviewStatus === 'accepted') {
+        i.stage = 'Received at Studio';
+        fixed++;
+      }
+    });
+    if (fixed > 0) {
+      writeJSON(ITEMS_FILE, items);
+      console.log(`✅ Migration: moved ${fixed} accepted item(s) from Home Visit → Received at Studio`);
+    }
+  } catch (e) { console.error('Migration error:', e.message); }
+})();
+
+// =========================
 // ENSURE UPLOADS FOLDER
 // =========================
 const uploadsPath = path.join(__dirname, 'public/uploads');
@@ -708,10 +728,12 @@ app.post('/items/:id/review-accept', (req, res) => {
 
   const employee = req.body.employee || 'system';
   item.reviewStatus = 'accepted';
-  item.reviewedAt = new Date().toISOString();
-  item.reviewedBy = employee;
+  item.reviewedAt   = new Date().toISOString();
+  item.reviewedBy   = employee;
+  // Advance stage from Home Visit → Received at Studio so item enters inventory
+  if (item.stage === 'Home Visit') item.stage = 'Received at Studio';
 
-  addLog(item, { employee, action: 'accepted in review', note: 'Item accepted post-visit' });
+  addLog(item, { employee, action: 'accepted in review — moved to Received at Studio' });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
 });
