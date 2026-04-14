@@ -147,9 +147,14 @@ function injectNotificationBell(u) {
     try {
       var res = await fetch('/notifications?employee=' + encodeURIComponent(u.name));
       var data = await res.json();
-      var assigned = (data.assigned || []);
       var notifications = (data.notifications || []);
-      var total = assigned.length + notifications.length;
+      var assigned = (data.assigned || []);
+
+      // Deduplicate: hide assigned items that already have an explicit notification
+      var notifItemIds = new Set(notifications.map(function(n) { return String(n.itemId); }));
+      var uniqueAssigned = assigned.filter(function(i) { return !notifItemIds.has(String(i.id)); });
+
+      var total = notifications.length + uniqueAssigned.length;
 
       var badge = document.getElementById('navBellBadge');
       if (badge) {
@@ -164,15 +169,15 @@ function injectNotificationBell(u) {
       if (!total) {
         html += '<div class="nav-bell-empty">No new notifications</div>';
       } else {
-        // Explicit notifications first
+        // Explicit assignment notifications first
         notifications.forEach(function(n) {
           html += '<div class="nav-bell-item" onclick="window.location.href=\'/item.html?id=' + encStr(n.itemId) + '\'">';
           html += '<div class="nav-bell-item-name">📦 ' + encStr(n.itemName || 'Item assigned') + '</div>';
           html += '<div class="nav-bell-item-meta">Assigned by ' + encStr(n.assignedBy || '—') + ' · Lot ' + encStr(n.lotNumber || '—') + '</div>';
           html += '</div>';
         });
-        // Assigned items
-        assigned.forEach(function(i) {
+        // Assigned items not already shown above
+        uniqueAssigned.forEach(function(i) {
           html += '<div class="nav-bell-item" onclick="window.location.href=\'/item.html?id=' + encStr(i.id) + '\'">';
           html += '<div class="nav-bell-item-name">👤 ' + encStr(i.name || 'Unnamed') + '</div>';
           html += '<div class="nav-bell-item-meta">Lot ' + encStr(i.lotNumber || '—') + ' · ' + encStr(i.stage || '—') + (i.assignedBy ? ' · by ' + encStr(i.assignedBy) : '') + '</div>';

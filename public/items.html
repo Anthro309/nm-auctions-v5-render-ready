@@ -133,6 +133,13 @@
       <option>Missing at Drop Off</option>
       <option>Archived</option>
     </select>
+    <select id="categoryFilter" onchange="render()">
+      <option value="">All Categories</option>
+    </select>
+    <select id="assignedFilter" onchange="render()">
+      <option value="">Any Assignment</option>
+      <option value="__unassigned__">Unassigned</option>
+    </select>
     <select id="sortFilter" onchange="render()">
       <option value="consigner">Group by Consigner</option>
       <option value="stage">Sort by Stage</option>
@@ -144,7 +151,7 @@
   <div class="card" style="padding-top:14px;padding-bottom:14px;">
     <div class="mode-toggle">
       <button class="mode-btn active" id="modeConsigner" onclick="setMode('consigner')">By Consigner</button>
-      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Advance <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Select multiple items using checkboxes, then move them all to the same workflow stage in one tap. Useful for processing a batch that arrived together.')">?</button></button>
+      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Actions <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Select multiple items using checkboxes, then advance their stage or assign them to an employee — all in one tap.')">?</button></button>
     </div>
 
     <!-- BATCH BAR -->
@@ -204,6 +211,8 @@ async function load() {
   const [itemsRes, empRes] = await Promise.all([fetch('/items'), fetch('/employees')]);
   allItems = await itemsRes.json();
   const emps = await empRes.json();
+
+  // Populate batch assign select
   const sel = document.getElementById('batchAssignSelect');
   sel.innerHTML = '<option value="">Assign to...</option><option value="__unassign__">— Remove Assignment —</option>';
   emps.forEach(e => {
@@ -212,12 +221,34 @@ async function load() {
     opt.textContent = e.name;
     sel.appendChild(opt);
   });
+
+  // Populate category filter from actual item data
+  const cats = [...new Set(allItems.map(i => i.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('categoryFilter');
+  catSel.innerHTML = '<option value="">All Categories</option>';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    catSel.appendChild(o);
+  });
+
+  // Populate assigned filter from employees
+  const assignedSel = document.getElementById('assignedFilter');
+  assignedSel.innerHTML = '<option value="">Any Assignment</option><option value="__unassigned__">Unassigned</option>';
+  emps.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.name; o.textContent = e.name;
+    assignedSel.appendChild(o);
+  });
+
   render();
 }
 
 function clearFilters() {
   document.getElementById('search').value = '';
   document.getElementById('stageFilter').value = '';
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('assignedFilter').value = '';
   if (nlMode) toggleNL();
   render();
 }
@@ -272,6 +303,8 @@ function onSearchInput() {
 function getFiltered() {
   const q = document.getElementById('search').value.toLowerCase();
   const stageF = document.getElementById('stageFilter').value;
+  const catF = document.getElementById('categoryFilter').value;
+  const assignedF = document.getElementById('assignedFilter').value;
   return allItems.filter(i => {
     const matchQ = !q ||
       (i.name || '').toLowerCase().includes(q) ||
@@ -279,13 +312,16 @@ function getFiltered() {
       (i.code || '').toLowerCase().includes(q) ||
       (i.consigner || '').toLowerCase().includes(q);
     const matchStage = !stageF || i.stage === stageF;
-    return matchQ && matchStage;
+    const matchCat = !catF || i.category === catF;
+    const matchAssigned = !assignedF ||
+      (assignedF === '__unassigned__' ? !i.assignedTo : i.assignedTo === assignedF);
+    return matchQ && matchStage && matchCat && matchAssigned;
   });
 }
 
 function render() {
   const filtered = nlMode && nlResults !== null ? nlResults : getFiltered();
-  const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
+  const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value || document.getElementById('categoryFilter').value || document.getElementById('assignedFilter').value;
   document.getElementById('clearFiltersBtn').style.display = hasFilters ? 'inline' : 'none';
   document.getElementById('itemCount').innerText =
     filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
