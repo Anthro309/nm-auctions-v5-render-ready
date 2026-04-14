@@ -134,18 +134,7 @@
 .btn-reject:hover { background: #b91c1c; }
 .btn-reject.done { background: #7f1d1d; cursor: default; }
 
-.btn-undo {
-  padding: 9px 12px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 10px;
-  background: white;
-  color: #374151;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-}
-.btn-undo:hover { background: #f3f4f6; }
+
 
 .reason-row {
   margin-top: 8px;
@@ -448,7 +437,6 @@ function renderReview() {
       ).join('');
       actionsHtml = `
         <div class="review-actions">
-          <button class="btn-undo" onclick="undoItem('${item.id}')">↩ Undo</button>
           ${status === 'accepted' ? `<a href="/item.html?id=${item.id}" style="flex:1;text-align:center;padding:9px 12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;text-decoration:none;">View Item →</a>` : ''}
         </div>
         ${status === 'accepted' ? `
@@ -529,39 +517,6 @@ async function confirmReject(itemId) {
     body: JSON.stringify({ employee: user.name, reason })
   });
   await refreshSession();
-}
-
-// =====================
-// UNDO
-// =====================
-async function undoItem(itemId) {
-  delete localStatus[itemId];
-  // Restore via review-accept then undo (we just restore server state by reloading)
-  // Re-fetch the session items to get fresh server state
-  await fetch(`/items/${itemId}/review-accept`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ employee: user.name })
-  });
-  // Now set back to null on server side by resetting via stage back to Home Visit if was archived
-  const itemRes = await fetch(`/items/${itemId}`);
-  const itemData = await itemRes.json();
-  if (itemData.stage === 'Archived') {
-    await fetch(`/items/${itemId}/stage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage: 'Home Visit', employee: user.name })
-    });
-    // Also clear reviewStatus
-    await fetch(`/items/${itemId}/review-accept`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: user.name })
-    });
-  }
-  await refreshSession();
-  renderReview();
-  renderSessions();
 }
 
 // =====================

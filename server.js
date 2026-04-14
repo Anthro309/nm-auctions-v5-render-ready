@@ -596,9 +596,31 @@ app.get('/consigner-portal/:code', (req, res) => {
       id: i.id, name: i.name, lotNumber: i.lotNumber,
       stage: i.stage, category: i.category, condition: i.condition,
       photos: i.photos, soldPrice: i.soldPrice || null, payout: i.payout || null,
+      reviewStatus: i.reviewStatus || null,
+      archiveReason: i.archiveReason || null,
+      clientAction: i.clientAction || null,
+      clientActionAt: i.clientActionAt || null,
       createdAt: i.createdAt
     }))
   });
+});
+
+// =========================
+// CONSIGNER PORTAL — SUBMIT ACTION (donate / schedule pickup)
+// =========================
+app.post('/consigner-portal/action', (req, res) => {
+  const { code, itemId, action } = req.body || {};
+  if (!code || !itemId || !['donate', 'pickup'].includes(action)) {
+    return res.status(400).json({ success: false, message: 'code, itemId, and action (donate|pickup) are required' });
+  }
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(itemId) && i.code === code.toUpperCase());
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found for this code' });
+  item.clientAction = action;
+  item.clientActionAt = new Date().toISOString();
+  addLog(item, { employee: 'client', action: `client requested ${action}` });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true });
 });
 
 // =========================
