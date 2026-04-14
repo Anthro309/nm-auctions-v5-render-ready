@@ -315,6 +315,7 @@
       </label>
     </div>
     <div id="photoPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:0;"></div>
+    <button id="aiSuggestBtn" onclick="aiSuggestFields()" style="display:none;margin-top:8px;width:100%;padding:9px 14px;background:linear-gradient(90deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">✨ AI Suggest Name &amp; Category</button>
 
     <div class="loader" id="loader">
       <div class="loader-bar"></div>
@@ -397,6 +398,7 @@ function handlePhotoSelect(input) {
     preview.appendChild(wrap);
   });
   setStatus(files.length === 1 ? '1 photo selected.' : `${files.length} photos selected — first is the main shot.`);
+  document.getElementById('aiSuggestBtn').style.display = 'block';
 }
 
 async function uploadAllPhotos() {
@@ -419,6 +421,39 @@ function adjustPieces(delta) {
   document.getElementById('piecesCount').textContent = piecesInSet;
   const lbl = document.getElementById('piecesLabel');
   if (lbl) lbl.textContent = piecesInSet === 1 ? '1 label' : `${piecesInSet} labels — named "(1 of ${piecesInSet})" through "(${piecesInSet} of ${piecesInSet})"`;
+}
+
+async function aiSuggestFields() {
+  if (!selectedFiles.length) { alert('Select or take a photo first.'); return; }
+  const btn = document.getElementById('aiSuggestBtn');
+  btn.textContent = '✨ Thinking…';
+  btn.disabled = true;
+  try {
+    // Upload just the first photo to get a URL
+    const form = new FormData();
+    form.append('photo', selectedFiles[0]);
+    const upRes = await fetch('/upload', { method: 'POST', body: form });
+    const upData = await safeJson(upRes);
+    if (!upData.success || !upData.path) throw new Error('Upload failed');
+
+    const res = await fetch('/analyze-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl: window.location.origin + upData.path })
+    });
+    const data = await safeJson(res);
+    if (!data.success) throw new Error(data.message || 'AI failed');
+
+    if (data.title)    document.getElementById('itemName').value = data.title;
+    if (data.category) document.getElementById('itemCategory').value = data.category;
+    setStatus(`✨ AI suggested "${data.title || '—'}" · ${data.category || '—'}. Fill in the rest manually.`);
+    checkDuplicate(data.title);
+  } catch (err) {
+    setStatus('AI suggest failed: ' + err.message);
+  } finally {
+    btn.textContent = '✨ AI Suggest Name & Category';
+    btn.disabled = false;
+  }
 }
 
 async function safeJson(res) {
@@ -629,6 +664,7 @@ async function addItem() {
     document.getElementById('photo').value = '';
     document.getElementById('galleryPhotos').value = '';
     document.getElementById('photoPreview').innerHTML = '';
+    document.getElementById('aiSuggestBtn').style.display = 'none';
     document.getElementById('dupWarning').style.display = 'none';
     selectedFiles = []; currentPhotoPaths = [];
     currentTags = []; currentEstValueLow = 0; currentEstValueHigh = 0;
