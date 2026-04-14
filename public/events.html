@@ -166,13 +166,17 @@ async function createEvent() {
       })
     });
     const data = await res.json();
+    const msg = document.getElementById('createMsg');
     if (data.success) {
-      document.getElementById('createMsg').innerText = '✅ Event created!';
-      document.getElementById('createMsg').style.display = 'block';
+      msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
+      msg.innerText = '✅ Event created!';
       document.getElementById('newName').value = '';
       document.getElementById('newDate').value = '';
       document.getElementById('newDesc').value = '';
       setTimeout(() => { toggleCreate(); load(); }, 1200);
+    } else {
+      msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+      msg.innerText = '❌ ' + (data.message || 'Failed to create event');
     }
   } catch { alert('Failed to create event'); }
   btn.disabled = false;

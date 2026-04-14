@@ -286,17 +286,17 @@
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile">
+    <div class="stat-tile" onclick="window.location.href='/items.html?stage=Home+Visit'" style="cursor:pointer;" title="Items logged but not yet accepted">
+      <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
+      <div class="stat-label">Prospects</div>
+    </div>
+    <div class="stat-tile" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="Items received and in active workflow">
       <div class="stat-number skeleton" id="statInStudio" style="min-height:34px;">—</div>
-      <div class="stat-label">Total in Inventory</div>
+      <div class="stat-label">In Inventory</div>
     </div>
     <div class="stat-tile">
       <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
       <div class="stat-label">Ready to Photograph</div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-number skeleton" id="statToday" style="min-height:34px;">—</div>
-      <div class="stat-label">Photographed Today</div>
     </div>
   </div>
 
@@ -439,42 +439,39 @@
       const items = await res.json();
       const today = new Date().toLocaleDateString();
 
-      // Total in inventory = everything not picked up or missing
+      // Prospects = items at Home Visit (logged but not yet accepted/received)
+      const prospects = items.filter(i => i.stage === 'Home Visit');
+
+      // In Inventory = received and actively in workflow (not prospect, not picked up, not archived)
       const totalInventory = items.filter(i =>
-        i.stage !== 'Picked Up' && i.stage !== 'Missing at Drop Off'
+        i.stage !== 'Home Visit' &&
+        i.stage !== 'Picked Up' &&
+        i.stage !== 'Missing at Drop Off' &&
+        i.stage !== 'Archived'
       );
 
-      // Ready to photograph = items at "Review & Cleaning" stage (next step is photograph)
+      // Ready to photograph = items at "Review & Cleaning" stage
       const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
 
-      // Photographed today = items whose logs show a stage change TO 'Photograph' today
-      const photographedToday = items.filter(i =>
-        Array.isArray(i.logs) && i.logs.some(l =>
-          l.toStage === 'Photograph' &&
-          new Date(l.timestamp).toLocaleDateString() === today
-        )
-      );
+      const statProspects = document.getElementById('statProspects');
+      const statInStudio  = document.getElementById('statInStudio');
+      const statReady     = document.getElementById('statReady');
 
-      const statInStudio = document.getElementById('statInStudio');
-      const statReady = document.getElementById('statReady');
-      const statToday = document.getElementById('statToday');
+      statProspects.innerText = prospects.length;
+      statInStudio.innerText  = totalInventory.length;
+      statReady.innerText     = readyToPhoto.length;
 
-      statInStudio.innerText = totalInventory.length;
-      statReady.innerText    = readyToPhoto.length;
-      statToday.innerText    = photographedToday.length;
-
-      // Remove skeleton class now that data is loaded
+      statProspects.classList.remove('skeleton');
       statInStudio.classList.remove('skeleton');
       statReady.classList.remove('skeleton');
-      statToday.classList.remove('skeleton');
 
-      // Show onboarding if nothing in inventory yet
-      if (totalInventory.length === 0) {
+      // Show onboarding only when no items received yet (prospects OK to have)
+      if (totalInventory.length === 0 && prospects.length === 0) {
         document.getElementById('onboardingBanner').style.display = 'block';
       }
     } catch (err) {
       console.warn('Stats failed to load');
-      ['statInStudio','statReady','statToday'].forEach(id => {
+      ['statProspects','statInStudio','statReady'].forEach(id => {
         const el = document.getElementById(id);
         el.innerText = '—';
         el.classList.remove('skeleton');

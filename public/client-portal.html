@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consigner Portal | Auction Legacy</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #eef2f7;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Header */
+.portal-header {
+  background: linear-gradient(90deg, #0b1b2b 0%, #0f2640 100%);
+  color: white;
+  padding: 18px 20px 16px;
+  text-align: center;
+  border-bottom: 2px solid rgba(37,99,235,0.7);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.35);
+}
+.portal-header .logo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 2px; }
+.portal-logo { width: 32px; height: 32px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: white; flex-shrink: 0; box-shadow: 0 2px 8px rgba(37,99,235,0.4); }
+.portal-title { font-size: 20px; font-weight: 800; letter-spacing: 0.03em; }
+.portal-sub { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+/* Container */
+.container { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
+
+/* Lookup card */
+.lookup-card {
+  background: white;
+  border-radius: 18px;
+  padding: 28px 22px;
+  box-shadow: 0 2px 16px rgba(15,23,42,0.08);
+  margin-bottom: 20px;
+  text-align: center;
+}
+.lookup-card h2 { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+.lookup-card p { margin: 0 0 20px; font-size: 14px; color: #6b7280; }
+.code-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-transform: uppercase;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  outline: none;
+  margin-bottom: 14px;
+  color: #111827;
+}
+.code-input:focus { border-color: #2563eb; }
+.lookup-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.lookup-btn:hover { opacity: 0.9; }
+.lookup-btn:disabled { opacity: 0.5; cursor: default; }
+.lookup-error { margin-top: 12px; padding: 10px 14px; background: #fef2f2; color: #dc2626; border-radius: 10px; font-size: 13px; font-weight: 600; display: none; }
+
+/* Section headers */
+.section-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 22px 0 8px;
+}
+
+/* Item cards */
+.item-card {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.item-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4f6;
+}
+.item-thumb-placeholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.item-body { flex: 1; min-width: 0; }
+.item-name { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-meta { font-size: 12px; color: #6b7280; }
+.item-stage-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 5px;
+}
+.badge-prospect  { background: #fffbeb; color: #92400e; }
+.badge-active    { background: #eff6ff; color: #1d4ed8; }
+.badge-ready     { background: #f0fdf4; color: #15803d; }
+.badge-sold      { background: #f0fdf4; color: #15803d; }
+.badge-archived  { background: #fef2f2; color: #dc2626; }
+.badge-done      { background: #f3f4f6; color: #6b7280; }
+
+/* Action buttons for archived items */
+.item-actions { display: flex; gap: 8px; margin-top: 10px; }
+.action-btn {
+  flex: 1;
+  padding: 9px 6px;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.action-btn:hover { opacity: 0.85; }
+.action-btn:disabled { opacity: 0.5; cursor: default; }
+.btn-donate { background: #eff6ff; color: #1d4ed8; }
+.btn-pickup  { background: #f0fdf4; color: #15803d; }
+.btn-selected { opacity: 1 !important; box-shadow: inset 0 0 0 2px currentColor; }
+.action-confirmed { font-size: 12px; color: #15803d; font-weight: 700; margin-top: 8px; display: none; }
+
+/* Progress bar for active items */
+.stage-progress { margin-top: 8px; }
+.stage-progress-bar { height: 5px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
+.stage-progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #1d4ed8); border-radius: 99px; transition: width 0.4s ease; }
+.stage-progress-label { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+/* Consigner welcome */
+.welcome-card {
+  background: linear-gradient(135deg, #0b1b2b, #1e3a5f);
+  color: white;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 6px;
+}
+.welcome-name { font-size: 20px; font-weight: 800; }
+.welcome-code { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+.welcome-stats { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.welcome-stat { text-align: center; }
+.welcome-stat-n { font-size: 22px; font-weight: 900; color: white; line-height: 1; }
+.welcome-stat-l { font-size: 10px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 24px; color: #9ca3af; font-size: 13px; }
+
+/* Payout row */
+.payout-row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #f3f4f6; }
+.payout-label { color: #6b7280; font-weight: 600; }
+.payout-value { color: #15803d; font-weight: 800; }
+
+/* Contact footer */
+.contact-footer { text-align: center; margin-top: 32px; padding: 20px; font-size: 13px; color: #9ca3af; }
+.contact-footer a { color: #2563eb; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="portal-header">
+  <div class="logo-row">
+    <div class="portal-logo">AL</div>
+    <div class="portal-title">Auction Legacy</div>
+  </div>
+  <div class="portal-sub">Consigner Portal</div>
+</div>
+
+<div class="container">
+
+  <!-- Lookup form -->
+  <div class="lookup-card" id="lookupCard">
+    <h2>View Your Items</h2>
+    <p>Enter your 6-character consigner code to see the status of your items.</p>
+    <input class="code-input" id="codeInput" maxlength="6" placeholder="ABC123" autocomplete="off"
+      oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')lookupCode()">
+    <button class="lookup-btn" id="lookupBtn" onclick="lookupCode()">View My Items</button>
+    <div class="lookup-error" id="lookupError"></div>
+  </div>
+
+  <!-- Results (hidden until lookup) -->
+  <div id="results" style="display:none;"></div>
+
+  <div class="contact-footer">
+    Questions? Contact us at <a href="mailto:info@nmauctions.com">info@nmauctions.com</a>
+  </div>
+</div>
+
+<script>
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Check for ?code= in URL
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const code = (params.get('code') || '').toUpperCase().trim();
+  if (code) {
+    document.getElementById('codeInput').value = code;
+    lookupCode();
+  }
+})();
+
+async function lookupCode() {
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if (!code) { showError('Please enter your consigner code'); return; }
+
+  const btn = document.getElementById('lookupBtn');
+  btn.disabled = true;
+  btn.textContent = 'Looking up…';
+  document.getElementById('lookupError').style.display = 'none';
+
+  try {
+    const res = await fetch('/consigner-portal/' + encodeURIComponent(code));
+    const data = await res.json();
+    if (!data.success) {
+      showError(data.message || 'No items found for that code. Please check your code and try again.');
+      btn.disabled = false;
+      btn.textContent = 'View My Items';
+      return;
+    }
+    renderResults(data);
+    document.getElementById('lookupCard').style.display = 'none';
+  } catch (err) {
+    showError('Unable to connect. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'View My Items';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('lookupError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// Stage definitions
+const STAGE_ORDER = [
+  'Home Visit',
+  'Received at Studio',
+  'Review & Cleaning',
+  'Photograph',
+  'Prep for Pick Up',
+  'Ready for Pick Up',
+  'Picked Up',
+  'Archived'
+];
+
+function stageProgress(stage) {
+  const active = ['Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'];
+  const idx = active.indexOf(stage);
+  if (idx < 0) return null;
+  return { pct: Math.round(((idx + 1) / active.length) * 100), label: stage };
+}
+
+function renderResults(data) {
+  const items = data.items || [];
+
+  // Categorize
+  const prospects  = items.filter(i => i.stage === 'Home Visit');
+  const active     = items.filter(i => ['Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'].includes(i.stage));
+  const readyPU    = items.filter(i => i.stage === 'Ready for Pick Up');
+  const sold       = items.filter(i => i.stage === 'Picked Up');
+  const rejected   = items.filter(i => i.stage === 'Archived' && i.reviewStatus === 'rejected');
+  const archived   = items.filter(i => i.stage === 'Archived' && i.reviewStatus !== 'rejected');
+
+  let html = '';
+
+  // Welcome card
+  html += `<div class="welcome-card">
+    <div class="welcome-name">${esc(data.consigner)}</div>
+    <div class="welcome-code">Code: ${esc(data.code)}</div>
+    <div class="welcome-stats">
+      <div class="welcome-stat"><div class="welcome-stat-n">${items.length}</div><div class="welcome-stat-l">Total Items</div></div>
+      <div class="welcome-stat"><div class="welcome-stat-n">${active.length + readyPU.length}</div><div class="welcome-stat-l">In Progress</div></div>
+      <div class="welcome-stat"><div class="welcome-stat-n">${sold.length}</div><div class="welcome-stat-l">Sold</div></div>
+      ${rejected.length ? `<div class="welcome-stat"><div class="welcome-stat-n">${rejected.length}</div><div class="welcome-stat-l">Need Action</div></div>` : ''}
+    </div>
+  </div>`;
+
+  // Rejected items — these need action
+  if (rejected.length) {
+    html += '<div class="section-label">⚠️ Action Required — Rejected Items</div>';
+    rejected.forEach(item => { html += renderRejectedCard(item, data.code); });
+  }
+
+  // Ready for pickup
+  if (readyPU.length) {
+    html += '<div class="section-label">✅ Ready for Pick Up</div>';
+    readyPU.forEach(item => { html += renderItemCard(item, 'badge-ready', 'Ready for Pick Up'); });
+  }
+
+  // Active items
+  if (active.length) {
+    html += '<div class="section-label">🔄 In Progress</div>';
+    active.forEach(item => { html += renderActiveCard(item); });
+  }
+
+  // Sold items
+  if (sold.length) {
+    html += '<div class="section-label">💰 Sold</div>';
+    sold.forEach(item => { html += renderSoldCard(item); });
+  }
+
+  // Prospects
+  if (prospects.length) {
+    html += '<div class="section-label">📋 Pending Review</div>';
+    prospects.forEach(item => {
+      html += renderItemCard(item, 'badge-prospect', 'Awaiting Review');
+    });
+  }
+
+  // Other archived
+  if (archived.length) {
+    html += '<div class="section-label">🗂 Archived</div>';
+    archived.forEach(item => { html += renderItemCard(item, 'badge-done', 'Archived'); });
+  }
+
+  if (!items.length) {
+    html += '<div class="empty-state">No items found for your account.</div>';
+  }
+
+  html += `<div style="margin-top:20px;text-align:center;">
+    <button onclick="document.getElementById('lookupCard').style.display='block';document.getElementById('results').style.display='none';document.getElementById('lookupBtn').disabled=false;document.getElementById('lookupBtn').textContent='View My Items';"
+      style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;font-weight:600;">← Look up a different code</button>
+  </div>`;
+
+  const el = document.getElementById('results');
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function thumbHtml(item) {
+  const photo = Array.isArray(item.photos) ? item.photos[0] : null;
+  if (photo) return `<img class="item-thumb" src="${esc(photo)}" alt="" onerror="this.style.display='none'">`;
+  return `<div class="item-thumb-placeholder">📦</div>`;
+}
+
+function renderItemCard(item, badgeClass, badgeLabel) {
+  return `<div class="item-card">
+    ${thumbHtml(item)}
+    <div class="item-body">
+      <div class="item-name">${esc(item.name || 'Unnamed Item')}</div>
+      <div class="item-meta">${esc(item.category || '')}${item.lotNumber ? ' · Lot ' + esc(item.lotNumber) : ''}</div>
+      <span class="item-stage-badge ${badgeClass}">${badgeLabel}</span>
+    </div>
+  </div>`;
+}
+
+function renderActiveCard(item) {
+  const prog = stageProgress(item.stage);
+  return `<div class="item-card">
+    ${thumbHtml(item)}
+    <div class="item-body">
+      <div class="item-name">${esc(item.name || 'Unnamed Item')}</div>
+      <div class="item-meta">${esc(item.category || '')}${item.lotNumber ? ' · Lot ' + esc(item.lotNumber) : ''}</div>
+      <span class="item-stage-badge badge-active">${esc(item.stage)}</span>
+      ${prog ? `<div class="stage-progress">
+        <div class="stage-progress-bar"><div class="stage-progress-fill" style="width:${prog.pct}%"></div></div>
+        <div class="stage-progress-label">${prog.pct}% complete</div>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderSoldCard(item) {
+  const payout = item.payout != null ? '$' + Number(item.payout).toFixed(2) : null;
+  const sold   = item.soldPrice != null ? '$' + Number(item.soldPrice).toFixed(2) : null;
+  return `<div class="item-card" style="flex-direction:column;align-items:stretch;">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      ${thumbHtml(item)}
+      <div class="item-body">
+        <div class="item-name">${esc(item.name || 'Unnamed Item')}</div>
+        <div class="item-meta">${esc(item.category || '')}${item.lotNumber ? ' · Lot ' + esc(item.lotNumber) : ''}</div>
+        <span class="item-stage-badge badge-sold">Sold</span>
+      </div>
+    </div>
+    ${(sold || payout) ? `<div class="payout-row">
+      ${sold ? `<span class="payout-label">Sold for ${sold}</span>` : '<span></span>'}
+      ${payout ? `<span class="payout-value">Your payout: ${payout}</span>` : ''}
+    </div>` : ''}
+  </div>`;
+}
+
+function renderRejectedCard(item, code) {
+  const alreadyActed = item.clientAction;
+  const actionLabel  = item.clientAction === 'donate' ? '✅ Marked for Donation'
+                     : item.clientAction === 'pickup' ? '✅ Pickup Requested'
+                     : null;
+
+  return `<div class="item-card" style="flex-direction:column;align-items:stretch;" id="rejected-${esc(item.id)}">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      ${thumbHtml(item)}
+      <div class="item-body">
+        <div class="item-name">${esc(item.name || 'Unnamed Item')}</div>
+        <div class="item-meta">${esc(item.category || '')}${item.lotNumber ? ' · Lot ' + esc(item.lotNumber) : ''}</div>
+        <span class="item-stage-badge badge-archived">Not Accepted</span>
+        ${item.archiveReason ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;">Reason: ${esc(item.archiveReason)}</div>` : ''}
+      </div>
+    </div>
+    ${alreadyActed
+      ? `<div style="margin-top:10px;padding:9px 12px;background:#f0fdf4;color:#15803d;border-radius:10px;font-size:12px;font-weight:700;">${actionLabel}</div>`
+      : `<div class="item-actions">
+          <button class="action-btn btn-donate" id="donate-${esc(item.id)}" onclick="submitAction('${esc(code)}','${esc(item.id)}','donate')">
+            🎁 Donate
+          </button>
+          <button class="action-btn btn-pickup" id="pickup-${esc(item.id)}" onclick="submitAction('${esc(code)}','${esc(item.id)}','pickup')">
+            🚗 Schedule Pick Up
+          </button>
+        </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;">We'll contact you to arrange pick up if you choose that option.</div>`
+    }
+  </div>`;
+}
+
+async function submitAction(code, itemId, action) {
+  const donateBtn = document.getElementById('donate-' + itemId);
+  const pickupBtn = document.getElementById('pickup-' + itemId);
+  if (donateBtn) donateBtn.disabled = true;
+  if (pickupBtn) pickupBtn.disabled = true;
+
+  try {
+    const res = await fetch('/consigner-portal/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, itemId, action })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const card = document.getElementById('rejected-' + itemId);
+      if (card) {
+        const actionsEl = card.querySelector('.item-actions');
+        const hintEl    = card.querySelector('div[style*="9ca3af"]');
+        if (actionsEl) actionsEl.remove();
+        if (hintEl) hintEl.remove();
+        const label = action === 'donate' ? '✅ Marked for Donation' : '✅ Pickup Requested';
+        const notice = document.createElement('div');
+        notice.style.cssText = 'margin-top:10px;padding:9px 12px;background:#f0fdf4;color:#15803d;border-radius:10px;font-size:12px;font-weight:700;';
+        notice.textContent = label;
+        card.appendChild(notice);
+      }
+    } else {
+      alert('Something went wrong. Please try again.');
+      if (donateBtn) donateBtn.disabled = false;
+      if (pickupBtn) pickupBtn.disabled = false;
+    }
+  } catch {
+    alert('Connection error. Please try again.');
+    if (donateBtn) donateBtn.disabled = false;
+    if (pickupBtn) pickupBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
