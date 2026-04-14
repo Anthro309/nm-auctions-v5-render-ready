@@ -32,6 +32,7 @@ const REPORTS_FILE       = 'reports.json';
 const WOTD_FILE          = 'wotd.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
 const INTAKE_FILE        = 'intake.json';
+const LOT_COUNTER_FILE   = 'lot-counter.json';
 
 // =========================
 // HELPERS
@@ -281,16 +282,34 @@ app.post('/employees/:name/photo', upload.single('photo'), (req, res) => {
 // NEXT LOT CODE
 // =========================
 app.get('/next-lot-code', (req, res) => {
-  const items = readJSON(ITEMS_FILE);
   const month = req.query.month || monthLetterForDate(new Date());
-  const usedNumbers = items
-    .map(i => i.lotNumber)
-    .filter(Boolean)
-    .filter(l => typeof l === 'string' && l.startsWith(month))
-    .map(l => parseInt(l.slice(1), 10))
-    .filter(n => !isNaN(n));
-  const next = usedNumbers.length ? Math.max(...usedNumbers) + 1 : 1;
-  const lotCode = `${month}${String(next).padStart(3, '0')}`;
+
+  // Read persisted counter (synchronous so concurrent Node.js calls stay serialized)
+  let counters = {};
+  try {
+    if (fs.existsSync(LOT_COUNTER_FILE)) {
+      counters = JSON.parse(fs.readFileSync(LOT_COUNTER_FILE, 'utf8'));
+    }
+  } catch {}
+
+  // On first use for this month, seed from saved items so we never re-issue a code
+  if (!counters[month]) {
+    const items = readJSON(ITEMS_FILE);
+    const usedNumbers = items
+      .map(i => i.lotNumber)
+      .filter(Boolean)
+      .filter(l => typeof l === 'string' && l.startsWith(month))
+      .map(l => parseInt(l.slice(1), 10))
+      .filter(n => !isNaN(n));
+    counters[month] = usedNumbers.length ? Math.max(...usedNumbers) : 0;
+  }
+
+  counters[month] += 1;
+  const lotCode = `${month}${String(counters[month]).padStart(3, '0')}`;
+
+  // Persist the incremented counter before responding
+  try { fs.writeFileSync(LOT_COUNTER_FILE, JSON.stringify(counters)); } catch {}
+
   res.json({ success: true, lotCode });
 });
 

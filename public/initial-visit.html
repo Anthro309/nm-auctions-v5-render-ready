@@ -431,7 +431,10 @@ function handlePhotoSelect(input) {
 }
 
 async function uploadAllPhotos() {
-  // Upload all photos in parallel
+  // Return cached paths if all files were already uploaded (e.g. via aiSuggestFields)
+  if (currentPhotoPaths.length > 0 && currentPhotoPaths.length === selectedFiles.length) {
+    return currentPhotoPaths;
+  }
   const results = await Promise.all(selectedFiles.map(file => {
     const form = new FormData();
     form.append('photo', file);
@@ -458,16 +461,14 @@ async function aiSuggestFields() {
   btn.textContent = '✨ Thinking…';
   btn.disabled = true;
   try {
-    const form = new FormData();
-    form.append('photo', selectedFiles[0]);
-    const upRes = await fetch('/upload', { method: 'POST', body: form });
-    const upData = await safeJson(upRes);
-    if (!upData.success || !upData.path) throw new Error('Upload failed');
+    // Use uploadAllPhotos so the path is cached — avoids re-uploading when Add to Visit is hit
+    const paths = await uploadAllPhotos();
+    if (!paths.length) throw new Error('Upload failed');
 
     const res = await fetch('/analyze-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: window.location.origin + upData.path })
+      body: JSON.stringify({ imageUrl: window.location.origin + paths[0] })
     });
     const data = await safeJson(res);
     if (!data.success) throw new Error(data.message || 'AI failed');
@@ -757,30 +758,30 @@ async function addItem() {
 async function addBatchItems() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const createdBy = user.name || 'unknown';
-  const count = selectedFiles.length;
 
   try {
     showLoader();
-    setStatus(`🚀 Uploading ${count} photos and asking AI to name each one…`);
+    setStatus(`🚀 Uploading photos…`);
 
-    // Upload all photos + get lot codes in parallel
-    const [paths, lotCodes] = await Promise.all([
-      uploadAllPhotos(),
-      getLotCodes(count)
-    ]);
+    // Upload first — lot codes depend on how many succeed
+    const paths = await uploadAllPhotos();
+    if (!paths.length) throw new Error('No photos uploaded successfully');
 
-    // AI identify each photo in parallel
+    // Get lot codes + AI identify in parallel (now that we know the exact path count)
     setStatus(`✨ AI identifying ${paths.length} items…`);
-    const aiResults = await Promise.all(paths.map(path =>
-      fetch('/analyze-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: window.location.origin + path })
-      })
-        .then(r => safeJson(r))
-        .then(d => ({ title: d.title || 'Untitled Item', category: d.category || '' }))
-        .catch(() => ({ title: 'Untitled Item', category: '' }))
-    ));
+    const [lotCodes, aiResults] = await Promise.all([
+      getLotCodes(paths.length),
+      Promise.all(paths.map(path =>
+        fetch('/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl: window.location.origin + path })
+        })
+          .then(r => safeJson(r))
+          .then(d => ({ title: d.title || 'Untitled Item', category: d.category || '' }))
+          .catch(() => ({ title: 'Untitled Item', category: '' }))
+      ))
+    ]);
 
     const newItems = paths.map((path, idx) => ({
       title: aiResults[idx].title,
