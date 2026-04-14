@@ -402,6 +402,22 @@ function renderReview() {
     `;
   }
 
+  // Batch assign bar (hidden until checkboxes selected)
+  if (accepted > 0) {
+    const empOpts = employees.map(e => `<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
+    html += `
+      <div id="batchAssignBar" style="display:none;background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span id="batchCheckCount" style="font-size:13px;font-weight:700;color:#374151;flex:1;min-width:80px;">0 selected</span>
+        <select id="batchEmpSel" style="margin:0;font-size:13px;padding:8px 10px;flex:1;min-width:140px;">
+          <option value="">— Assign to employee —</option>
+          ${empOpts}
+          <option value="__unassign__">— Remove Assignment —</option>
+        </select>
+        <button onclick="batchAssignSelected()" style="padding:9px 14px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
+      </div>
+    `;
+  }
+
   if (!items.length) {
     html += `<div class="empty-session"><div class="empty-icon">📭</div><div>No items in this session.</div></div>`;
   }
@@ -409,14 +425,29 @@ function renderReview() {
   items.forEach(item => {
     const status = effectiveStatus(item);
     const photo  = (item.photos && item.photos.length) ? item.photos[0] : null;
-    const valStr = item.estimatedValueLow || item.estimatedValueHigh
-      ? `$${item.estimatedValueLow}–$${item.estimatedValueHigh}`
-      : 'No estimate';
+
+    // Estimate display — show inline inputs if no estimate set
+    const hasEstimate = item.estimatedValueLow > 0 || item.estimatedValueHigh > 0;
+    const valHtml = hasEstimate
+      ? `<div class="item-review-value">$${item.estimatedValueLow}–$${item.estimatedValueHigh}</div>`
+      : `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+           <span style="font-size:12px;color:#9ca3af;white-space:nowrap;">$</span>
+           <input type="number" id="est-low-${item.id}" placeholder="Low" min="0" style="width:54px;padding:3px 5px;font-size:12px;border:1.5px solid #d1d5db;border-radius:6px;margin:0;">
+           <span style="font-size:11px;color:#9ca3af;">–</span>
+           <span style="font-size:12px;color:#9ca3af;">$</span>
+           <input type="number" id="est-high-${item.id}" placeholder="High" min="0" style="width:54px;padding:3px 5px;font-size:12px;border:1.5px solid #d1d5db;border-radius:6px;margin:0;">
+           <button onclick="saveEstimate('${item.id}')" style="padding:3px 8px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>
+         </div>`;
 
     let chipHtml = '';
     if (status === 'accepted') chipHtml = `<span class="status-chip chip-accepted">✓ Accepted</span>`;
     else if (status === 'rejected') chipHtml = `<span class="status-chip chip-rejected">✕ Archived</span>`;
     else chipHtml = `<span class="status-chip chip-pending">Pending</span>`;
+
+    // Checkbox for accepted items (for batch assign)
+    const chkHtml = status === 'accepted'
+      ? `<input type="checkbox" class="rv-chk" data-id="${item.id}" onchange="updateBatchBar()" style="width:20px;height:20px;cursor:pointer;accent-color:#7c3aed;flex-shrink:0;margin-top:2px;">`
+      : '';
 
     let actionsHtml = '';
     if (status === null) {
@@ -441,7 +472,7 @@ function renderReview() {
         </div>
         ${status === 'accepted' ? `
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-          <select id="assign-sel-${item.id}" style="flex:1;margin:0;font-size:13px;padding:8px 10px;" onchange="">
+          <select id="assign-sel-${item.id}" style="flex:1;margin:0;font-size:13px;padding:8px 10px;">
             <option value="">— Assign to employee —</option>
             ${empOptions}
           </select>
@@ -458,16 +489,19 @@ function renderReview() {
 
     html += `
       <div class="item-review-card ${status || ''}" id="card-${item.id}">
-        <div class="item-review-inner">
-          ${thumbHtml}
-          <div class="item-review-info">
-            <div class="item-review-name">${esc(item.name || 'Unnamed Item')}</div>
-            <div class="item-review-meta">${esc(item.category || '—')} · ${esc(item.condition || '—')} · Lot ${esc(item.lotNumber || '—')}</div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <div class="item-review-value">${valStr}</div>
-              ${chipHtml}
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <div class="item-review-inner" style="flex:1;min-width:0;">
+            ${thumbHtml}
+            <div class="item-review-info">
+              <div class="item-review-name">${esc(item.name || 'Unnamed Item')}</div>
+              <div class="item-review-meta">${esc(item.category || '—')} · ${esc(item.condition || '—')} · Lot ${esc(item.lotNumber || '—')}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                ${valHtml}
+                ${chipHtml}
+              </div>
             </div>
           </div>
+          ${chkHtml}
         </div>
         ${actionsHtml}
       </div>
@@ -580,6 +614,67 @@ async function assignFromReview(itemId) {
       }
     }
   } catch (err) { alert('Failed to assign item. Please try again.'); }
+}
+
+// =====================
+// BATCH ASSIGN (multi-select)
+// =====================
+function updateBatchBar() {
+  const checked = document.querySelectorAll('.rv-chk:checked');
+  const bar   = document.getElementById('batchAssignBar');
+  const count = document.getElementById('batchCheckCount');
+  if (!bar) return;
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    count.textContent = checked.length + ' item' + (checked.length !== 1 ? 's' : '') + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function batchAssignSelected() {
+  const checked = [...document.querySelectorAll('.rv-chk:checked')];
+  const sel = document.getElementById('batchEmpSel');
+  if (!sel || !sel.value) { return; }
+  const ids = checked.map(c => c.dataset.id);
+  if (!ids.length) return;
+  const assignedTo = sel.value === '__unassign__' ? null : sel.value;
+  try {
+    const res = await fetch('/items/batch-assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, assignedTo, employee: user.name })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (currentSession && currentSession.items) {
+        currentSession.items.forEach(i => {
+          if (ids.includes(String(i.id))) i.assignedTo = assignedTo || null;
+        });
+      }
+      renderReview();
+    }
+  } catch(e) {}
+}
+
+// =====================
+// SAVE ESTIMATE
+// =====================
+async function saveEstimate(itemId) {
+  const low  = parseFloat(document.getElementById('est-low-'  + itemId)?.value) || 0;
+  const high = parseFloat(document.getElementById('est-high-' + itemId)?.value) || 0;
+  try {
+    await fetch('/items/' + itemId + '/set-estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estimatedValueLow: low, estimatedValueHigh: high, employee: user.name })
+    });
+    if (currentSession && currentSession.items) {
+      const itm = currentSession.items.find(i => String(i.id) === String(itemId));
+      if (itm) { itm.estimatedValueLow = low; itm.estimatedValueHigh = high; }
+    }
+    renderReview();
+  } catch(e) {}
 }
 
 // =====================

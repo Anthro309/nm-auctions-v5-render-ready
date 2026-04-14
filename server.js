@@ -1058,6 +1058,21 @@ app.post('/items/:id/update-details', (req, res) => {
 });
 
 // =========================
+// SET ESTIMATE (manual entry from review page)
+// =========================
+app.post('/items/:id/set-estimate', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  const { estimatedValueLow, estimatedValueHigh, employee } = req.body;
+  item.estimatedValueLow  = parseFloat(estimatedValueLow)  || 0;
+  item.estimatedValueHigh = parseFloat(estimatedValueHigh) || 0;
+  addLog(item, { employee: employee || 'system', action: `estimate set: $${item.estimatedValueLow}–$${item.estimatedValueHigh}` });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
+});
+
+// =========================
 // VOICE TO ITEM
 // =========================
 app.post('/voice-to-item', async (req, res) => {
