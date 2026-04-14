@@ -286,7 +286,7 @@
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile" onclick="window.location.href='/items.html?stage=Home+Visit'" style="cursor:pointer;" title="Items logged but not yet accepted">
+    <div class="stat-tile" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
       <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
       <div class="stat-label">Prospects</div>
     </div>
@@ -354,6 +354,12 @@
       <div class="dash-sub">View & manage upcoming auction events</div>
     </div>
 
+    <div class="dash-card" id="clientPortalCard" onclick="window.location.href='/client-portal.html'" style="display:none;">
+      <div class="dash-icon">🔗</div>
+      <div class="dash-title">Client Portal</div>
+      <div class="dash-sub">Share with consigners to view item status</div>
+    </div>
+
   </div>
 
   <!-- Photo Studio shortcut (admin only) -->
@@ -392,7 +398,9 @@
   if (!user) window.location.href = '/';
 
   // Gate admin-only dashboard elements
-  if (user && !user.isAdmin) {
+  if (user && user.isAdmin) {
+    document.getElementById('clientPortalCard').style.display = 'flex';
+  } else {
     document.getElementById('reportsGridCard').style.display = 'none';
     document.getElementById('reviewVisitCard').style.display = 'none';
     document.getElementById('photoStudioShortcut').style.display = 'none';

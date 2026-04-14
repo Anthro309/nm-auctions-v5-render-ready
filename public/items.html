@@ -132,7 +132,6 @@
     <div class="filter-grid">
       <select id="stageFilter" onchange="render();updateFilterBadge()">
         <option value="">All Stages</option>
-        <option>Home Visit</option>
         <option>Received at Studio</option>
         <option>Review &amp; Cleaning</option>
         <option>Photograph</option>
@@ -348,9 +347,8 @@ function getFiltered() {
   const catF = document.getElementById('categoryFilter').value;
   const assignedF = document.getElementById('assignedFilter').value;
   return allItems.filter(i => {
-    // Hide prospects (Home Visit) from default library view — they're not yet in inventory.
-    // Only show them when the stage filter is explicitly set to 'Home Visit'.
-    if (i.stage === 'Home Visit' && stageF !== 'Home Visit') return false;
+    // Prospects (Home Visit) are never in the item library — manage them via Review Visit.
+    if (i.stage === 'Home Visit') return false;
     const matchQ = !q ||
       (i.name || '').toLowerCase().includes(q) ||
       (i.lotNumber || '').toLowerCase().includes(q) ||

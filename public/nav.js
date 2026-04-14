@@ -64,14 +64,22 @@
     if (href === currentPath) link.classList.add('active');
   });
 
-  // Inject Admin link into sidebar for admin users
+  // Inject Admin + Client Portal links into sidebar for admin users
   if (u.isAdmin) {
     var nav = document.querySelector('#sidebar nav');
-    if (nav && !nav.querySelector('a[href="/admin.html"]')) {
-      var a = document.createElement('a');
-      a.href = '/admin.html';
-      a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
-      nav.appendChild(a);
+    if (nav) {
+      if (!nav.querySelector('a[href="/admin.html"]')) {
+        var a = document.createElement('a');
+        a.href = '/admin.html';
+        a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
+        nav.appendChild(a);
+      }
+      if (!nav.querySelector('a[href="/client-portal.html"]')) {
+        var cp = document.createElement('a');
+        cp.href = '/client-portal.html';
+        cp.innerHTML = '<span class="sidebar-icon">🔗</span> Client Portal';
+        nav.appendChild(cp);
+      }
     }
   }
 

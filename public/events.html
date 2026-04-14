@@ -86,42 +86,28 @@
   <!-- Create new event -->
   <div id="createForm" class="create-form">
     <h3>New Auction Event</h3>
-    <div class="form-row">
-      <div>
-        <span class="form-label">Event Name *</span>
-        <input id="newName" placeholder="e.g. April 19th Estate Auction" style="margin-top:4px;">
-      </div>
-      <div>
-        <span class="form-label">Date *</span>
-        <input id="newDate" type="date" style="margin-top:4px;">
-      </div>
-    </div>
-    <div class="form-row">
-      <div>
-        <span class="form-label">Category Focus</span>
-        <select id="newCategory" style="margin-top:4px;">
-          <option value="general">General Estate</option>
-          <option value="furniture">Furniture & Decor</option>
-          <option value="jewelry">Jewelry & Accessories</option>
-          <option value="art">Art & Collectibles</option>
-          <option value="electronics">Electronics & Tools</option>
-          <option value="outdoor">Outdoor & Garden</option>
-        </select>
-        <p class="help-text" style="margin-top:4px;">Used for AI auto-assignment of lots</p>
-      </div>
+    <input id="newName" placeholder="e.g. April 19th Estate Auction" style="margin-top:4px;margin-bottom:0;">
+
+    <span class="form-label" style="margin-top:12px;">Date *</span>
+    <input id="newDate" type="date" style="margin-top:4px;margin-bottom:0;">
+
+    <div class="form-row" style="margin-top:12px;">
       <div>
         <span class="form-label">Commission Rate (%)</span>
         <input id="newCommission" type="number" value="35" min="0" max="100" style="margin-top:4px;">
-        <p class="help-text" style="margin-top:4px;">Your cut — consigner receives the rest (35% = consigner gets 65%)</p>
+        <p class="help-text" style="margin-top:4px;">Your cut — consigner gets the rest</p>
+      </div>
+      <div>
+        <span class="form-label">Description (optional)</span>
+        <textarea id="newDesc" rows="2" placeholder="Notes about this sale..." style="margin-top:4px;resize:vertical;"></textarea>
       </div>
     </div>
-    <span class="form-label">Description (optional)</span>
-    <textarea id="newDesc" rows="2" placeholder="Notes about this sale..." style="margin-top:4px;"></textarea>
+
+    <div id="createMsg" style="display:none;margin-top:12px;padding:10px;border-radius:10px;font-size:13px;font-weight:600;"></div>
     <div style="display:flex;gap:10px;margin-top:14px;">
       <button id="createSubmitBtn" onclick="createEvent()" style="flex:1;">Create Event</button>
       <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
     </div>
-    <div id="createMsg" style="display:none;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
   </div>
 
   <button onclick="toggleCreate()" id="createBtn" style="width:100%;margin-bottom:16px;">+ Create New Auction Event</button>
@@ -141,18 +127,35 @@ function toggleMenu() {
 }
 
 function toggleCreate() {
-  document.getElementById('createForm').classList.toggle('open');
-  document.getElementById('createBtn').innerText =
-    document.getElementById('createForm').classList.contains('open') ? '✕ Cancel' : '+ Create New Auction Event';
+  const form = document.getElementById('createForm');
+  const btn  = document.getElementById('createBtn');
+  form.classList.toggle('open');
+  // Hide the create button while form is open to avoid two cancel buttons
+  btn.style.display = form.classList.contains('open') ? 'none' : 'block';
+  if (!form.classList.contains('open')) {
+    // Reset form on close
+    document.getElementById('createMsg').style.display = 'none';
+  }
 }
 
 async function createEvent() {
   const name = document.getElementById('newName').value.trim();
   const date = document.getElementById('newDate').value;
-  if (!name || !date) { alert('Event name and date are required'); return; }
-
   const btn = document.getElementById('createSubmitBtn');
   const msg = document.getElementById('createMsg');
+
+  if (!name) {
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '⚠️ Event name is required';
+    document.getElementById('newName').focus();
+    return;
+  }
+  if (!date) {
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '⚠️ Date is required';
+    return;
+  }
+
   btn.disabled = true;
   msg.style.display = 'none';
   try {
@@ -162,7 +165,7 @@ async function createEvent() {
       body: JSON.stringify({
         name, date,
         description: document.getElementById('newDesc').value.trim(),
-        category: document.getElementById('newCategory').value,
+        category: 'general',
         commissionRate: document.getElementById('newCommission').value,
         createdBy: user.name
       })
@@ -170,18 +173,18 @@ async function createEvent() {
     if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
     if (data.success) {
-      msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
+      msg.style.cssText = 'display:block;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
       msg.innerText = '✅ Event created!';
       document.getElementById('newName').value = '';
       document.getElementById('newDate').value = '';
       document.getElementById('newDesc').value = '';
-      setTimeout(() => { toggleCreate(); load(); }, 1200);
+      setTimeout(() => { toggleCreate(); load(); }, 1000);
     } else {
-      msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+      msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
       msg.innerText = '❌ ' + (data.message || 'Failed to create event');
     }
   } catch (err) {
-    msg.style.cssText = 'display:block;margin-top:10px;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
     msg.innerText = '❌ ' + (err.message || 'Network error — please try again');
   } finally {
     btn.disabled = false;
