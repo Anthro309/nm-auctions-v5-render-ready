@@ -6,7 +6,25 @@
 <title>Item Library</title>
 <link rel="stylesheet" href="/styles.css">
 <style>
-.batch-bar {
+.filter-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.filter-grid select { margin-top: 0; }
+.filter-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #dc2626; color: white; font-size: 10px; font-weight: 800;
+  min-width: 16px; height: 16px; border-radius: 99px; padding: 0 4px;
+  margin-left: 5px; vertical-align: middle;
+}
   background: #0b1b2b;
   color: white;
   border-radius: 14px;
@@ -111,41 +129,43 @@
     </div>
   </div>
 
-  <!-- Search + Sort row -->
+  <!-- Search row -->
   <div class="search-bar-row">
-    <input id="search" placeholder="Search or ask AI: 'jewelry over $200 not photographed'" oninput="onSearchInput()">
+    <input id="search" placeholder="Search items, lots, consigners…" oninput="onSearchInput()">
+    <button id="filterToggleBtn" onclick="toggleFilterPanel()" style="width:auto;padding:10px 14px;font-size:13px;font-weight:700;border-radius:12px;background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb;flex-shrink:0;margin-top:0;font-family:inherit;cursor:pointer;">⚙️ Filter<span id="filterBadge" class="filter-badge" style="display:none;"></span></button>
     <button id="nlBtn" onclick="toggleNL()" style="width:auto;padding:10px 14px;font-size:13px;border-radius:12px;background:#7c3aed;flex-shrink:0;margin-top:0;" title="AI Natural Language Search">✨ AI</button>
-    <button class="help-btn" onclick="showTip(this,'Tap ✨ AI then type a plain-English query. Examples: \"jewelry not yet photographed\", \"items from Smith received this week\", \"furniture estimated over $200\".')" style="margin-left:4px;flex-shrink:0;">?</button>
   </div>
   <div id="nlStatus" style="display:none;font-size:12px;color:#7c3aed;font-weight:600;margin-bottom:8px;padding:8px 12px;background:#f5f3ff;border-radius:8px;"></div>
 
-  <!-- Filter row -->
-  <div class="filter-row" style="align-items:center;">
-    <select id="stageFilter" onchange="render()">
-      <option value="">All Stages</option>
-      <option>Home Visit</option>
-      <option>Received at Studio</option>
-      <option>Review &amp; Cleaning</option>
-      <option>Photograph</option>
-      <option>Prep for Pick Up</option>
-      <option>Ready for Pick Up</option>
-      <option>Picked Up</option>
-      <option>Missing at Drop Off</option>
-      <option>Archived</option>
-    </select>
-    <select id="categoryFilter" onchange="render()">
-      <option value="">All Categories</option>
-    </select>
-    <select id="assignedFilter" onchange="render()">
-      <option value="">Any Assignment</option>
-      <option value="__unassigned__">Unassigned</option>
-    </select>
-    <select id="sortFilter" onchange="render()">
-      <option value="consigner">Group by Consigner</option>
-      <option value="stage">Sort by Stage</option>
-      <option value="recent">Most Recent</option>
-    </select>
-    <span class="clear-filters" id="clearFiltersBtn" style="display:none;" onclick="clearFilters()">✕ Clear</span>
+  <!-- Collapsible filter panel -->
+  <div id="filterPanel" class="filter-panel" style="display:none;">
+    <div class="filter-grid">
+      <select id="stageFilter" onchange="render();updateFilterBadge()">
+        <option value="">All Stages</option>
+        <option>Home Visit</option>
+        <option>Received at Studio</option>
+        <option>Review &amp; Cleaning</option>
+        <option>Photograph</option>
+        <option>Prep for Pick Up</option>
+        <option>Ready for Pick Up</option>
+        <option>Picked Up</option>
+        <option>Missing at Drop Off</option>
+        <option>Archived</option>
+      </select>
+      <select id="categoryFilter" onchange="render();updateFilterBadge()">
+        <option value="">All Categories</option>
+      </select>
+      <select id="assignedFilter" onchange="render();updateFilterBadge()">
+        <option value="">Any Assignment</option>
+        <option value="__unassigned__">Unassigned</option>
+      </select>
+      <select id="sortFilter" onchange="render()">
+        <option value="consigner">Group by Consigner</option>
+        <option value="stage">Sort by Stage</option>
+        <option value="recent">Most Recent</option>
+      </select>
+    </div>
+    <button id="clearFiltersBtn" onclick="clearFilters()" style="display:none;margin-top:12px;width:100%;padding:9px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">✕ Clear all filters</button>
   </div>
 
   <div class="card" style="padding-top:14px;padding-bottom:14px;">
@@ -244,11 +264,35 @@ async function load() {
   render();
 }
 
+function toggleFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  const btn = document.getElementById('filterToggleBtn');
+  const open = panel.style.display === 'none' || panel.style.display === '';
+  panel.style.display = open ? 'block' : 'none';
+  btn.style.background = open ? '#0b1b2b' : '#f3f4f6';
+  btn.style.color = open ? 'white' : '#374151';
+  btn.style.borderColor = open ? '#0b1b2b' : '#e5e7eb';
+}
+
+function updateFilterBadge() {
+  const count = [
+    document.getElementById('stageFilter').value,
+    document.getElementById('categoryFilter').value,
+    document.getElementById('assignedFilter').value
+  ].filter(Boolean).length;
+  const badge = document.getElementById('filterBadge');
+  const clearBtn = document.getElementById('clearFiltersBtn');
+  badge.style.display = count ? 'inline-flex' : 'none';
+  badge.textContent = count;
+  clearBtn.style.display = count ? 'block' : 'none';
+}
+
 function clearFilters() {
   document.getElementById('search').value = '';
   document.getElementById('stageFilter').value = '';
   document.getElementById('categoryFilter').value = '';
   document.getElementById('assignedFilter').value = '';
+  updateFilterBadge();
   if (nlMode) toggleNL();
   render();
 }
@@ -321,8 +365,7 @@ function getFiltered() {
 
 function render() {
   const filtered = nlMode && nlResults !== null ? nlResults : getFiltered();
-  const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value || document.getElementById('categoryFilter').value || document.getElementById('assignedFilter').value;
-  document.getElementById('clearFiltersBtn').style.display = hasFilters ? 'inline' : 'none';
+  updateFilterBadge();
   document.getElementById('itemCount').innerText =
     filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
     (allItems.length !== filtered.length ? ' of ' + allItems.length + ' total' : '');
@@ -459,13 +502,26 @@ function renderBatch() {
     chk.className = 'item-chk';
     chk.dataset.id = i.id;
     chk.onchange = updateBatchCount;
+    chk.onclick = e => e.stopPropagation();
+
+    const thumb = i.photos?.[0]
+      ? `<img src="${i.photos[0]}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;" loading="lazy">`
+      : `<div style="width:44px;height:44px;border-radius:8px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📦</div>`;
+
+    const assignedLine = i.assignedTo
+      ? `<span style="color:#7c3aed;font-weight:600;">👤 ${i.assignedTo}</span>`
+      : `<span style="color:#9ca3af;">Unassigned</span>`;
 
     const info = document.createElement('div');
     info.className = 'item-row-info';
     info.innerHTML = `
-      <div class="item-row-name">${i.name || 'Unnamed'}</div>
-      <div class="item-row-meta">Lot ${i.lotNumber || '—'} · ${i.consigner || '—'}</div>
+      ${thumb}
+      <div style="flex:1;min-width:0;">
+        <div class="item-row-name">${i.name || 'Unnamed'}</div>
+        <div class="item-row-meta">Lot ${i.lotNumber || '—'} · ${assignedLine}</div>
+      </div>
     `;
+    info.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;';
     info.onclick = () => { window.location.href = '/item.html?id=' + i.id; };
 
     const pill = document.createElement('span');
