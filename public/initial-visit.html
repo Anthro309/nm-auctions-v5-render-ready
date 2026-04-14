@@ -258,16 +258,16 @@
     <h2>Add Item</h2>
     <div class="info-hint" style="margin-top:0;">
       <span class="info-hint-icon">💡</span>
-      <span>Take a photo first, then tap <strong>AI Auto-Fill</strong> to have AI name, describe, and value the item automatically.</span>
+      <span>Fill in the details, snap a photo or grab a batch from your gallery, and hit <strong>+ Add to Visit</strong>. Got a 3-piece set? Bump up the pieces count — each piece gets its own label.</span>
     </div>
 
     <label class="field-label" style="margin-top:12px;">
       Item Name
-      <button class="help-btn" onclick="showTip(this,'Type a short name or use the voice button. You can also leave it blank and let AI Auto-Fill name it from the photo.')">?</button>
+      <button class="help-btn" onclick="showTip(this,'Type a short name or tap the mic to speak it — say something like &quot;brass floor lamp with green shade&quot;.')">?</button>
     </label>
     <div style="display:flex;gap:8px;">
       <input id="itemName" placeholder="e.g. Victorian oak dresser with mirror" style="flex:1;margin-top:0;">
-      <button id="voiceBtn" onclick="startVoice()" title="Tap and describe the item out loud — AI will fill the fields" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
+      <button id="voiceBtn" onclick="startVoice()" title="Tap and describe the item out loud" style="background:#1e3a5c;color:white;border:none;border-radius:12px;padding:0 14px;font-size:20px;cursor:pointer;flex-shrink:0;">🎙️</button>
     </div>
     <p class="help-text" style="margin-top:4px;">Or tap 🎙️ and speak — say something like "old wooden dresser with brass handles, some scratches"</p>
 
@@ -303,27 +303,34 @@
       <option>As-Is / For Parts</option>
     </datalist>
 
-    <label class="field-label">Photo</label>
-    <input type="file" id="photo" accept="image/*" capture="environment" style="margin-top:0;">
+    <label class="field-label">Photos</label>
+    <div style="display:flex;gap:8px;margin-top:0;">
+      <label style="flex:1;display:block;padding:11px;background:#1e3a5c;border-radius:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:700;color:white;">
+        📷 Camera
+        <input type="file" id="photo" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelect(this)">
+      </label>
+      <label style="flex:1;display:block;padding:11px;background:#f3f4f6;border-radius:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:700;color:#374151;border:1.5px solid #d1d5db;">
+        📁 Gallery
+        <input type="file" id="galleryPhotos" accept="image/*" multiple style="display:none;" onchange="handlePhotoSelect(this)">
+      </label>
+    </div>
+    <div id="photoPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:0;"></div>
 
     <div class="loader" id="loader">
       <div class="loader-bar"></div>
     </div>
 
-    <button class="iv-btn" style="background:linear-gradient(90deg,#7c3aed,#4f46e5);margin-top:14px;" onclick="autoIntake()">
-      ✨ AI Auto-Fill — Name, Description &amp; Value
-      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Requires a photo. AI reads the image and fills in the item name, description, category, condition, and estimated value range — all in one tap.')">?</button>
-    </button>
-
-    <button class="iv-btn" onclick="analyzePhoto()" style="background:#1e3a5c;">
-      📷 Analyze Photo Only
-      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Quickly suggests a name and short description from the photo. Faster than full AI Auto-Fill but does not estimate value or fill all fields.')">?</button>
-    </button>
-
-    <div id="autoIntakeStatus" style="display:none;margin-top:8px;padding:10px 14px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:10px;font-size:13px;color:#5b21b6;font-weight:600;"></div>
-
     <hr style="border:none;border-top:1px solid #f1f5f9;margin:16px 0 4px;">
-    <button class="iv-btn" onclick="addItem()">+ Add Item to Visit</button>
+
+    <label class="field-label" style="margin-top:0;">Pieces in this set <button class="help-btn" onclick="showTip(this,'Got a 3-piece dining set? A pair of nightstands? Set the count here — each piece gets its own QR label and lot number, but they\'re all named together so you know they belong to the same set.')">?</button></label>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+      <button type="button" onclick="adjustPieces(-1)" style="width:38px;height:38px;background:#f3f4f6;border:1.5px solid #d1d5db;border-radius:10px;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">−</button>
+      <span id="piecesCount" style="font-size:24px;font-weight:800;min-width:28px;text-align:center;color:#111827;">1</span>
+      <button type="button" onclick="adjustPieces(1)" style="width:38px;height:38px;background:#f3f4f6;border:1.5px solid #d1d5db;border-radius:10px;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">+</button>
+      <span id="piecesLabel" style="font-size:12px;color:#6b7280;line-height:1.3;">1 label</span>
+    </div>
+
+    <button class="iv-btn" onclick="addItem()" style="margin-top:14px;">+ Add to Visit</button>
     <button class="iv-btn green" onclick="endVisit()" style="margin-top:8px;">🖨️ End Visit &amp; Print Labels</button>
     <button class="iv-btn secondary" onclick="printIntakeSummary()" style="margin-top:8px;">🧾 Print Intake Summary Sheet</button>
     <div id="statusBox" class="status">Ready.</div>
@@ -345,7 +352,9 @@
 <script>
 let session = null;
 let items = [];
-let currentPhotoPath = null;
+let selectedFiles = [];
+let currentPhotoPaths = [];
+let piecesInSet = 1;
 let currentTags = [];
 let currentEstValueLow = 0;
 let currentEstValueHigh = 0;
@@ -368,8 +377,48 @@ function setStatus(msg) {
 function showLoader() { document.getElementById('loader').style.display = 'block'; }
 function hideLoader() { document.getElementById('loader').style.display = 'none'; }
 
-function safeFilenameRequired() {
-  return !!document.getElementById('photo').files[0];
+// ── PHOTO SELECTION ──
+function handlePhotoSelect(input) {
+  const files = [...input.files];
+  if (!files.length) return;
+  selectedFiles = files;
+  // Clear the other input so there's no confusion
+  if (input.id === 'photo') document.getElementById('galleryPhotos').value = '';
+  else document.getElementById('photo').value = '';
+
+  const preview = document.getElementById('photoPreview');
+  preview.innerHTML = '';
+  files.forEach((file, i) => {
+    const url = URL.createObjectURL(file);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;';
+    wrap.innerHTML = `<img src="${url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid ${i === 0 ? '#2563eb' : '#e5e7eb'};display:block;">` +
+      (i === 0 ? '<span style="position:absolute;bottom:2px;left:2px;background:#2563eb;color:white;font-size:9px;font-weight:700;padding:1px 4px;border-radius:4px;">MAIN</span>' : '');
+    preview.appendChild(wrap);
+  });
+  setStatus(files.length === 1 ? '1 photo selected.' : `${files.length} photos selected — first is the main shot.`);
+}
+
+async function uploadAllPhotos() {
+  currentPhotoPaths = [];
+  for (const file of selectedFiles) {
+    const form = new FormData();
+    form.append('photo', file);
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: form });
+      const data = await safeJson(res);
+      if (data.success && data.path) currentPhotoPaths.push(data.path);
+    } catch { /* best effort */ }
+  }
+  return currentPhotoPaths;
+}
+
+// ── PIECES STEPPER ──
+function adjustPieces(delta) {
+  piecesInSet = Math.max(1, Math.min(20, piecesInSet + delta));
+  document.getElementById('piecesCount').textContent = piecesInSet;
+  const lbl = document.getElementById('piecesLabel');
+  if (lbl) lbl.textContent = piecesInSet === 1 ? '1 label' : `${piecesInSet} labels — named "(1 of ${piecesInSet})" through "(${piecesInSet} of ${piecesInSet})"`;
 }
 
 async function safeJson(res) {
@@ -406,91 +455,6 @@ async function startVisit() {
   document.getElementById('visitCard').style.display = 'none';
   document.getElementById('itemSection').style.display = 'block';
   setStatus('Visit started for ' + session.code + '. Add items below.');
-}
-
-async function uploadPhoto() {
-  const file = document.getElementById('photo').files[0];
-  if (!file) return null;
-  const form = new FormData();
-  form.append('photo', file);
-  const res = await fetch('/upload', { method: 'POST', body: form });
-  const data = await safeJson(res);
-  if (!data.success) throw new Error(data.message || 'Upload failed');
-  return data.path;
-}
-
-// =========================
-// FULL INTAKE AUTOMATION
-// =========================
-async function autoIntake() {
-  if (!session) { alert('Start visit first'); return; }
-  const photoFile = document.getElementById('photo').files[0];
-  if (!photoFile) { alert('Take or choose a photo first — it drives everything'); return; }
-
-  const statusEl = document.getElementById('autoIntakeStatus');
-  statusEl.innerText = '✨ AI analyzing photo and filling all fields…';
-  statusEl.style.display = 'block';
-
-  const form = new FormData();
-  form.append('photo', photoFile);
-  const voice = document.getElementById('itemName').value.trim();
-  if (voice) form.append('voiceTranscript', voice);
-  form.append('consignerCode', session.code);
-  form.append('consignerName', session.consigner);
-  form.append('employee', JSON.parse(localStorage.getItem('user') || '{}').name || 'system');
-
-  try {
-    const res = await fetch('/auto-intake', { method: 'POST', body: form });
-    const data = await res.json();
-    if (!data.success && !data.photoPath) throw new Error(data.message || 'Auto-intake failed');
-
-    // Fill all fields from AI
-    if (data.title)       document.getElementById('itemName').value = data.title;
-    if (data.description) document.getElementById('itemDescription').value = data.description;
-    if (data.category)    document.getElementById('itemCategory').value = data.category;
-    if (data.condition)   document.getElementById('itemCondition').value = data.condition;
-    if (data.photoPath)   currentPhotoPath = data.photoPath;
-    if (data.tags)        currentTags = data.tags;
-    if (data.estimatedValueLow)  currentEstValueLow  = data.estimatedValueLow;
-    if (data.estimatedValueHigh) currentEstValueHigh = data.estimatedValueHigh;
-
-    statusEl.innerText = `✅ Done! ${data.title || 'Item'} — ${data.category} — ${data.condition} — $${data.estimatedValueLow||0}–$${data.estimatedValueHigh||0}`;
-    if (data.conditionReport) statusEl.innerText += `\n📋 ${data.conditionReport}`;
-    checkDuplicate(data.title);
-  } catch (err) {
-    statusEl.innerText = '⚠️ ' + (err.message || 'Auto-intake failed');
-  }
-}
-
-async function analyzePhoto() {
-  if (!session) { alert('Start visit first'); return; }
-  if (!safeFilenameRequired()) { alert('Choose or take a photo first'); return; }
-  try {
-    showLoader();
-    setStatus('Uploading photo...');
-    currentPhotoPath = await uploadPhoto();
-    setStatus('Analyzing with AI...');
-    const res = await fetch('/analyze-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl: window.location.origin + currentPhotoPath })
-    });
-    const data = await safeJson(res);
-    if (!data.success) throw new Error(data.message || 'AI failed');
-    document.getElementById('itemName').value = data.title || '';
-    document.getElementById('itemDescription').value = data.description || '';
-    document.getElementById('itemCategory').value = data.category || '';
-    document.getElementById('itemCondition').value = data.condition || '';
-    currentTags = data.tags || [];
-    currentEstValueLow  = data.estimatedValueLow  || 0;
-    currentEstValueHigh = data.estimatedValueHigh || 0;
-    checkDuplicate(data.title);
-    setStatus('AI filled in the details. Review and click Add Item.');
-  } catch (err) {
-    setStatus('AI failed: ' + err.message);
-  } finally {
-    hideLoader();
-  }
 }
 
 // ── VOICE TO ITEM ──
@@ -576,65 +540,108 @@ document.getElementById('itemName').addEventListener('blur', function() {
 });
 
 async function addItem() {
-  if (!session) { alert('Start visit first'); return; }
+  if (!session) { alert('Start a visit first!'); return; }
   const name = document.getElementById('itemName').value.trim();
   const description = document.getElementById('itemDescription').value.trim();
   const category = document.getElementById('itemCategory').value.trim();
   const condition = document.getElementById('itemCondition').value.trim();
-  if (!name) { alert('Enter item name'); return; }
-  const isSessionDuplicate = items.some(i => (i.name || '').trim().toLowerCase() === name.toLowerCase());
-  if (isSessionDuplicate && !confirm(`"${name}" already exists in this visit. Add anyway?`)) return;
+  if (!name) { alert('Every item needs a name — what are we working with?'); return; }
+
+  const isSessionDuplicate = items.some(i => (i.setName || i.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (isSessionDuplicate && !confirm(`"${name}" is already in this visit. Still adding it?`)) return;
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const createdBy = user.name || 'unknown';
+  const pieces = piecesInSet;
 
   try {
     showLoader();
-    setStatus('Saving item...');
-    if (!currentPhotoPath && safeFilenameRequired()) {
-      currentPhotoPath = await uploadPhoto();
-    }
+    setStatus(pieces > 1 ? `Saving ${pieces}-piece set — grabbing lot codes…` : 'Saving item…');
+
+    // Upload all selected photos
+    const paths = await uploadAllPhotos();
+    const mainPhoto = paths[0] || null;
+    const refPhotos = paths.slice(1);
+
+    // Get one lot code per piece
     const month = 'ABCDEFGHIJKL'[new Date().getMonth()];
-    const lotRes = await fetch(`/next-lot-code?month=${month}`);
-    const lotData = await safeJson(lotRes);
-    if (!lotData.success || !lotData.lotCode) throw new Error('Could not get lot code');
-    const lotCode = lotData.lotCode;
+    const lotCodes = [];
+    for (let p = 0; p < pieces; p++) {
+      const lotRes = await fetch(`/next-lot-code?month=${month}`);
+      const lotData = await safeJson(lotRes);
+      if (!lotData.success || !lotData.lotCode) throw new Error('Could not get lot code');
+      lotCodes.push(lotData.lotCode);
+    }
+
+    // Build item payload — set pieces get "(X of N)" appended to name
+    const newItems = lotCodes.map((lotCode, idx) => ({
+      title: pieces > 1 ? `${name} (${idx + 1} of ${pieces})` : name,
+      description, category, condition,
+      consignerFirstName: session.first,
+      consignerLastName: session.last,
+      consignerCode: session.code,
+      lotCode,
+      photo: mainPhoto,
+      createdBy,
+      tags: currentTags,
+      estimatedValueLow: currentEstValueLow,
+      estimatedValueHigh: currentEstValueHigh,
+      itemNumber: pieces,
+      partCount: idx + 1
+    }));
 
     const res = await fetch('/addItems', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: [{
-          title: name, description, category, condition,
-          consignerFirstName: session.first,
-          consignerLastName: session.last,
-          consignerCode: session.code,
-          lotCode,
-          photo: currentPhotoPath,
-          createdBy,
-          tags: currentTags,
-          estimatedValueLow: currentEstValueLow,
-          estimatedValueHigh: currentEstValueHigh
-        }]
-      })
+      body: JSON.stringify({ items: newItems })
     });
     const result = await safeJson(res);
     if (!result.success) throw new Error(result.message || 'Save failed');
 
-    items.push({ name, description, category, condition, lotCode });
+    // Attach extra gallery photos as reference photos on each piece
+    if (refPhotos.length) {
+      for (const lotCode of lotCodes) {
+        try {
+          const r = await fetch('/items/by-lot/' + lotCode);
+          const si = await r.json();
+          if (si && si.id) {
+            for (const refPath of refPhotos) {
+              await fetch(`/items/${si.id}/add-reference-photo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photoPath: refPath, employee: createdBy })
+              });
+            }
+          }
+        } catch { /* best effort */ }
+      }
+    }
+
+    // Track locally and re-render labels
+    newItems.forEach(ni => items.push({ name: ni.title, setName: name, description, category, condition, lotCode: ni.lotCode }));
     renderLabels();
 
+    // Reset form
     document.getElementById('itemName').value = '';
     document.getElementById('itemDescription').value = '';
     document.getElementById('itemCategory').value = '';
     document.getElementById('itemCondition').value = '';
     document.getElementById('photo').value = '';
+    document.getElementById('galleryPhotos').value = '';
+    document.getElementById('photoPreview').innerHTML = '';
     document.getElementById('dupWarning').style.display = 'none';
-    currentPhotoPath = null;
+    selectedFiles = []; currentPhotoPaths = [];
     currentTags = []; currentEstValueLow = 0; currentEstValueHigh = 0;
-    setStatus('✅ Item added (' + items.length + ' total). Add another or print.');
+    piecesInSet = 1;
+    document.getElementById('piecesCount').textContent = '1';
+    document.getElementById('piecesLabel').textContent = '1 label';
+
+    const msg = pieces > 1
+      ? `🔥 ${pieces}-piece set logged — ${pieces} labels queued up (${items.length} total)`
+      : `✅ "${name}" added — ${items.length} item(s) in this visit`;
+    setStatus(msg);
   } catch (err) {
-    setStatus('Failed: ' + err.message);
+    setStatus('Yikes: ' + err.message);
     alert('Add item failed: ' + err.message);
   } finally {
     hideLoader();
