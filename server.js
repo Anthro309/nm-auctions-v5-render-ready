@@ -1288,6 +1288,83 @@ app.get('/reports', (req, res) => {
 });
 
 // =========================
+// REPORTS — CONSIGNER LIST
+// =========================
+app.get('/reports/consigners', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const map = {};
+  items.forEach(i => {
+    if (!i.code) return;
+    if (!map[i.code]) map[i.code] = { code: i.code, name: i.consigner || i.code };
+  });
+  res.json(Object.values(map).sort((a, b) => a.name.localeCompare(b.name)));
+});
+
+// =========================
+// REPORTS — CONSIGNER DETAIL
+// =========================
+app.get('/reports/consigner/:code', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const code = req.params.code.toUpperCase();
+  const all = items.filter(i => (i.code || '').toUpperCase() === code);
+  if (!all.length) return res.json({ success: false, message: 'No items found for this code' });
+
+  const consigner = all[0].consigner || code;
+
+  const prospects = all.filter(i => i.stage === 'Home Visit');
+  const active    = all.filter(i => !['Home Visit','Picked Up','Archived'].includes(i.stage));
+  const sold      = all.filter(i => i.stage === 'Picked Up');
+  const archived  = all.filter(i => i.stage === 'Archived');
+
+  const totalSoldRevenue = sold.reduce((s, i) => s + (i.soldPrice || 0), 0);
+  const totalPayout      = sold.reduce((s, i) => s + (i.payout || i.payoutAmount || 0), 0);
+  const totalCommission  = totalSoldRevenue - totalPayout;
+  const avgSalePrice     = sold.length ? (totalSoldRevenue / sold.length).toFixed(2) : '0.00';
+
+  const mapItem = i => ({
+    id: i.id,
+    name: i.name || 'Unnamed',
+    category: i.category || '—',
+    condition: i.condition || '—',
+    stage: i.stage,
+    lotNumber: i.lotNumber || '—',
+    estimatedValueLow:  i.estimatedValueLow  || 0,
+    estimatedValueHigh: i.estimatedValueHigh || 0,
+    soldPrice:    i.soldPrice    || null,
+    payout:       i.payout || i.payoutAmount || null,
+    commission:   i.commission   || null,
+    reviewStatus: i.reviewStatus || null,
+    eventName:    i.eventName    || null,
+    photos:       (i.photos || []).slice(0, 1),
+    createdAt:    i.createdAt    || null,
+    soldAt:       i.soldAt       || null,
+    archiveReason: i.archiveReason || null,
+    clientAction:  i.clientAction  || null
+  });
+
+  res.json({
+    success: true,
+    consigner,
+    code,
+    summary: {
+      totalItems:      all.length,
+      prospectItems:   prospects.length,
+      activeItems:     active.length,
+      soldItems:       sold.length,
+      archivedItems:   archived.length,
+      totalSoldRevenue: totalSoldRevenue.toFixed(2),
+      totalPayout:      totalPayout.toFixed(2),
+      totalCommission:  totalCommission.toFixed(2),
+      avgSalePrice
+    },
+    prospects: prospects.map(mapItem),
+    active:    active.map(mapItem),
+    sold:      sold.map(mapItem),
+    archived:  archived.map(mapItem)
+  });
+});
+
+// =========================
 // REPORTS — GENERATE TODAY
 // =========================
 app.post('/closeout', (req, res) => {

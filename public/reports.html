@@ -52,6 +52,19 @@
     </div>
   </div>
 
+  <!-- CONSIGNER REPORT -->
+  <div class="card">
+    <h2 style="margin-bottom:4px;">📋 Consigner Report</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">View a full item history, sales, and payout summary for any consigner.</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <select id="consignerSelect" style="flex:1;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;" onchange="loadConsignerReport()">
+        <option value="">Select consigner…</option>
+      </select>
+      <button onclick="printConsignerReport()" id="consignerPrintBtn" style="padding:10px 14px;background:#6b7280;color:white;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;display:none;">🖨️ Print</button>
+    </div>
+    <div id="consignerReportOutput"></div>
+  </div>
+
   <!-- TODAY'S PHOTOGRAPHY SUMMARY -->
   <div class="card" id="photoSummaryCard">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
@@ -264,8 +277,201 @@ async function loadHistory() {
   }
 }
 
+// ── CONSIGNER REPORT ──
+async function loadConsigners() {
+  try {
+    const res  = await fetch('/reports/consigners');
+    const list = await res.json();
+    const sel  = document.getElementById('consignerSelect');
+    list.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value       = c.code;
+      opt.textContent = c.name !== c.code ? `${c.name} (${c.code})` : c.code;
+      sel.appendChild(opt);
+    });
+  } catch {}
+}
+
+async function loadConsignerReport() {
+  const code   = document.getElementById('consignerSelect').value;
+  const output = document.getElementById('consignerReportOutput');
+  const pBtn   = document.getElementById('consignerPrintBtn');
+  if (!code) { output.innerHTML = ''; pBtn.style.display = 'none'; return; }
+
+  output.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;font-size:14px;">Loading…</div>';
+  try {
+    const res  = await fetch('/reports/consigner/' + encodeURIComponent(code));
+    const data = await res.json();
+    if (!data.success) {
+      output.innerHTML = '<div style="color:#dc2626;font-size:14px;padding:12px 0;">No items found.</div>';
+      return;
+    }
+    const s = data.summary;
+
+    let html = `
+      <div style="margin-bottom:14px;">
+        <div style="font-size:18px;font-weight:800;color:#111827;">${escapeHtml(data.consigner)}</div>
+        <div style="font-size:12px;color:#6b7280;font-weight:600;margin-top:2px;">Code: ${escapeHtml(data.code)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:#f0fdf4;border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#15803d;">${s.totalItems}</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-top:2px;">Total Items</div>
+        </div>
+        <div style="background:#eff6ff;border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#1d4ed8;">${s.soldItems}</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-top:2px;">Items Sold</div>
+        </div>
+        <div style="background:#fefce8;border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#ca8a04;">$${Number(s.totalPayout).toLocaleString()}</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-top:2px;">Total Payout</div>
+        </div>
+        <div style="background:#f5f3ff;border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#7c3aed;">$${Number(s.avgSalePrice).toLocaleString()}</div>
+          <div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-top:2px;">Avg Sale</div>
+        </div>
+      </div>`;
+
+    if (data.active.length) {
+      html += sectionHeader('Active Items', data.active.length);
+      html += renderItemRows(data.active, 'active');
+    }
+
+    if (data.sold.length) {
+      html += sectionHeader('Sold', data.sold.length, '16px 0 8px');
+      html += renderItemRows(data.sold, 'sold');
+      html += `
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;margin-top:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span style="color:#6b7280;">Total Revenue</span>
+            <span style="font-weight:700;color:#111827;">$${Number(s.totalSoldRevenue).toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span style="color:#6b7280;">Commission</span>
+            <span style="font-weight:700;color:#dc2626;">–$${Number(s.totalCommission).toLocaleString()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;border-top:1px solid #d1fae5;padding-top:8px;margin-top:4px;">
+            <span style="font-weight:800;color:#15803d;">Payout to Consigner</span>
+            <span style="font-weight:900;color:#15803d;">$${Number(s.totalPayout).toLocaleString()}</span>
+          </div>
+        </div>`;
+    }
+
+    if (data.prospects.length) {
+      html += sectionHeader('Pending Review', data.prospects.length, '16px 0 8px');
+      html += renderItemRows(data.prospects, 'prospect');
+    }
+
+    if (data.archived.length) {
+      html += sectionHeader('Archived', data.archived.length, '16px 0 8px');
+      html += renderItemRows(data.archived, 'archived');
+    }
+
+    output.innerHTML = html;
+    pBtn.style.display = 'block';
+    window._consignerReportData = data;
+  } catch {
+    output.innerHTML = '<div style="color:#dc2626;font-size:14px;padding:12px 0;">Failed to load report.</div>';
+  }
+}
+
+function sectionHeader(label, count, margin) {
+  return `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#374151;margin:${margin || '0 0 8px'};">${label} (${count})</div>`;
+}
+
+function renderItemRows(items, type) {
+  const stageBg = {
+    'Home Visit':'#f1f5f9','Received at Studio':'#eff6ff','Review & Cleaning':'#fef9c3',
+    'Photograph':'#f0fdf4','Prep for Pick Up':'#fef3c7','Ready for Pick Up':'#ecfdf5',
+    'Picked Up':'#d1fae5','Archived':'#f9fafb'
+  };
+
+  return items.map(i => {
+    const bg = stageBg[i.stage] || '#f9fafb';
+    let detail = '';
+    if (type === 'sold') {
+      detail = `<span style="font-weight:700;color:#15803d;">$${Number(i.soldPrice||0).toLocaleString()}</span> · Payout: <span style="color:#6b7280;">$${Number(i.payout||0).toLocaleString()}</span>`;
+    } else if (i.estimatedValueLow || i.estimatedValueHigh) {
+      detail = `Est: $${Number(i.estimatedValueLow).toLocaleString()}–$${Number(i.estimatedValueHigh).toLocaleString()}`;
+    }
+    const lot = (i.lotNumber && i.lotNumber !== '—')
+      ? `<span style="background:#1e293b;color:white;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;margin-right:6px;flex-shrink:0;">${escapeHtml(i.lotNumber)}</span>`
+      : '';
+    return `
+      <div style="display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        ${lot}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(i.name)}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:1px;">${escapeHtml(i.category)}${detail ? ' · ' + detail : ''}</div>
+        </div>
+        <div style="font-size:11px;background:${bg};border-radius:20px;padding:3px 9px;font-weight:600;white-space:nowrap;flex-shrink:0;">${escapeHtml(i.stage)}</div>
+      </div>`;
+  }).join('');
+}
+
+function printConsignerReport() {
+  const data = window._consignerReportData;
+  if (!data) return;
+  const s = data.summary;
+  const commPct = (s.soldItems > 0 && Number(s.totalSoldRevenue) > 0)
+    ? Math.round(Number(s.totalCommission) / Number(s.totalSoldRevenue) * 100) : 0;
+
+  let html = `
+    <h2 style="margin-bottom:4px;">NM Auctions — Consigner Report</h2>
+    <p style="color:#6b7280;margin-bottom:4px;">Generated: ${new Date().toLocaleDateString('en-US')}</p>
+    <p style="margin-bottom:16px;font-size:15px;"><strong>${escapeHtml(data.consigner)}</strong> &nbsp;·&nbsp; Code: ${escapeHtml(data.code)}</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;padding:12px;">
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:900;">${s.totalItems}</div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;">Total Items</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:900;">${s.soldItems}</div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;">Sold</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:900;">$${Number(s.totalPayout).toLocaleString()}</div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;">Total Payout</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:900;">$${Number(s.avgSalePrice).toLocaleString()}</div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;">Avg Sale</div></div>
+    </div>`;
+
+  [
+    { label: 'Active Items',    items: data.active    },
+    { label: 'Sold Items',      items: data.sold      },
+    { label: 'Pending Review',  items: data.prospects },
+    { label: 'Archived',        items: data.archived  }
+  ].forEach(sec => {
+    if (!sec.items.length) return;
+    html += `<h3 style="margin:16px 0 6px;">${sec.label} (${sec.items.length})</h3>`;
+    html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+    html += '<tr style="background:#f1f5f9;"><th style="text-align:left;padding:5px 8px;">Lot</th><th style="text-align:left;padding:5px 8px;">Item</th><th style="text-align:left;padding:5px 8px;">Category</th><th style="text-align:left;padding:5px 8px;">Stage</th><th style="text-align:right;padding:5px 8px;">Sold Price</th><th style="text-align:right;padding:5px 8px;">Payout</th></tr>';
+    sec.items.forEach(i => {
+      html += `<tr style="border-bottom:1px solid #e5e7eb;">
+        <td style="padding:5px 8px;">${escapeHtml(i.lotNumber)}</td>
+        <td style="padding:5px 8px;font-weight:600;">${escapeHtml(i.name)}</td>
+        <td style="padding:5px 8px;">${escapeHtml(i.category)}</td>
+        <td style="padding:5px 8px;">${escapeHtml(i.stage)}</td>
+        <td style="padding:5px 8px;text-align:right;">${i.soldPrice ? '$' + Number(i.soldPrice).toLocaleString() : '—'}</td>
+        <td style="padding:5px 8px;text-align:right;">${i.payout ? '$' + Number(i.payout).toLocaleString() : '—'}</td>
+      </tr>`;
+    });
+    html += '</table>';
+  });
+
+  if (data.sold.length) {
+    html += `
+      <div style="margin-top:16px;border-top:2px solid #111827;padding-top:12px;">
+        <table style="width:100%;font-size:13px;">
+          <tr><td>Total Revenue</td><td style="text-align:right;font-weight:700;">$${Number(s.totalSoldRevenue).toLocaleString()}</td></tr>
+          <tr><td>Commission (${commPct}%)</td><td style="text-align:right;color:#dc2626;">–$${Number(s.totalCommission).toLocaleString()}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="font-weight:800;font-size:14px;padding-top:6px;">Total Payout to ${escapeHtml(data.consigner)}</td>
+            <td style="text-align:right;font-weight:900;font-size:14px;padding-top:6px;">$${Number(s.totalPayout).toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>`;
+  }
+
+  document.getElementById('printArea').innerHTML = html;
+  document.getElementById('printArea').style.display = 'block';
+  window.print();
+}
+
 loadDailySummary();
 loadHistory();
+loadConsigners();
 </script>
 
 <script src="/nav.js"></script>
