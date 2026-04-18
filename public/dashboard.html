@@ -11,629 +11,307 @@
   <meta name="apple-mobile-web-app-title" content="Auction Legacy">
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .hero-grid {
-      display: grid;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    @media (min-width: 900px) {
-      .hero-grid {
-        grid-template-columns: 1.7fr 1fr;
-        align-items: stretch;
-      }
-    }
-
-    .welcome-banner {
-      background:
-        radial-gradient(circle at top right, rgba(96,165,250,0.22), transparent 24%),
-        linear-gradient(135deg, #07121f 0%, #0c2340 52%, #123761 100%);
-      border-radius: 24px;
-      padding: 24px 22px;
+    .top-shell {
+      background: linear-gradient(135deg, #07121f 0%, #0d2642 58%, #123761 100%);
       color: white;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      position: relative;
-      overflow: hidden;
+      border-radius: 24px;
+      padding: 18px;
+      margin-bottom: 16px;
       border: 1px solid rgba(96,165,250,0.18);
-      box-shadow: 0 24px 54px rgba(7,18,31,0.26);
-      min-height: 166px;
+      box-shadow: 0 22px 50px rgba(7,18,31,0.22);
     }
-    .welcome-banner::before {
-      content: '';
-      position: absolute;
-      top: -32px; right: -26px;
-      width: 150px; height: 150px;
-      border-radius: 50%;
-      background: rgba(37,99,235,0.16);
-      pointer-events: none;
-    }
-    .welcome-banner::after {
-      content: '';
-      position: absolute;
-      bottom: -54px; right: 26px;
-      width: 110px; height: 110px;
-      border-radius: 50%;
-      background: rgba(14,165,233,0.11);
-      pointer-events: none;
-    }
-    .welcome-avatar {
-      width: 66px;
-      height: 66px;
-      min-width: 66px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    .top-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      box-shadow: 0 10px 24px rgba(37,99,235,0.4);
-      flex-shrink: 0;
-      overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.14);
-      position: relative;
-      z-index: 1;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
     }
-    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 16px; }
-    .welcome-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
-    .welcome-greeting {
-      font-size: 12px;
-      opacity: 0.66;
-      font-weight: 700;
-      text-transform: uppercase;
+    .top-kicker {
+      font-size: 11px;
+      font-weight: 800;
       letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #93c5fd;
       margin-bottom: 6px;
     }
-    .welcome-name {
+    .top-title {
       font-size: 26px;
       font-weight: 900;
-      line-height: 1.08;
-      margin-bottom: 6px;
+      line-height: 1.05;
       letter-spacing: -0.02em;
+      margin-bottom: 6px;
     }
-    .welcome-date {
+    .top-sub {
       font-size: 13px;
-      color: rgba(226,232,240,0.74);
-      font-weight: 500;
+      color: rgba(226,232,240,0.76);
+      line-height: 1.5;
+      max-width: 620px;
     }
-    .welcome-badge {
-      background: rgba(37,99,235,0.25);
-      border: 1px solid rgba(96,165,250,0.34);
+    .top-badge {
+      background: rgba(37,99,235,0.24);
+      border: 1px solid rgba(96,165,250,0.30);
       border-radius: 999px;
       padding: 7px 12px;
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #bfdbfe;
+      color: #dbeafe;
       white-space: nowrap;
-      flex-shrink: 0;
-      align-self: flex-start;
-      position: relative;
-      z-index: 1;
     }
-    @media (min-width: 600px) {
-      .welcome-banner { padding: 28px 28px; min-height: 184px; }
-      .welcome-avatar { width: 76px; height: 76px; min-width: 76px; font-size: 32px; border-radius: 20px; }
-      .welcome-name { font-size: 32px; }
-    }
-
-    .ops-pulse {
-      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.91) 100%);
-      border-radius: 24px;
-      padding: 20px 18px;
-      border: 1px solid rgba(148,163,184,0.16);
-      box-shadow: 0 18px 42px rgba(15,23,42,0.11);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .ops-kicker {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .ops-label {
-      font-size: 11px;
-      font-weight: 800;
-      color: #2563eb;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .ops-pill {
-      font-size: 11px;
-      font-weight: 800;
-      color: #0f172a;
-      background: #eff6ff;
-      border-radius: 999px;
-      padding: 5px 10px;
-    }
-    .ops-title {
-      font-size: 24px;
-      font-weight: 900;
-      line-height: 1.08;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-    }
-    .ops-sub {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.55;
-      margin-top: 2px;
-    }
-    .quick-actions {
+    .action-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      margin-top: 2px;
+      margin-top: 14px;
     }
-    .quick-action {
-      background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
-      border: 1px solid rgba(37,99,235,0.16);
+    .action-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 18px;
-      padding: 14px 14px;
+      padding: 14px;
       cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      box-shadow: 0 10px 20px rgba(37,99,235,0.08);
+      transition: transform 0.18s ease, background 0.18s ease;
     }
-    .quick-action:hover,
-    .quick-action:active {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 30px rgba(37,99,235,0.13);
-      border-color: rgba(37,99,235,0.28);
-    }
-    .quick-action-icon {
-      width: 42px;
-      height: 42px;
+    .action-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.12); }
+    .action-icon {
+      width: 40px;
+      height: 40px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      background: rgba(37,99,235,0.28);
       font-size: 22px;
       margin-bottom: 10px;
-      box-shadow: 0 12px 24px rgba(37,99,235,0.22);
     }
-    .quick-action-title {
+    .action-title {
       font-size: 14px;
       font-weight: 800;
-      color: #0f172a;
       margin-bottom: 3px;
     }
-    .quick-action-sub {
+    .action-sub {
       font-size: 12px;
-      color: #64748b;
+      color: rgba(226,232,240,0.74);
       line-height: 1.45;
     }
 
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 22px 0 14px;
-    }
-    .section-eyebrow {
-      font-size: 11px;
-      font-weight: 800;
-      color: #2563eb;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 4px;
-    }
-    .section-title {
-      font-size: 23px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-    }
-    .section-sub {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 4px;
-    }
-
-    .stat-grid {
+    .summary-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
-    .stat-tile {
-      border-radius: 22px;
-      padding: 18px 14px 16px;
-      text-align: left;
-      position: relative;
-      overflow: hidden;
-      min-height: 122px;
+    .summary-chip {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 18px;
+      padding: 14px 14px;
+      box-shadow: 0 14px 30px rgba(15,23,42,0.08);
     }
-    .stat-tile::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.48), transparent 55%);
-      pointer-events: none;
-    }
-    .stat-tile::after {
-      display: none;
-    }
-    .stat-number {
-      font-size: 34px;
+    .summary-value {
+      font-size: 28px;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
-      position: relative;
-      z-index: 1;
     }
-    .stat-label {
+    .summary-label {
       font-size: 11px;
-      color: #475569;
-      margin-top: 8px;
       font-weight: 800;
       letter-spacing: 0.10em;
       text-transform: uppercase;
-      position: relative;
-      z-index: 1;
+      color: #64748b;
+      margin-top: 6px;
     }
-    .stat-note {
+    .summary-note {
       font-size: 12px;
       color: #64748b;
-      margin-top: 8px;
+      margin-top: 6px;
       line-height: 1.4;
-      position: relative;
-      z-index: 1;
-    }
-    .stat-tile.stat-prospects {
-      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-      border-color: rgba(37,99,235,0.18);
-    }
-    .stat-tile.stat-inventory {
-      background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%);
-      border-color: rgba(22,163,74,0.16);
-    }
-    .stat-tile.stat-photo {
-      background: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%);
-      border-color: rgba(234,88,12,0.16);
-    }
-    @media (max-width: 720px) {
-      .stat-grid { grid-template-columns: 1fr; }
-      .stat-tile { min-height: auto; }
     }
 
-    .alert-grid {
+    .tab-shell {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 11px 12px;
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 14px;
+      background: white;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0b1b2b, #183b63);
+      color: white;
+      border-color: #0b1b2b;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .panel-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
       margin-bottom: 16px;
     }
-    .alert-card {
+    .panel-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
       border: 1px solid rgba(148,163,184,0.14);
       border-radius: 20px;
       padding: 16px;
       box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+    }
+    .priority-card {
       cursor: pointer;
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      min-height: 150px;
     }
-    .alert-card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(15,23,42,0.12); }
-    .alert-card.warning { border-color: rgba(249,115,22,0.22); background: linear-gradient(180deg, #ffffff 0%, #fff8f1 100%); }
-    .alert-card.danger { border-color: rgba(220,38,38,0.20); background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%); }
-    .alert-card.info { border-color: rgba(37,99,235,0.18); background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); }
-    .alert-card.success { border-color: rgba(22,163,74,0.18); background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%); }
-    .alert-top {
+    .priority-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px rgba(15,23,42,0.12);
+    }
+    .priority-card.warning { background: linear-gradient(180deg, #ffffff 0%, #fff8f1 100%); border-color: rgba(249,115,22,0.18); }
+    .priority-card.danger { background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%); border-color: rgba(220,38,38,0.18); }
+    .priority-card.info { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); border-color: rgba(37,99,235,0.18); }
+    .priority-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
-    .alert-label {
+    .priority-label {
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.10em;
       text-transform: uppercase;
       color: #64748b;
     }
-    .alert-count {
-      font-size: 30px;
+    .priority-count {
+      font-size: 28px;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
     }
-    .alert-title {
+    .priority-title {
       font-size: 16px;
       font-weight: 800;
       color: #111827;
       margin-bottom: 5px;
     }
-    .alert-sub {
+    .priority-sub {
       font-size: 13px;
       color: #64748b;
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
-    .alert-foot {
-      font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-    }
-    @media (max-width: 720px) {
-      .alert-grid { grid-template-columns: 1fr; }
+      line-height: 1.45;
     }
 
-    .queue-grid {
+    .queue-list,
+    .tool-list {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
     }
-    .queue-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
-      border: 1px solid rgba(148,163,184,0.14);
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 16px 34px rgba(15,23,42,0.08);
-      cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      min-height: 170px;
-      position: relative;
-      overflow: hidden;
-    }
-    .queue-card:hover { transform: translateY(-4px); box-shadow: 0 22px 44px rgba(15,23,42,0.12); }
-    .queue-card.receiving { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); border-color: rgba(37,99,235,0.18); }
-    .queue-card.cleaning { background: linear-gradient(180deg, #ffffff 0%, #fffbf4 100%); border-color: rgba(245,158,11,0.18); }
-    .queue-card.photo { background: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%); border-color: rgba(234,88,12,0.18); }
-    .queue-card.catalog { background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%); border-color: rgba(124,58,237,0.18); }
-    .queue-card.ready { background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%); border-color: rgba(22,163,74,0.18); }
-    .queue-card.problem { background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%); border-color: rgba(220,38,38,0.18); }
-    .queue-top {
+    .queue-row,
+    .tool-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 12px;
+      padding: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(15,23,42,0.06);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
-    .queue-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
+    .queue-row:hover,
+    .tool-row:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(15,23,42,0.10);
+      border-color: rgba(37,99,235,0.18);
+    }
+    .row-icon {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border-radius: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.7);
-      font-size: 24px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+      background: #eff6ff;
+      font-size: 22px;
     }
-    .queue-num {
-      font-size: 28px;
+    .row-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .row-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 3px;
+    }
+    .row-sub {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+    .row-meta {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .row-count {
+      font-size: 22px;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
     }
-    .queue-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: #111827;
-      margin-bottom: 4px;
-    }
-    .queue-sub {
-      font-size: 13px;
+    .row-note {
+      font-size: 11px;
       color: #64748b;
-      line-height: 1.5;
-      margin-bottom: 10px;
+      margin-top: 4px;
+      max-width: 120px;
     }
-    .queue-foot {
-      font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-      margin-top: auto;
-    }
-    @media (max-width: 900px) {
-      .queue-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 620px) {
-      .queue-grid { grid-template-columns: 1fr; }
+    .row-arrow {
+      font-size: 22px;
+      color: #94a3b8;
+      flex-shrink: 0;
     }
 
-    .dash-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-    @media (min-width: 600px) {
-      .dash-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    }
-    .dash-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.91) 100%);
-      border-radius: 22px;
-      padding: 20px 18px;
-      box-shadow: 0 16px 34px rgba(15,23,42,0.10);
-      cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      border: 1px solid rgba(148,163,184,0.16);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      overflow: hidden;
-      min-height: 176px;
-    }
-    .dash-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(37,99,235,0.06), transparent 45%);
-      pointer-events: none;
-    }
-    .dash-card::after {
-      content: '›';
-      position: absolute;
-      right: 16px;
-      bottom: 14px;
-      font-size: 24px;
-      color: rgba(148,163,184,0.75);
-      font-weight: 400;
-      transition: transform 0.18s ease, color 0.18s ease;
-    }
-    .dash-card:hover,
-    .dash-card:active {
-      transform: translateY(-5px);
-      box-shadow: 0 22px 44px rgba(15,23,42,0.14);
-      border-color: rgba(37,99,235,0.24);
-    }
-    .dash-card:hover::after,
-    .dash-card:active::after {
-      transform: translateX(3px);
-      color: #2563eb;
-    }
-    .dash-icon-wrap {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #eff6ff, #dbeafe);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-      position: relative;
-      z-index: 1;
-    }
-    .dash-icon {
-      font-size: 28px;
-      margin-bottom: 0;
-    }
-    .dash-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #111827;
-      position: relative;
-      z-index: 1;
-      margin-top: 2px;
-    }
-    .dash-sub {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.5;
-      position: relative;
-      z-index: 1;
-      max-width: 90%;
-    }
-    .dash-chip {
-      margin-top: auto;
-      align-self: flex-start;
-      background: #f8fafc;
-      border: 1px solid rgba(148,163,184,0.20);
-      color: #475569;
-      border-radius: 999px;
-      padding: 5px 10px;
+    .section-label {
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      position: relative;
-      z-index: 1;
-    }
-    @media (min-width: 600px) {
-      .dash-card { padding: 22px 20px; min-height: 188px; }
-      .dash-title { font-size: 18px; }
-      .dash-sub { font-size: 14px; }
+      color: #2563eb;
+      margin-bottom: 8px;
     }
 
-    .photo-studio-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: linear-gradient(90deg, #07121f 0%, #0d2642 58%, #143761 100%);
-      border-radius: 22px;
-      padding: 16px 18px;
-      margin-top: 14px;
-      cursor: pointer;
-      border: 1px solid rgba(37,99,235,0.24);
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 18px 34px rgba(7,18,31,0.18);
-    }
-    .photo-studio-card:hover,
-    .photo-studio-card:active {
-      transform: translateY(-2px);
-      box-shadow: 0 22px 42px rgba(37,99,235,0.2);
-    }
-    .photo-studio-icon {
-      font-size: 24px;
-      width: 48px; height: 48px; min-width: 48px;
-      background: rgba(37,99,235,0.25);
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-    }
-    .photo-studio-text { flex: 1; min-width: 0; }
-    .photo-studio-title {
-      font-size: 15px; font-weight: 800; color: white; margin-bottom: 3px;
-    }
-    .photo-studio-sub {
-      font-size: 12px; color: rgba(255,255,255,0.70);
-    }
-    .photo-studio-arrow {
-      font-size: 22px; color: rgba(255,255,255,0.35); flex-shrink: 0;
-    }
-    @media (min-width: 600px) {
-      .photo-studio-card { padding: 18px 22px; margin-top: 18px; }
-      .photo-studio-title { font-size: 16px; }
+    .card.compact {
+      padding: 16px;
+      margin-bottom: 16px;
     }
 
-    .wotd-card {
-      background:
-        radial-gradient(circle at top right, rgba(249,115,22,0.16), transparent 24%),
-        linear-gradient(135deg, #08111d 0%, #112236 100%);
-      border-radius: 24px;
-      padding: 22px 20px 24px;
-      margin-top: 16px;
-      color: white;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 20px 44px rgba(8,17,29,0.24);
-      border: 1px solid rgba(249,115,22,0.16);
-    }
-    .wotd-label {
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #fb923c;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .wotd-word {
-      font-size: 28px;
-      font-weight: 900;
-      margin-bottom: 4px;
-      line-height: 1.15;
-    }
-    .wotd-pronunciation {
-      font-size: 12px;
-      color: rgba(226,232,240,0.72);
-      font-style: italic;
-      margin-bottom: 10px;
-    }
-    .wotd-def {
-      font-size: 14px;
-      color: rgba(255,255,255,0.86);
-      line-height: 1.6;
-    }
-    .wotd-example {
-      font-size: 12px;
-      color: rgba(226,232,240,0.68);
-      margin-top: 8px;
-      font-style: italic;
-      line-height: 1.55;
-    }
-    @media (min-width: 600px) {
-      .wotd-card { padding: 24px 26px 26px; }
-      .wotd-word { font-size: 32px; }
+    @media (max-width: 760px) {
+      .action-row,
+      .summary-row,
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+      .row-note { max-width: 96px; }
     }
   </style>
 </head>
@@ -668,232 +346,225 @@
 
 <div class="container">
 
-  <div class="hero-grid">
-    <div id="welcomeCard" class="welcome-banner" style="display:none;">
-      <div class="welcome-avatar" id="welcomeAvatar">
-        <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
-      </div>
-      <div class="welcome-text">
-        <div class="welcome-greeting" id="welcomeGreeting">Good morning</div>
-        <div class="welcome-name" id="welcomeName"></div>
-        <div class="welcome-date" id="welcomeDate"></div>
-      </div>
-      <div class="welcome-badge" id="welcomeRole">Employee</div>
-    </div>
-
-    <div class="ops-pulse">
-      <div class="ops-kicker">
-        <div class="ops-label">Operations Pulse</div>
-        <div class="ops-pill">Live Workflow</div>
-      </div>
+  <div class="top-shell">
+    <div class="top-row">
       <div>
-        <div class="ops-title">Run the floor from one screen.</div>
-        <div class="ops-sub">See what is stalled, who owns the work, what is ready to move, and which queues need attention before the day gets away from you.</div>
+        <div class="top-kicker">Operations dashboard</div>
+        <div class="top-title" id="topTitle">Good morning</div>
+        <div class="top-sub">A cleaner overview of what needs action right now, with queues and tools one tap away instead of all stacked together.</div>
       </div>
-      <div class="quick-actions">
-        <div class="quick-action" onclick="window.location.href='/scanner.html'">
-          <div class="quick-action-icon">📷</div>
-          <div class="quick-action-title">Scan Now</div>
-          <div class="quick-action-sub">Open the scanner and move items through the workflow.</div>
-        </div>
-        <div class="quick-action" onclick="window.location.href='/initial-visit.html'">
-          <div class="quick-action-icon">📋</div>
-          <div class="quick-action-title">Start Intake</div>
-          <div class="quick-action-sub">Create a new initial visit and print labels fast.</div>
-        </div>
+      <div class="top-badge" id="topBadge">Employee</div>
+    </div>
+    <div class="action-row">
+      <div class="action-card" onclick="window.location.href='/scanner.html'">
+        <div class="action-icon">📷</div>
+        <div class="action-title">Scan Now</div>
+        <div class="action-sub">Open the scanner and move items through the workflow.</div>
+      </div>
+      <div class="action-card" onclick="window.location.href='/initial-visit.html'">
+        <div class="action-icon">📋</div>
+        <div class="action-title">Start Intake</div>
+        <div class="action-sub">Create a new initial visit and print labels fast.</div>
       </div>
     </div>
   </div>
 
-  <div class="section-head">
-    <div>
-      <div class="section-eyebrow">Today at a glance</div>
-      <div class="section-title">Studio workflow</div>
-      <div class="section-sub">A clearer snapshot of what is waiting, active, and ready to shoot.</div>
+  <div class="summary-row">
+    <div class="summary-chip">
+      <div class="summary-value" id="statProspects">—</div>
+      <div class="summary-label">Prospects</div>
+      <div class="summary-note">Home visit items waiting for approval.</div>
+    </div>
+    <div class="summary-chip">
+      <div class="summary-value" id="statInStudio">—</div>
+      <div class="summary-label">In Inventory</div>
+      <div class="summary-note">Active items currently inside workflow.</div>
+    </div>
+    <div class="summary-chip">
+      <div class="summary-value" id="statReady">—</div>
+      <div class="summary-label">Ready to Shoot</div>
+      <div class="summary-note">Items waiting in the photography line.</div>
     </div>
   </div>
 
-  <div class="stat-grid" id="statsRow">
-    <div class="stat-tile stat-prospects" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
-      <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
-      <div class="stat-label">Prospects</div>
-      <div class="stat-note">Items waiting for review before they enter inventory.</div>
-    </div>
-    <div class="stat-tile stat-inventory" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="Items received and in active workflow">
-      <div class="stat-number skeleton" id="statInStudio" style="min-height:34px;">—</div>
-      <div class="stat-label">In Inventory</div>
-      <div class="stat-note">Active items currently moving through studio operations.</div>
-    </div>
-    <div class="stat-tile stat-photo" onclick="window.location.href='/photography-queue.html'" style="cursor:pointer;" title="View items ready to photograph">
-      <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
-      <div class="stat-label">Ready to Photograph</div>
-      <div class="stat-note">Items staged and ready for the photo queue.</div>
-    </div>
-  </div>
-
-  <div id="onboardingBanner" class="onboarding-banner" style="display:none;">
-    <div class="onboarding-title" id="onboardingTitle"></div>
-    <div class="onboarding-steps" id="onboardingSteps"></div>
-  </div>
-
-  <div id="assignmentsCard" class="card" style="display:none;margin-bottom:16px;padding-bottom:4px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <h2 style="margin:0;">🔔 My Assignments</h2>
+  <div id="assignmentsCard" class="card compact" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;">
+      <h2 style="margin:0;">My Assignments</h2>
       <span id="assignBadge" style="background:#dc2626;color:white;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:none;"></span>
     </div>
     <div id="assignmentsList"></div>
   </div>
 
-  <div class="section-head">
-    <div>
-      <div class="section-eyebrow">Needs attention</div>
-      <div class="section-title">Bottlenecks and problem items</div>
-      <div class="section-sub">The issues most likely to slow the operation down or disappear without follow-up.</div>
+  <div class="tab-shell">
+    <button class="tab-btn active" data-tab="overview" onclick="setTab('overview')">Overview</button>
+    <button class="tab-btn" data-tab="queues" onclick="setTab('queues')">Queues</button>
+    <button class="tab-btn" data-tab="tools" onclick="setTab('tools')">Tools</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-overview">
+    <div class="section-label">Priority items</div>
+    <div class="panel-grid">
+      <div class="panel-card priority-card warning" onclick="window.location.href='/photography-queue.html'">
+        <div class="priority-top"><div class="priority-label">Aging</div><div class="priority-count" id="priorityAging">—</div></div>
+        <div class="priority-title">Overdue in stage</div>
+        <div class="priority-sub" id="priorityAgingSub">Checking queue age…</div>
+      </div>
+      <div class="panel-card priority-card danger" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
+        <div class="priority-top"><div class="priority-label">Problems</div><div class="priority-count" id="priorityProblems">—</div></div>
+        <div class="priority-title">Missing or repair flagged</div>
+        <div class="priority-sub" id="priorityProblemsSub">Watching problem items…</div>
+      </div>
+      <div class="panel-card priority-card info" onclick="window.location.href='/items.html'">
+        <div class="priority-top"><div class="priority-label">Ownership</div><div class="priority-count" id="priorityUnassigned">—</div></div>
+        <div class="priority-title">Unassigned inventory</div>
+        <div class="priority-sub" id="priorityUnassignedSub">Checking assignment load…</div>
+      </div>
+      <div class="panel-card priority-card info" id="priorityAdminCard" onclick="window.location.href='/events.html'" style="display:none;">
+        <div class="priority-top"><div class="priority-label">Auction prep</div><div class="priority-count" id="priorityReadyEvent">—</div></div>
+        <div class="priority-title">Ready for event assignment</div>
+        <div class="priority-sub" id="priorityReadyEventSub">Checking ready inventory…</div>
+      </div>
     </div>
   </div>
 
-  <div class="alert-grid" id="alertGrid">
-    <div class="alert-card warning" onclick="window.location.href='/photography-queue.html'">
-      <div class="alert-top"><div class="alert-label">Aging queue</div><div class="alert-count" id="alertAging">—</div></div>
-      <div class="alert-title">Overdue in stage</div>
-      <div class="alert-sub">Items sitting too long in the active workflow.</div>
-      <div class="alert-foot" id="alertAgingFoot">Checking queue age…</div>
-    </div>
-    <div class="alert-card danger" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
-      <div class="alert-top"><div class="alert-label">Problem items</div><div class="alert-count" id="alertProblems">—</div></div>
-      <div class="alert-title">Missing or repair flagged</div>
-      <div class="alert-sub">Items already marked as missing or needing repair.</div>
-      <div class="alert-foot" id="alertProblemsFoot">Watching flagged inventory…</div>
-    </div>
-    <div class="alert-card info" onclick="window.location.href='/items.html'">
-      <div class="alert-top"><div class="alert-label">Ownership</div><div class="alert-count" id="alertUnassigned">—</div></div>
-      <div class="alert-title">Unassigned inventory</div>
-      <div class="alert-sub">Active items with no clear employee owner right now.</div>
-      <div class="alert-foot" id="alertUnassignedFoot">Checking assignment load…</div>
-    </div>
-    <div class="alert-card success" onclick="window.location.href='/events.html'">
-      <div class="alert-top"><div class="alert-label">Auction prep</div><div class="alert-count" id="alertReadyEvent">—</div></div>
-      <div class="alert-title">Ready for event assignment</div>
-      <div class="alert-sub">Photographed or prepped items that still need an event.</div>
-      <div class="alert-foot" id="alertReadyEventFoot">Checking ready inventory…</div>
-    </div>
-  </div>
-
-  <div class="section-head">
-    <div>
-      <div class="section-eyebrow">Work queues</div>
-      <div class="section-title">Stage-based queues</div>
-      <div class="section-sub">Direct entry points into the work, grouped the way the team actually thinks about it.</div>
-    </div>
-  </div>
-
-  <div class="queue-grid" id="queueGrid">
-    <div class="queue-card receiving" onclick="window.location.href='/items.html?stage=Received+at+Studio'">
-      <div class="queue-top"><div class="queue-icon">📦</div><div class="queue-num" id="queueReceiving">—</div></div>
-      <div class="queue-title">Receiving Queue</div>
-      <div class="queue-sub">Items received into studio and waiting to be worked next.</div>
-      <div class="queue-foot" id="queueReceivingFoot">Checking oldest item…</div>
-    </div>
-    <div class="queue-card cleaning" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'">
-      <div class="queue-top"><div class="queue-icon">🧽</div><div class="queue-num" id="queueCleaning">—</div></div>
-      <div class="queue-title">Cleaning Queue</div>
-      <div class="queue-sub">Items waiting for review, cleaning, measuring, or prep before photos.</div>
-      <div class="queue-foot" id="queueCleaningFoot">Checking oldest item…</div>
-    </div>
-    <div class="queue-card photo" onclick="window.location.href='/photography-queue.html'">
-      <div class="queue-top"><div class="queue-icon">📸</div><div class="queue-num" id="queuePhoto">—</div></div>
-      <div class="queue-title">Photo Queue</div>
-      <div class="queue-sub">Items that are ready to be shot and pushed forward.</div>
-      <div class="queue-foot" id="queuePhotoFoot">Checking oldest item…</div>
-    </div>
-    <div class="queue-card catalog" onclick="window.location.href='/items.html?stage=Photograph'">
-      <div class="queue-top"><div class="queue-icon">📝</div><div class="queue-num" id="queueCatalog">—</div></div>
-      <div class="queue-title">Catalog Queue</div>
-      <div class="queue-sub">Shot items that still need listing polish, export prep, or event placement.</div>
-      <div class="queue-foot" id="queueCatalogFoot">Checking oldest item…</div>
-    </div>
-    <div class="queue-card ready" onclick="window.location.href='/items.html?stage=Ready+for+Pick+Up'">
-      <div class="queue-top"><div class="queue-icon">✅</div><div class="queue-num" id="queueReady">—</div></div>
-      <div class="queue-title">Ready for Pick Up</div>
-      <div class="queue-sub">Items fully prepared and waiting for their final handoff.</div>
-      <div class="queue-foot" id="queueReadyFoot">Checking oldest item…</div>
-    </div>
-    <div class="queue-card problem" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
-      <div class="queue-top"><div class="queue-icon">⚠️</div><div class="queue-num" id="queueProblem">—</div></div>
-      <div class="queue-title">Problem Queue</div>
-      <div class="queue-sub">Missing, flagged, or blocked items that need intervention.</div>
-      <div class="queue-foot" id="queueProblemFoot">Checking flagged items…</div>
-    </div>
-  </div>
-
-  <div class="section-head">
-    <div>
-      <div class="section-eyebrow">Core tools</div>
-      <div class="section-title">Run the floor</div>
-      <div class="section-sub">The main tools your team uses most, now sitting under the command view instead of replacing it.</div>
+  <div class="tab-panel" id="tab-queues">
+    <div class="section-label">Work queues</div>
+    <div class="queue-list">
+      <div class="queue-row" onclick="window.location.href='/items.html?stage=Received+at+Studio'">
+        <div class="row-icon">📦</div>
+        <div class="row-info">
+          <div class="row-title">Receiving Queue</div>
+          <div class="row-sub">Items received into studio and waiting to be worked next.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queueReceiving">—</div>
+          <div class="row-note" id="queueReceivingNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="queue-row" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'">
+        <div class="row-icon">🧽</div>
+        <div class="row-info">
+          <div class="row-title">Cleaning Queue</div>
+          <div class="row-sub">Items waiting for review, cleaning, measuring, or prep before photos.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queueCleaning">—</div>
+          <div class="row-note" id="queueCleaningNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="queue-row" onclick="window.location.href='/photography-queue.html'">
+        <div class="row-icon">📸</div>
+        <div class="row-info">
+          <div class="row-title">Photo Queue</div>
+          <div class="row-sub">Items that are ready to be shot and pushed forward.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queuePhoto">—</div>
+          <div class="row-note" id="queuePhotoNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="queue-row" onclick="window.location.href='/items.html?stage=Photograph'">
+        <div class="row-icon">📝</div>
+        <div class="row-info">
+          <div class="row-title">Catalog Queue</div>
+          <div class="row-sub">Shot items that still need listing polish, export prep, or event placement.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queueCatalog">—</div>
+          <div class="row-note" id="queueCatalogNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="queue-row" onclick="window.location.href='/items.html?stage=Ready+for+Pick+Up'">
+        <div class="row-icon">✅</div>
+        <div class="row-info">
+          <div class="row-title">Ready for Pick Up</div>
+          <div class="row-sub">Items fully prepared and waiting for their final handoff.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queueReady">—</div>
+          <div class="row-note" id="queueReadyNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="queue-row" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
+        <div class="row-icon">⚠️</div>
+        <div class="row-info">
+          <div class="row-title">Problem Queue</div>
+          <div class="row-sub">Missing, flagged, or blocked items that need intervention.</div>
+        </div>
+        <div class="row-meta">
+          <div class="row-count" id="queueProblem">—</div>
+          <div class="row-note" id="queueProblemNote">Checking…</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
     </div>
   </div>
 
-  <div class="dash-grid">
-    <div class="dash-card" onclick="window.location.href='/initial-visit.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">📋</div></div>
-      <div class="dash-title">Initial Visit</div>
-      <div class="dash-sub">Capture consignments, generate labels, and start the chain of custody cleanly.</div>
-      <div class="dash-chip">Intake</div>
+  <div class="tab-panel" id="tab-tools">
+    <div class="section-label">Core tools</div>
+    <div class="tool-list" id="toolList">
+      <div class="tool-row" onclick="window.location.href='/initial-visit.html'">
+        <div class="row-icon">📋</div>
+        <div class="row-info">
+          <div class="row-title">Initial Visit</div>
+          <div class="row-sub">Capture consignments, generate labels, and start the chain of custody.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row" onclick="window.location.href='/scanner.html'">
+        <div class="row-icon">📷</div>
+        <div class="row-info">
+          <div class="row-title">Scanner</div>
+          <div class="row-sub">Scan labels instantly, log touches, and move items through the workflow.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row" onclick="window.location.href='/items.html'">
+        <div class="row-icon">📦</div>
+        <div class="row-info">
+          <div class="row-title">Item Library</div>
+          <div class="row-sub">Browse, search, batch assign, and keep every item easy to find.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row" onclick="window.location.href='/photography-queue.html'">
+        <div class="row-icon">🎯</div>
+        <div class="row-info">
+          <div class="row-title">Photo Queue</div>
+          <div class="row-sub">Work the photography backlog in a cleaner production view.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row admin-only" onclick="window.location.href='/review-visit.html'" style="display:none;">
+        <div class="row-icon">✅</div>
+        <div class="row-info">
+          <div class="row-title">Review Visit</div>
+          <div class="row-sub">Approve worthwhile items, archive the rest, and assign work.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row admin-only" onclick="window.location.href='/events.html'" style="display:none;">
+        <div class="row-icon">🏷️</div>
+        <div class="row-info">
+          <div class="row-title">Auction Events</div>
+          <div class="row-sub">Build events, assign lots, and prepare sold results.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="tool-row admin-only" onclick="window.location.href='/reports.html'" style="display:none;">
+        <div class="row-icon">📊</div>
+        <div class="row-info">
+          <div class="row-title">Reports</div>
+          <div class="row-sub">Track output, backlog, and consigner or team activity.</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
     </div>
-    <div class="dash-card" id="reviewVisitCard" onclick="window.location.href='/review-visit.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">✅</div></div>
-      <div class="dash-title">Review Visit</div>
-      <div class="dash-sub">Approve worthwhile items, archive the rest, and assign work before backlog grows.</div>
-      <div class="dash-chip">Admin flow</div>
-    </div>
-    <div class="dash-card" onclick="window.location.href='/scanner.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">📷</div></div>
-      <div class="dash-title">Scanner</div>
-      <div class="dash-sub">Scan labels instantly, log touches, and push items through the workflow with fewer mistakes.</div>
-      <div class="dash-chip">Fast action</div>
-    </div>
-    <div class="dash-card" onclick="window.location.href='/items.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">📦</div></div>
-      <div class="dash-title">Item Library</div>
-      <div class="dash-sub">Browse, search, batch assign, and keep every item easy to find under pressure.</div>
-      <div class="dash-chip">Inventory</div>
-    </div>
-    <div class="dash-card" id="reportsGridCard" onclick="window.location.href='/reports.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">📊</div></div>
-      <div class="dash-title">Reports</div>
-      <div class="dash-sub">Track lot flow, daily output, and what each consigner or team member has in motion.</div>
-      <div class="dash-chip">Reporting</div>
-    </div>
-    <div class="dash-card" id="eventsGridCard" onclick="window.location.href='/events.html'">
-      <div class="dash-icon-wrap"><div class="dash-icon">🏷️</div></div>
-      <div class="dash-title">Auction Events</div>
-      <div class="dash-sub">Build events, assign lots, and prepare sold results without bouncing between systems.</div>
-      <div class="dash-chip">Sales</div>
-    </div>
-    <div class="dash-card" id="clientPortalCard" onclick="window.location.href='/client-portal.html'" style="display:none;">
-      <div class="dash-icon-wrap"><div class="dash-icon">🔗</div></div>
-      <div class="dash-title">Client Portal</div>
-      <div class="dash-sub">Share cleaner visibility with consigners so item status is easier to understand externally.</div>
-      <div class="dash-chip">Consigners</div>
-    </div>
-  </div>
-
-  <div class="photo-studio-card" id="photoStudioShortcut" onclick="window.location.href='/photo-upload.html'">
-    <div class="photo-studio-icon">📸</div>
-    <div class="photo-studio-text">
-      <div class="photo-studio-title">Photo Studio</div>
-      <div class="photo-studio-sub">Upload, clean up, and pair today’s photos with the right items faster.</div>
-    </div>
-    <div class="photo-studio-arrow">›</div>
-  </div>
-
-  <div class="wotd-card" id="wotdCard">
-    <div class="wotd-label">🔥 Word of the Day</div>
-    <div class="wotd-word" id="wotdWord"></div>
-    <div class="wotd-pronunciation" id="wotdPronun"></div>
-    <div class="wotd-def" id="wotdDef"></div>
-    <div class="wotd-example" id="wotdEx"></div>
   </div>
 
 </div>
@@ -904,38 +575,12 @@
     document.getElementById('overlay').classList.toggle('show');
   }
 
-  function logout() {
-    localStorage.removeItem('user');
-    window.location.href = '/';
-  }
-
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
 
-  if (user && user.isAdmin) {
-    document.getElementById('clientPortalCard').style.display = 'flex';
-  } else {
-    document.getElementById('reportsGridCard').style.display = 'none';
-    document.getElementById('reviewVisitCard').style.display = 'none';
-    document.getElementById('photoStudioShortcut').style.display = 'none';
-  }
-
-  if (user && user.name) {
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const now = new Date();
-    const dateStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
-
-    document.getElementById('welcomeGreeting').innerText = greeting;
-    document.getElementById('welcomeName').innerText = user.name;
-    document.getElementById('welcomeDate').innerText = dateStr;
-    document.getElementById('welcomeRole').innerText = user.isAdmin ? 'Admin' : 'Employee';
-    if (user.photo) {
-      document.getElementById('welcomeAvatar').innerHTML = `<img src="${user.photo}" alt="${user.name}">`;
-    }
-    document.getElementById('welcomeCard').style.display = 'flex';
+  function setTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + tab));
   }
 
   function escDash(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -951,32 +596,27 @@
   function oldestAgeText(items) {
     if (!items.length) return 'No items waiting';
     const oldest = Math.max(...items.map(i => daysSince(latestTouch(i))));
-    if (oldest <= 0) return 'Oldest item touched today';
-    if (oldest === 1) return 'Oldest item touched 1 day ago';
-    return `Oldest item touched ${oldest} days ago`;
+    if (oldest <= 0) return 'Touched today';
+    if (oldest === 1) return 'Oldest is 1 day';
+    return `Oldest is ${oldest} days`;
   }
 
-  async function loadWOTD() {
-    document.getElementById('wotdWord').innerText = '…';
-    try {
-      const res = await fetch('/word-of-day');
-      const data = await res.json();
-      if (!data.word) throw new Error('No word returned');
-      document.getElementById('wotdWord').innerText = data.word;
-      document.getElementById('wotdPronun').innerText = data.pronun || '';
-      document.getElementById('wotdDef').innerText = data.def || '';
-      document.getElementById('wotdEx').innerText = data.ex || '';
-      if (data.stale) {
-        document.querySelector('.wotd-label').innerText = '🔥 Word of the Day (yesterday\'s — refreshing soon)';
-      }
-    } catch (err) {
-      document.getElementById('wotdWord').innerText = 'Lot-nesia';
-      document.getElementById('wotdPronun').innerText = '/lɒt.ˈniː.ziə/';
-      document.getElementById('wotdDef').innerText = 'The total inability to remember where you placed an item 11 minutes after scanning it into the system.';
-      document.getElementById('wotdEx').innerText = '"Full lot-nesia. It was in my hand the whole time."';
+  function setupTop() {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('topTitle').innerText = `${greeting}, ${user.name}`;
+    document.getElementById('topBadge').innerText = user.isAdmin ? 'Admin' : 'Employee';
+    if (user.isAdmin) {
+      document.getElementById('priorityAdminCard').style.display = 'block';
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+    }
+    const navAvatar = document.getElementById('navAvatar');
+    if (user.photo) {
+      navAvatar.innerHTML = `<img src="${user.photo}" alt="${user.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      navAvatar.textContent = (user.name || '?')[0].toUpperCase();
     }
   }
-  loadWOTD();
 
   async function loadStats() {
     try {
@@ -984,37 +624,29 @@
       const items = await res.json();
 
       const prospects = items.filter(i => i.stage === 'Home Visit');
-      const activeInventory = items.filter(i =>
-        i.stage !== 'Home Visit' &&
-        i.stage !== 'Picked Up' &&
-        i.stage !== 'Archived'
-      );
-      const totalInventory = items.filter(i =>
-        i.stage !== 'Home Visit' &&
-        i.stage !== 'Picked Up' &&
-        i.stage !== 'Missing at Drop Off' &&
-        i.stage !== 'Archived'
-      );
+      const totalInventory = items.filter(i => !['Home Visit','Picked Up','Missing at Drop Off','Archived'].includes(i.stage));
+      const activeInventory = items.filter(i => !['Home Visit','Picked Up','Archived'].includes(i.stage));
       const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
 
       document.getElementById('statProspects').innerText = prospects.length;
-      document.getElementById('statInStudio').innerText  = totalInventory.length;
-      document.getElementById('statReady').innerText     = readyToPhoto.length;
-      ['statProspects','statInStudio','statReady'].forEach(id => document.getElementById(id).classList.remove('skeleton'));
+      document.getElementById('statInStudio').innerText = totalInventory.length;
+      document.getElementById('statReady').innerText = readyToPhoto.length;
 
       const overdue = activeInventory.filter(i => daysSince(latestTouch(i)) >= 5 && !['Picked Up','Archived'].includes(i.stage));
       const problemItems = items.filter(i => i.stage === 'Missing at Drop Off' || i.needsRepair);
       const unassigned = totalInventory.filter(i => !i.assignedTo);
       const readyForEvent = items.filter(i => (i.stage === 'Photograph' || i.stage === 'Prep for Pick Up') && !i.eventId);
 
-      document.getElementById('alertAging').innerText = overdue.length;
-      document.getElementById('alertAgingFoot').innerText = overdue.length ? oldestAgeText(overdue) : 'Nothing overdue right now';
-      document.getElementById('alertProblems').innerText = problemItems.length;
-      document.getElementById('alertProblemsFoot').innerText = problemItems.length ? `${problemItems.filter(i => i.stage === 'Missing at Drop Off').length} missing · ${problemItems.filter(i => i.needsRepair).length} repair flagged` : 'No flagged problem items';
-      document.getElementById('alertUnassigned').innerText = unassigned.length;
-      document.getElementById('alertUnassignedFoot').innerText = unassigned.length ? `${Math.round((unassigned.length / Math.max(totalInventory.length, 1)) * 100)}% of active inventory has no owner` : 'Everything active has an owner';
-      document.getElementById('alertReadyEvent').innerText = readyForEvent.length;
-      document.getElementById('alertReadyEventFoot').innerText = readyForEvent.length ? `${readyForEvent.filter(i => i.stage === 'Photograph').length} photographed · ${readyForEvent.filter(i => i.stage === 'Prep for Pick Up').length} prepped` : 'Nothing waiting on event assignment';
+      document.getElementById('priorityAging').innerText = overdue.length;
+      document.getElementById('priorityAgingSub').innerText = overdue.length ? oldestAgeText(overdue) : 'Nothing overdue right now.';
+      document.getElementById('priorityProblems').innerText = problemItems.length;
+      document.getElementById('priorityProblemsSub').innerText = problemItems.length ? `${problemItems.filter(i => i.stage === 'Missing at Drop Off').length} missing · ${problemItems.filter(i => i.needsRepair).length} repair flagged` : 'No flagged problem items.';
+      document.getElementById('priorityUnassigned').innerText = unassigned.length;
+      document.getElementById('priorityUnassignedSub').innerText = unassigned.length ? `${Math.round((unassigned.length / Math.max(totalInventory.length, 1)) * 100)}% of active inventory has no owner.` : 'Everything active has an owner.';
+      if (user.isAdmin) {
+        document.getElementById('priorityReadyEvent').innerText = readyForEvent.length;
+        document.getElementById('priorityReadyEventSub').innerText = readyForEvent.length ? `${readyForEvent.filter(i => i.stage === 'Photograph').length} photographed · ${readyForEvent.filter(i => i.stage === 'Prep for Pick Up').length} prepped` : 'Nothing waiting on event assignment.';
+      }
 
       const queueReceiving = items.filter(i => i.stage === 'Received at Studio');
       const queueCleaning = items.filter(i => i.stage === 'Review & Cleaning');
@@ -1024,65 +656,28 @@
       const queueProblem = problemItems;
 
       document.getElementById('queueReceiving').innerText = queueReceiving.length;
-      document.getElementById('queueReceivingFoot').innerText = oldestAgeText(queueReceiving);
+      document.getElementById('queueReceivingNote').innerText = oldestAgeText(queueReceiving);
       document.getElementById('queueCleaning').innerText = queueCleaning.length;
-      document.getElementById('queueCleaningFoot').innerText = oldestAgeText(queueCleaning);
+      document.getElementById('queueCleaningNote').innerText = oldestAgeText(queueCleaning);
       document.getElementById('queuePhoto').innerText = queuePhoto.length;
-      document.getElementById('queuePhotoFoot').innerText = oldestAgeText(queuePhoto);
+      document.getElementById('queuePhotoNote').innerText = oldestAgeText(queuePhoto);
       document.getElementById('queueCatalog').innerText = queueCatalog.length;
-      document.getElementById('queueCatalogFoot').innerText = oldestAgeText(queueCatalog);
+      document.getElementById('queueCatalogNote').innerText = oldestAgeText(queueCatalog);
       document.getElementById('queueReady').innerText = queueReady.length;
-      document.getElementById('queueReadyFoot').innerText = oldestAgeText(queueReady);
+      document.getElementById('queueReadyNote').innerText = oldestAgeText(queueReady);
       document.getElementById('queueProblem').innerText = queueProblem.length;
-      document.getElementById('queueProblemFoot').innerText = queueProblem.length ? oldestAgeText(queueProblem) : 'No blocked items right now';
-
-      if (totalInventory.length === 0 && prospects.length === 0) {
-        const banner = document.getElementById('onboardingBanner');
-        const adminTips = [
-          ['Initial Visit', 'Log a consigner\'s items — AI generates titles &amp; price estimates, then print QR labels'],
-          ['Review Visit', 'Accept items to keep in the workflow or archive ones that aren\'t worth processing'],
-          ['Assign to Employees', 'Assign items to team members from any item page, in batch from Item Library, or directly in Review Visit'],
-          ['Scanner', 'Scan QR labels from any camera app to check items in and move them through workflow stages'],
-          ['Photo Studio', 'Upload today\'s photos and pair them with inventory items'],
-          ['Auction Events', 'Create events at /events.html, add items to lots, and import auction results when done'],
-          ['Reports', 'Generate daily lot reports and track consigner activity from the Reports page'],
-        ];
-        const employeeTips = [
-          ['Check My Assignments', 'Items assigned to you appear above — tap any item to open it and start working'],
-          ['Scanner', 'Use the Scanner to scan a QR label and move an item to the next workflow stage'],
-          ['Add Reference Photos', 'Open any item and tap "Upload Photo" or "Take Photo" to add close-up reference images'],
-          ['Update Item Details', 'Edit title, description, dimensions, condition, and notes directly on any item page'],
-          ['Item Library', 'Browse and search all consigned items — filter by stage, consigner, or category'],
-          ['Auction Events', 'View upcoming auction events and see which lots have been added'],
-        ];
-        const tips = user && user.isAdmin ? adminTips : employeeTips;
-        document.getElementById('onboardingTitle').innerHTML = user && user.isAdmin
-          ? '👋 Welcome to Auction Legacy — here\'s how it works'
-          : '👋 Here\'s how to get started';
-        document.getElementById('onboardingSteps').innerHTML = tips.map((t, i) =>
-          `<div class="onboarding-step"><div class="onboarding-step-num">${i + 1}</div><span><strong>${t[0]}</strong> — ${t[1]}</span></div>`
-        ).join('');
-        banner.style.display = 'block';
-      }
+      document.getElementById('queueProblemNote').innerText = queueProblem.length ? oldestAgeText(queueProblem) : 'No blocked items';
     } catch (err) {
       console.warn('Stats failed to load');
-      ['statProspects','statInStudio','statReady'].forEach(id => {
-        const el = document.getElementById(id);
-        el.innerText = '—';
-        el.classList.remove('skeleton');
-      });
     }
   }
 
-  loadStats();
-
   async function loadAssignments() {
-    if (!user) return;
     try {
       const res = await fetch('/notifications?employee=' + encodeURIComponent(user.name));
       const data = await res.json();
       const assigned = data.assigned || [];
-      const notifications = (data.notifications || []);
+      const notifications = data.notifications || [];
       const card = document.getElementById('assignmentsCard');
       const list = document.getElementById('assignmentsList');
       const badge = document.getElementById('assignBadge');
@@ -1093,7 +688,6 @@
       card.style.display = 'block';
       badge.style.display = 'inline-block';
       badge.textContent = total;
-
       const rows = [];
       notifications.forEach(n => {
         rows.push(`
@@ -1113,7 +707,6 @@
             <div style="flex:1;">
               <div style="font-size:14px;font-weight:700;color:#111827;">${escDash(i.name || 'Unnamed')}</div>
               <div style="font-size:12px;color:#6b7280;margin-top:2px;">Lot ${escDash(i.lotNumber || '—')} · ${escDash(i.stage || '—')}</div>
-              ${i.assignedBy ? `<div style="font-size:11px;color:#7c3aed;margin-top:1px;">Assigned by ${escDash(i.assignedBy)}</div>` : ''}
             </div>
             <span style="font-size:18px;color:#9ca3af;flex-shrink:0;">›</span>
           </div>`);
@@ -1133,6 +726,8 @@
     } catch {}
   }
 
+  setupTop();
+  loadStats();
   loadAssignments();
 </script>
 
