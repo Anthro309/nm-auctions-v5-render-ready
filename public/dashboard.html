@@ -298,12 +298,144 @@
       border-color: rgba(234,88,12,0.16);
     }
     @media (max-width: 720px) {
-      .stat-grid {
-        grid-template-columns: 1fr;
-      }
-      .stat-tile {
-        min-height: auto;
-      }
+      .stat-grid { grid-template-columns: 1fr; }
+      .stat-tile { min-height: auto; }
+    }
+
+    .alert-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .alert-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      min-height: 150px;
+    }
+    .alert-card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(15,23,42,0.12); }
+    .alert-card.warning { border-color: rgba(249,115,22,0.22); background: linear-gradient(180deg, #ffffff 0%, #fff8f1 100%); }
+    .alert-card.danger { border-color: rgba(220,38,38,0.20); background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%); }
+    .alert-card.info { border-color: rgba(37,99,235,0.18); background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); }
+    .alert-card.success { border-color: rgba(22,163,74,0.18); background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%); }
+    .alert-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .alert-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .alert-count {
+      font-size: 30px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .alert-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 5px;
+    }
+    .alert-sub {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .alert-foot {
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+    }
+    @media (max-width: 720px) {
+      .alert-grid { grid-template-columns: 1fr; }
+    }
+
+    .queue-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .queue-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      min-height: 170px;
+      position: relative;
+      overflow: hidden;
+    }
+    .queue-card:hover { transform: translateY(-4px); box-shadow: 0 22px 44px rgba(15,23,42,0.12); }
+    .queue-card.receiving { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); border-color: rgba(37,99,235,0.18); }
+    .queue-card.cleaning { background: linear-gradient(180deg, #ffffff 0%, #fffbf4 100%); border-color: rgba(245,158,11,0.18); }
+    .queue-card.photo { background: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%); border-color: rgba(234,88,12,0.18); }
+    .queue-card.catalog { background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%); border-color: rgba(124,58,237,0.18); }
+    .queue-card.ready { background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%); border-color: rgba(22,163,74,0.18); }
+    .queue-card.problem { background: linear-gradient(180deg, #ffffff 0%, #fff5f5 100%); border-color: rgba(220,38,38,0.18); }
+    .queue-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .queue-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.7);
+      font-size: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .queue-num {
+      font-size: 28px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .queue-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .queue-sub {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .queue-foot {
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      margin-top: auto;
+    }
+    @media (max-width: 900px) {
+      .queue-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 620px) {
+      .queue-grid { grid-template-columns: 1fr; }
     }
 
     .dash-grid {
@@ -538,7 +670,7 @@
 
   <div class="hero-grid">
     <div id="welcomeCard" class="welcome-banner" style="display:none;">
-      <div class="welcome-avatar">
+      <div class="welcome-avatar" id="welcomeAvatar">
         <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
       </div>
       <div class="welcome-text">
@@ -555,8 +687,8 @@
         <div class="ops-pill">Live Workflow</div>
       </div>
       <div>
-        <div class="ops-title">Move intake to sold faster.</div>
-        <div class="ops-sub">Track every item from initial visit to pickup, keep assignments clear, and keep the team working from the same screen.</div>
+        <div class="ops-title">Run the floor from one screen.</div>
+        <div class="ops-sub">See what is stalled, who owns the work, what is ready to move, and which queues need attention before the day gets away from you.</div>
       </div>
       <div class="quick-actions">
         <div class="quick-action" onclick="window.location.href='/scanner.html'">
@@ -592,20 +724,18 @@
       <div class="stat-label">In Inventory</div>
       <div class="stat-note">Active items currently moving through studio operations.</div>
     </div>
-    <div class="stat-tile stat-photo" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" style="cursor:pointer;" title="View items ready to photograph">
+    <div class="stat-tile stat-photo" onclick="window.location.href='/photography-queue.html'" style="cursor:pointer;" title="View items ready to photograph">
       <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
       <div class="stat-label">Ready to Photograph</div>
       <div class="stat-note">Items staged and ready for the photo queue.</div>
     </div>
   </div>
 
-  <!-- Onboarding banner — shown only when inventory is empty -->
   <div id="onboardingBanner" class="onboarding-banner" style="display:none;">
     <div class="onboarding-title" id="onboardingTitle"></div>
     <div class="onboarding-steps" id="onboardingSteps"></div>
   </div>
 
-  <!-- MY ASSIGNMENTS (notification card) -->
   <div id="assignmentsCard" class="card" style="display:none;margin-bottom:16px;padding-bottom:4px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h2 style="margin:0;">🔔 My Assignments</h2>
@@ -616,66 +746,139 @@
 
   <div class="section-head">
     <div>
+      <div class="section-eyebrow">Needs attention</div>
+      <div class="section-title">Bottlenecks and problem items</div>
+      <div class="section-sub">The issues most likely to slow the operation down or disappear without follow-up.</div>
+    </div>
+  </div>
+
+  <div class="alert-grid" id="alertGrid">
+    <div class="alert-card warning" onclick="window.location.href='/photography-queue.html'">
+      <div class="alert-top"><div class="alert-label">Aging queue</div><div class="alert-count" id="alertAging">—</div></div>
+      <div class="alert-title">Overdue in stage</div>
+      <div class="alert-sub">Items sitting too long in the active workflow.</div>
+      <div class="alert-foot" id="alertAgingFoot">Checking queue age…</div>
+    </div>
+    <div class="alert-card danger" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
+      <div class="alert-top"><div class="alert-label">Problem items</div><div class="alert-count" id="alertProblems">—</div></div>
+      <div class="alert-title">Missing or repair flagged</div>
+      <div class="alert-sub">Items already marked as missing or needing repair.</div>
+      <div class="alert-foot" id="alertProblemsFoot">Watching flagged inventory…</div>
+    </div>
+    <div class="alert-card info" onclick="window.location.href='/items.html'">
+      <div class="alert-top"><div class="alert-label">Ownership</div><div class="alert-count" id="alertUnassigned">—</div></div>
+      <div class="alert-title">Unassigned inventory</div>
+      <div class="alert-sub">Active items with no clear employee owner right now.</div>
+      <div class="alert-foot" id="alertUnassignedFoot">Checking assignment load…</div>
+    </div>
+    <div class="alert-card success" onclick="window.location.href='/events.html'">
+      <div class="alert-top"><div class="alert-label">Auction prep</div><div class="alert-count" id="alertReadyEvent">—</div></div>
+      <div class="alert-title">Ready for event assignment</div>
+      <div class="alert-sub">Photographed or prepped items that still need an event.</div>
+      <div class="alert-foot" id="alertReadyEventFoot">Checking ready inventory…</div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Work queues</div>
+      <div class="section-title">Stage-based queues</div>
+      <div class="section-sub">Direct entry points into the work, grouped the way the team actually thinks about it.</div>
+    </div>
+  </div>
+
+  <div class="queue-grid" id="queueGrid">
+    <div class="queue-card receiving" onclick="window.location.href='/items.html?stage=Received+at+Studio'">
+      <div class="queue-top"><div class="queue-icon">📦</div><div class="queue-num" id="queueReceiving">—</div></div>
+      <div class="queue-title">Receiving Queue</div>
+      <div class="queue-sub">Items received into studio and waiting to be worked next.</div>
+      <div class="queue-foot" id="queueReceivingFoot">Checking oldest item…</div>
+    </div>
+    <div class="queue-card cleaning" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'">
+      <div class="queue-top"><div class="queue-icon">🧽</div><div class="queue-num" id="queueCleaning">—</div></div>
+      <div class="queue-title">Cleaning Queue</div>
+      <div class="queue-sub">Items waiting for review, cleaning, measuring, or prep before photos.</div>
+      <div class="queue-foot" id="queueCleaningFoot">Checking oldest item…</div>
+    </div>
+    <div class="queue-card photo" onclick="window.location.href='/photography-queue.html'">
+      <div class="queue-top"><div class="queue-icon">📸</div><div class="queue-num" id="queuePhoto">—</div></div>
+      <div class="queue-title">Photo Queue</div>
+      <div class="queue-sub">Items that are ready to be shot and pushed forward.</div>
+      <div class="queue-foot" id="queuePhotoFoot">Checking oldest item…</div>
+    </div>
+    <div class="queue-card catalog" onclick="window.location.href='/items.html?stage=Photograph'">
+      <div class="queue-top"><div class="queue-icon">📝</div><div class="queue-num" id="queueCatalog">—</div></div>
+      <div class="queue-title">Catalog Queue</div>
+      <div class="queue-sub">Shot items that still need listing polish, export prep, or event placement.</div>
+      <div class="queue-foot" id="queueCatalogFoot">Checking oldest item…</div>
+    </div>
+    <div class="queue-card ready" onclick="window.location.href='/items.html?stage=Ready+for+Pick+Up'">
+      <div class="queue-top"><div class="queue-icon">✅</div><div class="queue-num" id="queueReady">—</div></div>
+      <div class="queue-title">Ready for Pick Up</div>
+      <div class="queue-sub">Items fully prepared and waiting for their final handoff.</div>
+      <div class="queue-foot" id="queueReadyFoot">Checking oldest item…</div>
+    </div>
+    <div class="queue-card problem" onclick="window.location.href='/items.html?stage=Missing+at+Drop+Off'">
+      <div class="queue-top"><div class="queue-icon">⚠️</div><div class="queue-num" id="queueProblem">—</div></div>
+      <div class="queue-title">Problem Queue</div>
+      <div class="queue-sub">Missing, flagged, or blocked items that need intervention.</div>
+      <div class="queue-foot" id="queueProblemFoot">Checking flagged items…</div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
       <div class="section-eyebrow">Core tools</div>
       <div class="section-title">Run the floor</div>
-      <div class="section-sub">The actions your team uses most, redesigned to feel more like a real operations app.</div>
+      <div class="section-sub">The main tools your team uses most, now sitting under the command view instead of replacing it.</div>
     </div>
   </div>
 
   <div class="dash-grid">
-
     <div class="dash-card" onclick="window.location.href='/initial-visit.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📋</div></div>
       <div class="dash-title">Initial Visit</div>
       <div class="dash-sub">Capture consignments, generate labels, and start the chain of custody cleanly.</div>
       <div class="dash-chip">Intake</div>
     </div>
-
     <div class="dash-card" id="reviewVisitCard" onclick="window.location.href='/review-visit.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">✅</div></div>
       <div class="dash-title">Review Visit</div>
       <div class="dash-sub">Approve worthwhile items, archive the rest, and assign work before backlog grows.</div>
       <div class="dash-chip">Admin flow</div>
     </div>
-
     <div class="dash-card" onclick="window.location.href='/scanner.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📷</div></div>
       <div class="dash-title">Scanner</div>
       <div class="dash-sub">Scan labels instantly, log touches, and push items through the workflow with fewer mistakes.</div>
       <div class="dash-chip">Fast action</div>
     </div>
-
     <div class="dash-card" onclick="window.location.href='/items.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📦</div></div>
       <div class="dash-title">Item Library</div>
       <div class="dash-sub">Browse, search, batch assign, and keep every item easy to find under pressure.</div>
       <div class="dash-chip">Inventory</div>
     </div>
-
     <div class="dash-card" id="reportsGridCard" onclick="window.location.href='/reports.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📊</div></div>
       <div class="dash-title">Reports</div>
       <div class="dash-sub">Track lot flow, daily output, and what each consigner or team member has in motion.</div>
       <div class="dash-chip">Reporting</div>
     </div>
-
     <div class="dash-card" id="eventsGridCard" onclick="window.location.href='/events.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">🏷️</div></div>
       <div class="dash-title">Auction Events</div>
       <div class="dash-sub">Build events, assign lots, and prepare sold results without bouncing between systems.</div>
       <div class="dash-chip">Sales</div>
     </div>
-
     <div class="dash-card" id="clientPortalCard" onclick="window.location.href='/client-portal.html'" style="display:none;">
       <div class="dash-icon-wrap"><div class="dash-icon">🔗</div></div>
       <div class="dash-title">Client Portal</div>
       <div class="dash-sub">Share cleaner visibility with consigners so item status is easier to understand externally.</div>
       <div class="dash-chip">Consigners</div>
     </div>
-
   </div>
 
-  <!-- Photo Studio shortcut (admin only) -->
   <div class="photo-studio-card" id="photoStudioShortcut" onclick="window.location.href='/photo-upload.html'">
     <div class="photo-studio-icon">📸</div>
     <div class="photo-studio-text">
@@ -685,7 +888,6 @@
     <div class="photo-studio-arrow">›</div>
   </div>
 
-  <!-- Word of the Day -->
   <div class="wotd-card" id="wotdCard">
     <div class="wotd-label">🔥 Word of the Day</div>
     <div class="wotd-word" id="wotdWord"></div>
@@ -710,7 +912,6 @@
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
 
-  // Gate admin-only dashboard elements
   if (user && user.isAdmin) {
     document.getElementById('clientPortalCard').style.display = 'flex';
   } else {
@@ -719,7 +920,6 @@
     document.getElementById('photoStudioShortcut').style.display = 'none';
   }
 
-  // Welcome banner
   if (user && user.name) {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -732,12 +932,31 @@
     document.getElementById('welcomeName').innerText = user.name;
     document.getElementById('welcomeDate').innerText = dateStr;
     document.getElementById('welcomeRole').innerText = user.isAdmin ? 'Admin' : 'Employee';
+    if (user.photo) {
+      document.getElementById('welcomeAvatar').innerHTML = `<img src="${user.photo}" alt="${user.name}">`;
+    }
     document.getElementById('welcomeCard').style.display = 'flex';
   }
 
-  // Word of the Day — AI generated, cached daily on server
+  function escDash(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function daysSince(ts) {
+    if (!ts) return 999;
+    return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  }
+  function latestTouch(item) {
+    if (item.lastHandledAt) return item.lastHandledAt;
+    if (Array.isArray(item.logs) && item.logs.length) return item.logs[item.logs.length - 1].timestamp;
+    return item.createdAt;
+  }
+  function oldestAgeText(items) {
+    if (!items.length) return 'No items waiting';
+    const oldest = Math.max(...items.map(i => daysSince(latestTouch(i))));
+    if (oldest <= 0) return 'Oldest item touched today';
+    if (oldest === 1) return 'Oldest item touched 1 day ago';
+    return `Oldest item touched ${oldest} days ago`;
+  }
+
   async function loadWOTD() {
-    const card = document.getElementById('wotdCard');
     document.getElementById('wotdWord').innerText = '…';
     try {
       const res = await fetch('/word-of-day');
@@ -764,33 +983,59 @@
       const res = await fetch('/items');
       const items = await res.json();
 
-      // Prospects = items at Home Visit (logged but not yet accepted/received)
       const prospects = items.filter(i => i.stage === 'Home Visit');
-
-      // In Inventory = received and actively in workflow (not prospect, not picked up, not archived)
+      const activeInventory = items.filter(i =>
+        i.stage !== 'Home Visit' &&
+        i.stage !== 'Picked Up' &&
+        i.stage !== 'Archived'
+      );
       const totalInventory = items.filter(i =>
         i.stage !== 'Home Visit' &&
         i.stage !== 'Picked Up' &&
         i.stage !== 'Missing at Drop Off' &&
         i.stage !== 'Archived'
       );
-
-      // Ready to photograph = items at "Review & Cleaning" stage
       const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
 
-      const statProspects = document.getElementById('statProspects');
-      const statInStudio  = document.getElementById('statInStudio');
-      const statReady     = document.getElementById('statReady');
+      document.getElementById('statProspects').innerText = prospects.length;
+      document.getElementById('statInStudio').innerText  = totalInventory.length;
+      document.getElementById('statReady').innerText     = readyToPhoto.length;
+      ['statProspects','statInStudio','statReady'].forEach(id => document.getElementById(id).classList.remove('skeleton'));
 
-      statProspects.innerText = prospects.length;
-      statInStudio.innerText  = totalInventory.length;
-      statReady.innerText     = readyToPhoto.length;
+      const overdue = activeInventory.filter(i => daysSince(latestTouch(i)) >= 5 && !['Picked Up','Archived'].includes(i.stage));
+      const problemItems = items.filter(i => i.stage === 'Missing at Drop Off' || i.needsRepair);
+      const unassigned = totalInventory.filter(i => !i.assignedTo);
+      const readyForEvent = items.filter(i => (i.stage === 'Photograph' || i.stage === 'Prep for Pick Up') && !i.eventId);
 
-      statProspects.classList.remove('skeleton');
-      statInStudio.classList.remove('skeleton');
-      statReady.classList.remove('skeleton');
+      document.getElementById('alertAging').innerText = overdue.length;
+      document.getElementById('alertAgingFoot').innerText = overdue.length ? oldestAgeText(overdue) : 'Nothing overdue right now';
+      document.getElementById('alertProblems').innerText = problemItems.length;
+      document.getElementById('alertProblemsFoot').innerText = problemItems.length ? `${problemItems.filter(i => i.stage === 'Missing at Drop Off').length} missing · ${problemItems.filter(i => i.needsRepair).length} repair flagged` : 'No flagged problem items';
+      document.getElementById('alertUnassigned').innerText = unassigned.length;
+      document.getElementById('alertUnassignedFoot').innerText = unassigned.length ? `${Math.round((unassigned.length / Math.max(totalInventory.length, 1)) * 100)}% of active inventory has no owner` : 'Everything active has an owner';
+      document.getElementById('alertReadyEvent').innerText = readyForEvent.length;
+      document.getElementById('alertReadyEventFoot').innerText = readyForEvent.length ? `${readyForEvent.filter(i => i.stage === 'Photograph').length} photographed · ${readyForEvent.filter(i => i.stage === 'Prep for Pick Up').length} prepped` : 'Nothing waiting on event assignment';
 
-      // Show role-specific onboarding tips when nothing received yet
+      const queueReceiving = items.filter(i => i.stage === 'Received at Studio');
+      const queueCleaning = items.filter(i => i.stage === 'Review & Cleaning');
+      const queuePhoto = items.filter(i => i.stage === 'Review & Cleaning');
+      const queueCatalog = items.filter(i => i.stage === 'Photograph');
+      const queueReady = items.filter(i => i.stage === 'Ready for Pick Up');
+      const queueProblem = problemItems;
+
+      document.getElementById('queueReceiving').innerText = queueReceiving.length;
+      document.getElementById('queueReceivingFoot').innerText = oldestAgeText(queueReceiving);
+      document.getElementById('queueCleaning').innerText = queueCleaning.length;
+      document.getElementById('queueCleaningFoot').innerText = oldestAgeText(queueCleaning);
+      document.getElementById('queuePhoto').innerText = queuePhoto.length;
+      document.getElementById('queuePhotoFoot').innerText = oldestAgeText(queuePhoto);
+      document.getElementById('queueCatalog').innerText = queueCatalog.length;
+      document.getElementById('queueCatalogFoot').innerText = oldestAgeText(queueCatalog);
+      document.getElementById('queueReady').innerText = queueReady.length;
+      document.getElementById('queueReadyFoot').innerText = oldestAgeText(queueReady);
+      document.getElementById('queueProblem').innerText = queueProblem.length;
+      document.getElementById('queueProblemFoot').innerText = queueProblem.length ? oldestAgeText(queueProblem) : 'No blocked items right now';
+
       if (totalInventory.length === 0 && prospects.length === 0) {
         const banner = document.getElementById('onboardingBanner');
         const adminTips = [
@@ -831,11 +1076,6 @@
 
   loadStats();
 
-  // =========================
-  // ASSIGNMENTS (notification section)
-  // =========================
-  function escDash(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
   async function loadAssignments() {
     if (!user) return;
     try {
@@ -846,20 +1086,15 @@
       const card = document.getElementById('assignmentsCard');
       const list = document.getElementById('assignmentsList');
       const badge = document.getElementById('assignBadge');
-
-      // Deduplicate: explicit notifications take priority over generic assigned items
       const notifItemIds = new Set(notifications.map(n => String(n.itemId)));
       const uniqueAssigned = assigned.filter(i => !notifItemIds.has(String(i.id)));
       const total = notifications.length + uniqueAssigned.length;
-
       if (!total) { card.style.display = 'none'; return; }
       card.style.display = 'block';
       badge.style.display = 'inline-block';
       badge.textContent = total;
 
       const rows = [];
-
-      // Explicit notifications (have a dismiss ID)
       notifications.forEach(n => {
         rows.push(`
           <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
@@ -871,8 +1106,6 @@
             <button onclick="dismissNotif('${escDash(n.id)}')" style="flex-shrink:0;padding:6px 10px;background:#f3f4f6;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#6b7280;cursor:pointer;font-family:inherit;">✕</button>
           </div>`);
       });
-
-      // Assigned items without explicit notification
       uniqueAssigned.forEach((i, idx) => {
         const isLast = idx === uniqueAssigned.length - 1;
         rows.push(`
@@ -885,7 +1118,6 @@
             <span style="font-size:18px;color:#9ca3af;flex-shrink:0;">›</span>
           </div>`);
       });
-
       list.innerHTML = rows.join('');
     } catch {}
   }
@@ -902,7 +1134,6 @@
   }
 
   loadAssignments();
-
 </script>
 
 <script src="/nav.js"></script>
