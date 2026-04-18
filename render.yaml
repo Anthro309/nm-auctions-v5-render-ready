@@ -1,13 +1,21 @@
 services:
   - type: web
     name: nm-auctions-v5
-    env: node
+    runtime: node
     plan: starter
     autoDeploy: true
-    buildCommand: "npm install"
-    startCommand: "node server.js"
+    buildCommand: npm install
+    startCommand: npm start
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 10
     envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
       - key: OPENAI_API_KEY
         sync: false
-      - key: PORT
-        value: "10000"
+      - key: REMOVE_BG_API_KEY
+        sync: false
