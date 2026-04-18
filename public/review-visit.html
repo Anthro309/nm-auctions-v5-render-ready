@@ -134,8 +134,6 @@
 .btn-reject:hover { background: #b91c1c; }
 .btn-reject.done { background: #7f1d1d; cursor: default; }
 
-
-
 .reason-row {
   margin-top: 8px;
   display: none;
@@ -287,7 +285,7 @@
 
 <script>
 const user = JSON.parse(localStorage.getItem('user') || 'null');
-if (!user) window.location.href = '/';
+if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
 
 let sessions = [];
 let currentSession = null;
@@ -296,13 +294,23 @@ let localStatus = {};
 let employees = [];
 
 async function load() {
-  const [intakeRes, empRes] = await Promise.all([
-    fetch('/intake'),
-    fetch('/employees')
-  ]);
-  sessions = await intakeRes.json();
-  employees = await empRes.json();
-  renderSessions();
+  try {
+    const [intakeRes, empRes] = await Promise.all([
+      fetch('/intake'),
+      fetch('/employees')
+    ]);
+    sessions = await intakeRes.json();
+    employees = await empRes.json();
+    renderSessions();
+  } catch (err) {
+    document.getElementById('reviewPanel').innerHTML = `
+      <div class="card">
+        <div class="empty-session">
+          <div class="empty-icon">⚠️</div>
+          <div>Unable to load review sessions right now.</div>
+        </div>
+      </div>`;
+  }
 }
 
 // =====================
@@ -581,6 +589,8 @@ async function refreshSession() {
   if (currentSession) {
     currentSession = sessions.find(s => s.id === currentSession.id) || currentSession;
   }
+  renderSessions();
+  renderReview();
 }
 
 // =====================
