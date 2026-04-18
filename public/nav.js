@@ -40,12 +40,20 @@
 
 // Shared navbar initializer — included on every page
 (function () {
+  ensureUiRefresh();
+
   var u = JSON.parse(localStorage.getItem('user') || 'null');
-  if (!u) return;
+  if (!u) {
+    window.location.href = '/';
+    return;
+  }
+
+  syncMenuOpenState();
 
   // Populate nav avatar
   var el = document.getElementById('navAvatar');
   if (el) {
+    el.innerHTML = '';
     if (u.photo) {
       var img = document.createElement('img');
       img.src = u.photo;
@@ -56,53 +64,90 @@
     }
   }
 
-  // Highlight active sidebar link based on current page
-  var links = document.querySelectorAll('#sidebar nav a');
-  var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-  links.forEach(function(link) {
-    var href = link.getAttribute('href').replace(/\/$/, '') || '/';
-    if (href === currentPath) link.classList.add('active');
-  });
-
   // Inject Admin + Client Portal links into sidebar for admin users
-  if (u.isAdmin) {
-    var nav = document.querySelector('#sidebar nav');
-    if (nav) {
-      if (!nav.querySelector('a[href="/admin.html"]')) {
-        var a = document.createElement('a');
-        a.href = '/admin.html';
-        a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
-        nav.appendChild(a);
-      }
-      if (!nav.querySelector('a[href="/client-portal.html"]')) {
-        var cp = document.createElement('a');
-        cp.href = '/client-portal.html';
-        cp.innerHTML = '<span class="sidebar-icon">🔗</span> Client Portal';
-        nav.appendChild(cp);
-      }
+  var nav = document.querySelector('#sidebar nav');
+  if (u.isAdmin && nav) {
+    if (!nav.querySelector('a[href="/admin.html"]')) {
+      var a = document.createElement('a');
+      a.href = '/admin.html';
+      a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
+      nav.appendChild(a);
+    }
+    if (!nav.querySelector('a[href="/client-portal.html"]')) {
+      var cp = document.createElement('a');
+      cp.href = '/client-portal.html';
+      cp.innerHTML = '<span class="sidebar-icon">🔗</span> Client Portal';
+      nav.appendChild(cp);
     }
   }
 
   // Hide admin-only sidebar links for regular employees
-  if (!u.isAdmin) {
-    var sidebarNav = document.querySelector('#sidebar nav');
-    if (sidebarNav) {
-      var photoLink = sidebarNav.querySelector('a[href="/photo-upload.html"]');
-      if (photoLink) photoLink.style.display = 'none';
-      var reportsLink = sidebarNav.querySelector('a[href="/reports.html"]');
-      if (reportsLink) reportsLink.style.display = 'none';
-      var reviewLink = sidebarNav.querySelector('a[href="/review-visit.html"]');
-      if (reviewLink) reviewLink.style.display = 'none';
-    }
+  if (!u.isAdmin && nav) {
+    [
+      '/photo-upload.html',
+      '/reports.html',
+      '/review-visit.html',
+      '/admin.html',
+      '/client-portal.html'
+    ].forEach(function (href) {
+      var link = nav.querySelector('a[href="' + href + '"]');
+      if (link) link.style.display = 'none';
+    });
   }
+
+  // Highlight active sidebar link based on current page
+  highlightActiveSidebarLink();
 
   // ── NOTIFICATION BELL ──
   injectNotificationBell(u);
 }());
 
+function ensureUiRefresh() {
+  if (document.querySelector('link[href="/ui-refresh.css"]')) return;
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = '/ui-refresh.css';
+  document.head.appendChild(link);
+}
+
+function highlightActiveSidebarLink() {
+  var links = document.querySelectorAll('#sidebar nav a');
+  var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+  links.forEach(function(link) {
+    var href = (link.getAttribute('href') || '').replace(/\/$/, '') || '/';
+    link.classList.toggle('active', href === currentPath);
+  });
+}
+
+function syncMenuOpenState() {
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('overlay');
+  if (!sidebar || !overlay) return;
+
+  function sync() {
+    document.body.classList.toggle('menu-open', sidebar.classList.contains('open') || overlay.classList.contains('show'));
+  }
+
+  sync();
+  var observer = new MutationObserver(sync);
+  observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+  observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+      sync();
+      var dropdown = document.getElementById('navBellDropdown');
+      if (dropdown) dropdown.classList.remove('open');
+    }
+  });
+}
+
 function injectNotificationBell(u) {
   var navbar = document.querySelector('.navbar');
   if (!navbar || !u) return;
+  if (document.getElementById('navBell')) return;
 
   // Inject CSS for bell
   if (!document.getElementById('navbell-styles')) {
@@ -112,7 +157,7 @@ function injectNotificationBell(u) {
       .nav-bell { position:relative; cursor:pointer; padding:0 6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
       .nav-bell-icon { font-size:20px; line-height:1; }
       .nav-bell-badge { position:absolute; top:-2px; right:0px; background:#dc2626; color:white; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #0b1b2b; display:none; }
-      .nav-bell-dropdown { position:fixed; top:64px; right:8px; width:300px; max-height:400px; overflow-y:auto; background:white; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); z-index:9999; display:none; padding:0; }
+      .nav-bell-dropdown { position:fixed; top:64px; right:8px; width:300px; max-width:calc(100vw - 16px); max-height:400px; overflow-y:auto; background:white; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); z-index:9999; display:none; padding:0; }
       .nav-bell-dropdown.open { display:block; }
       .nav-bell-header { padding:14px 16px 10px; font-size:13px; font-weight:800; color:#111827; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; }
       .nav-bell-item { padding:12px 16px; border-bottom:1px solid #f3f4f6; cursor:pointer; }
