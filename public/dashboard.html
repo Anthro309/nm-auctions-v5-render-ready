@@ -219,13 +219,11 @@
       line-height: 1.45;
     }
 
-    .queue-list,
-    .tool-list {
+    .queue-list {
       display: grid;
       gap: 10px;
     }
-    .queue-row,
-    .tool-row {
+    .queue-row {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -237,8 +235,7 @@
       cursor: pointer;
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
-    .queue-row:hover,
-    .tool-row:hover {
+    .queue-row:hover {
       transform: translateY(-2px);
       box-shadow: 0 18px 36px rgba(15,23,42,0.10);
       border-color: rgba(37,99,235,0.18);
@@ -291,6 +288,80 @@
       flex-shrink: 0;
     }
 
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .tool-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 156px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(37,99,235,0.05), transparent 45%);
+      pointer-events: none;
+    }
+    .tool-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px rgba(15,23,42,0.12);
+      border-color: rgba(37,99,235,0.18);
+    }
+    .tool-card-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      font-size: 25px;
+      position: relative;
+      z-index: 1;
+    }
+    .tool-card-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #111827;
+      position: relative;
+      z-index: 1;
+    }
+    .tool-card-sub {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.45;
+      position: relative;
+      z-index: 1;
+    }
+    .tool-card-chip {
+      margin-top: auto;
+      align-self: flex-start;
+      background: #f8fafc;
+      border: 1px solid rgba(148,163,184,0.18);
+      color: #475569;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+
     .section-label {
       font-size: 11px;
       font-weight: 800;
@@ -308,7 +379,8 @@
     @media (max-width: 760px) {
       .action-row,
       .summary-row,
-      .panel-grid {
+      .panel-grid,
+      .tool-grid {
         grid-template-columns: 1fr;
       }
       .row-note { max-width: 96px; }
@@ -507,62 +579,48 @@
 
   <div class="tab-panel" id="tab-tools">
     <div class="section-label">Core tools</div>
-    <div class="tool-list" id="toolList">
-      <div class="tool-row" onclick="window.location.href='/initial-visit.html'">
-        <div class="row-icon">📋</div>
-        <div class="row-info">
-          <div class="row-title">Initial Visit</div>
-          <div class="row-sub">Capture consignments, generate labels, and start the chain of custody.</div>
-        </div>
-        <div class="row-arrow">›</div>
+    <div class="tool-grid" id="toolGrid">
+      <div class="tool-card" onclick="window.location.href='/initial-visit.html'">
+        <div class="tool-card-icon">📋</div>
+        <div class="tool-card-title">Initial Visit</div>
+        <div class="tool-card-sub">Capture consignments, generate labels, and start the chain of custody.</div>
+        <div class="tool-card-chip">Intake</div>
       </div>
-      <div class="tool-row" onclick="window.location.href='/scanner.html'">
-        <div class="row-icon">📷</div>
-        <div class="row-info">
-          <div class="row-title">Scanner</div>
-          <div class="row-sub">Scan labels instantly, log touches, and move items through the workflow.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card" onclick="window.location.href='/scanner.html'">
+        <div class="tool-card-icon">📷</div>
+        <div class="tool-card-title">Scanner</div>
+        <div class="tool-card-sub">Scan labels instantly, log touches, and move items through the workflow.</div>
+        <div class="tool-card-chip">Fast action</div>
       </div>
-      <div class="tool-row" onclick="window.location.href='/items.html'">
-        <div class="row-icon">📦</div>
-        <div class="row-info">
-          <div class="row-title">Item Library</div>
-          <div class="row-sub">Browse, search, batch assign, and keep every item easy to find.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card" onclick="window.location.href='/items.html'">
+        <div class="tool-card-icon">📦</div>
+        <div class="tool-card-title">Item Library</div>
+        <div class="tool-card-sub">Browse, search, batch assign, and keep every item easy to find.</div>
+        <div class="tool-card-chip">Inventory</div>
       </div>
-      <div class="tool-row" onclick="window.location.href='/photography-queue.html'">
-        <div class="row-icon">🎯</div>
-        <div class="row-info">
-          <div class="row-title">Photo Queue</div>
-          <div class="row-sub">Work the photography backlog in a cleaner production view.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card" onclick="window.location.href='/photography-queue.html'">
+        <div class="tool-card-icon">🎯</div>
+        <div class="tool-card-title">Photo Queue</div>
+        <div class="tool-card-sub">Work the photography backlog in a cleaner production view.</div>
+        <div class="tool-card-chip">Production</div>
       </div>
-      <div class="tool-row admin-only" onclick="window.location.href='/review-visit.html'" style="display:none;">
-        <div class="row-icon">✅</div>
-        <div class="row-info">
-          <div class="row-title">Review Visit</div>
-          <div class="row-sub">Approve worthwhile items, archive the rest, and assign work.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card admin-only" onclick="window.location.href='/review-visit.html'" style="display:none;">
+        <div class="tool-card-icon">✅</div>
+        <div class="tool-card-title">Review Visit</div>
+        <div class="tool-card-sub">Approve worthwhile items, archive the rest, and assign work.</div>
+        <div class="tool-card-chip">Admin</div>
       </div>
-      <div class="tool-row admin-only" onclick="window.location.href='/events.html'" style="display:none;">
-        <div class="row-icon">🏷️</div>
-        <div class="row-info">
-          <div class="row-title">Auction Events</div>
-          <div class="row-sub">Build events, assign lots, and prepare sold results.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card admin-only" onclick="window.location.href='/events.html'" style="display:none;">
+        <div class="tool-card-icon">🏷️</div>
+        <div class="tool-card-title">Auction Events</div>
+        <div class="tool-card-sub">Build events, assign lots, and prepare sold results.</div>
+        <div class="tool-card-chip">Sales</div>
       </div>
-      <div class="tool-row admin-only" onclick="window.location.href='/reports.html'" style="display:none;">
-        <div class="row-icon">📊</div>
-        <div class="row-info">
-          <div class="row-title">Reports</div>
-          <div class="row-sub">Track output, backlog, and consigner or team activity.</div>
-        </div>
-        <div class="row-arrow">›</div>
+      <div class="tool-card admin-only" onclick="window.location.href='/reports.html'" style="display:none;">
+        <div class="tool-card-icon">📊</div>
+        <div class="tool-card-title">Reports</div>
+        <div class="tool-card-sub">Track output, backlog, and consigner or team activity.</div>
+        <div class="tool-card-chip">Reporting</div>
       </div>
     </div>
   </div>
