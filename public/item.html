@@ -469,7 +469,10 @@ async function load() {
     item = await res.json();
     if (!item) throw new Error('Item not found');
     render();
-    loadEmployees();
+    if (user.isAdmin) {
+      loadEmployees();
+      loadEvents();
+    }
   } catch (err) {
     document.querySelector('.container').innerHTML = `
       <div class="card">
@@ -483,6 +486,10 @@ function render() {
     document.getElementById('deleteCard').style.display = 'block';
     document.getElementById('eventCard').style.display = 'block';
     document.getElementById('assignCard').style.display = 'block';
+  } else {
+    document.getElementById('deleteCard').style.display = 'none';
+    document.getElementById('eventCard').style.display = 'none';
+    document.getElementById('assignCard').style.display = 'none';
   }
   document.getElementById('itemTitle').innerText = item.name || 'Unnamed Item';
   document.getElementById('detailLot').innerText = item.lotNumber || '—';
@@ -531,6 +538,8 @@ function render() {
     const advBtn = document.getElementById('advanceStageBtn');
     if (advBtn) advBtn.innerText = '→ Move to ' + nextStage;
     document.getElementById('stageCard').style.display = 'block';
+  } else {
+    document.getElementById('stageCard').style.display = 'none';
   }
 
   // Tags & estimated value
@@ -542,8 +551,8 @@ function render() {
     if (hasValue) {
       document.getElementById('valueBadge').innerText =
         '$' + (item.estimatedValueLow || 0) + ' – $' + (item.estimatedValueHigh || 0);
+      document.getElementById('valueBadge').style.display = 'inline-block';
     } else {
-      document.getElementById('valueBadge').parentElement.querySelector('h3').style.display = 'none';
       document.getElementById('valueBadge').style.display = 'none';
     }
     if (hasTags) {
@@ -553,13 +562,19 @@ function render() {
         const ci = idx % tagColors.length;
         return `<span class="tag-pill" style="background:${tagColors[ci]};color:${textColors[ci]};">${escapeHtml(t)}</span>`;
       }).join('');
+    } else {
+      document.getElementById('tagsWrap').innerHTML = '';
     }
+  } else {
+    tagsCard.style.display = 'none';
   }
 
   // Photo
   const imageBox = document.getElementById('imageBox');
   if (item.photos && item.photos.length) {
-    imageBox.innerHTML = `<img src="${item.photos[0]}" alt="${item.name}">`;
+    imageBox.innerHTML = `<img src="${item.photos[0]}" alt="${item.name}" onerror="this.parentElement.innerHTML='<span style=&quot;font-size:48px;opacity:0.3;&quot;>📦</span><span style=&quot;font-size:12px;font-weight:600;&quot;>Photo unavailable</span>'">`;
+  } else {
+    imageBox.innerHTML = `<span style="font-size:48px;opacity:0.3;">📦</span><span style="font-size:12px;font-weight:600;">No photo yet</span>`;
   }
 
   // QR — encode full URL so any camera app can open the item directly
@@ -572,7 +587,6 @@ function render() {
   renderRefPhotos();
   // History
   renderHistory();
-  loadEvents();
 }
 
 // =========================
@@ -700,11 +714,7 @@ async function saveItemDetails() {
     const data = await res.json();
     if (data.success) {
       item = data.item;
-      // Update display
-      document.getElementById('itemTitle').innerText     = item.name || 'Unnamed Item';
-      document.getElementById('detailDescription').innerText = item.description || '—';
-      document.getElementById('detailCondition').innerText   = item.condition   || '—';
-      document.getElementById('detailCategory').innerText    = item.category    || '—';
+      render();
       const msg = document.getElementById('detailsMsg');
       msg.style.display = 'block';
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
@@ -832,13 +842,7 @@ async function advanceStage() {
     const data = await res.json();
     if (data.success) {
       item = data.item;
-      document.getElementById('detailStage').innerText = item.stage;
-      const newNext = stageOrder[idx + 2];
-      if (newNext) {
-        document.getElementById('nextStageName').innerText = 'Current: ' + item.stage + '  →  Next: ' + newNext;
-        btn.innerText = '→ Move to ' + newNext;
-      }
-      if (idx + 2 >= stageOrder.length) document.getElementById('stageCard').style.display = 'none';
+      render();
       const msg = document.getElementById('stageMsg');
       msg.style.display = 'block';
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
@@ -896,7 +900,7 @@ async function flagMissing() {
     const data = await res.json();
     if (data.success) {
       item = data.item;
-      document.getElementById('detailStage').innerText = item.stage;
+      render();
       const msg = document.getElementById('flagMsg');
       msg.style.display = 'block';
       setTimeout(() => { msg.style.display = 'none'; }, 3000);
@@ -912,9 +916,13 @@ async function flagMissing() {
 // =========================
 function renderHistory() {
   const logs = item.logs;
-  if (!logs || !logs.length) return;
   const card = document.getElementById('historyCard');
   const list = document.getElementById('historyList');
+  if (!logs || !logs.length) {
+    card.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
   list.innerHTML = logs.slice().reverse().map(l => {
     const stageText = l.fromStage && l.toStage
       ? `${l.fromStage} → ${l.toStage}`
@@ -936,12 +944,16 @@ async function deleteItem() {
   if (!user || !user.isAdmin) return;
   if (!confirm('Permanently delete "' + (item.name || 'this item') + '"? This cannot be undone.')) return;
   try {
-    const res = await fetch('/items/' + item.id, { method: 'DELETE' });
+    const res = await fetch('/items/' + item.id, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestedBy: user.name, employee: user.name })
+    });
     const data = await res.json();
     if (data.success) {
       window.location.href = '/items.html';
     } else {
-      alert('Delete failed');
+      alert(data.message || 'Delete failed');
     }
   } catch (err) {
     alert('Delete failed');
@@ -966,6 +978,9 @@ async function loadEvents() {
         document.getElementById('eventAssignedDisplay').style.display = 'block';
         document.getElementById('eventSelectWrap').style.display = 'none';
       }
+    } else {
+      document.getElementById('eventAssignedDisplay').style.display = 'none';
+      document.getElementById('eventSelectWrap').style.display = 'block';
     }
   } catch {}
 }
