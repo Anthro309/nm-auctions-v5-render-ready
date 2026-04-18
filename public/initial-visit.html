@@ -847,14 +847,25 @@ async function deleteItem(lotCode) {
   const name = items[idx].name;
   if (!confirm('Remove "' + name + '" from this visit?')) return;
 
-  // Find item id from server to delete
   try {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const res = await fetch('/items/by-lot/' + lotCode);
     const serverItem = await res.json();
     if (serverItem && serverItem.id) {
-      await fetch('/items/' + serverItem.id, { method: 'DELETE' });
+      const archiveRes = await fetch(`/items/${serverItem.id}/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: 'Archived', employee: currentUser.name || 'unknown' })
+      });
+      const archiveData = await safeJson(archiveRes);
+      if (!archiveRes.ok || !archiveData.success) {
+        throw new Error(archiveData.message || 'Server rejected removal');
+      }
     }
-  } catch (err) { /* best effort */ }
+  } catch (err) {
+    alert('Could not remove item from the active visit: ' + err.message);
+    return;
+  }
 
   items.splice(idx, 1);
   renderLabels();
