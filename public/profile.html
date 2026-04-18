@@ -254,6 +254,7 @@ document.getElementById('photoFileInput').addEventListener('change', async funct
   if (!file) return;
   const form = new FormData();
   form.append('photo', file);
+  form.append('requestedBy', user.name);
   const res = await fetch(`/employees/${encodeURIComponent(user.name)}/photo`, {
     method: 'POST',
     body: form
@@ -264,7 +265,11 @@ document.getElementById('photoFileInput').addEventListener('change', async funct
     localStorage.setItem('user', JSON.stringify(user));
     setAvatar(document.getElementById('profileAvatar'), user);
     setAvatar(document.getElementById('navAvatar'), user);
+    showMsg(document.getElementById('pinMsg'), '✅ Profile photo updated', true);
+  } else {
+    showMsg(document.getElementById('pinMsg'), data.message || 'Photo upload failed', false);
   }
+  this.value = '';
 });
 
 function showMsg(el, text, success) {
