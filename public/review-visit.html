@@ -6,25 +6,107 @@
 <title>Review Visit</title>
 <link rel="stylesheet" href="/styles.css">
 <style>
+.review-hero {
+  background:
+    radial-gradient(circle at top right, rgba(96,165,250,0.18), transparent 24%),
+    linear-gradient(135deg, #07121f 0%, #0d2642 52%, #123761 100%);
+  color: white;
+  border-radius: 24px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(96,165,250,0.16);
+  box-shadow: 0 24px 54px rgba(7,18,31,0.22);
+}
+.review-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  margin-bottom: 6px;
+}
+.review-hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-bottom: 6px;
+}
+.review-hero-sub {
+  font-size: 13px;
+  color: rgba(226,232,240,0.74);
+  line-height: 1.55;
+  max-width: 620px;
+}
+.review-hero-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+.review-hero-box {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px;
+}
+.review-hero-box strong {
+  display:block;
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  margin-bottom:6px;
+}
+.review-hero-box span {
+  display:block;
+  font-size:11px;
+  color: rgba(226,232,240,0.76);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  font-weight:800;
+}
+.review-hero-box small {
+  display:block;
+  font-size:11px;
+  color: rgba(226,232,240,0.58);
+  line-height:1.4;
+  margin-top:6px;
+}
+@media (max-width: 720px) {
+  .review-hero-strip { grid-template-columns: 1fr; }
+}
+
 .session-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 14px 14px;
+  border: 1px solid rgba(148,163,184,0.14);
+  border-radius: 18px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s;
+  margin-bottom: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 12px 28px rgba(15,23,42,0.06);
 }
-.session-card:last-child { border-bottom: none; }
-.session-card:hover { background: #f8fafc; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
-.session-card.active { background: #eff6ff; margin: 0 -4px; padding-left: 4px; padding-right: 4px; border-radius: 8px; }
-.session-title { font-size: 15px; font-weight: 700; color: #111827; }
-.session-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.session-badge { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.session-card:last-child { margin-bottom: 0; }
+.session-card:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(15,23,42,0.10); border-color: rgba(37,99,235,0.18); }
+.session-card.active { background: linear-gradient(180deg, #eff6ff 0%, #e6f0ff 100%); border-color: rgba(37,99,235,0.24); }
+.session-title { font-size: 15px; font-weight: 800; color: #111827; }
+.session-sub { font-size: 12px; color: #6b7280; margin-top: 3px; }
+.session-badge { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
 .session-badge.done { background: #ecfdf5; color: #047857; }
 .session-badge.partial { background: #fef3c7; color: #92400e; }
 
+.review-panel-shell,
+.session-panel-shell {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+  border: 1px solid rgba(148,163,184,0.14);
+  border-radius: 24px;
+  box-shadow: 0 18px 42px rgba(15,23,42,0.10);
+}
+.session-panel-shell { padding: 16px; }
 .review-header {
   display: flex;
   align-items: flex-start;
@@ -33,8 +115,8 @@
   gap: 10px;
   margin-bottom: 16px;
 }
-.review-title { font-size: 17px; font-weight: 700; color: #111827; }
-.review-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+.review-title { font-size: 24px; font-weight: 900; color: #111827; letter-spacing: -0.02em; }
+.review-sub { font-size: 13px; color: #6b7280; margin-top: 3px; }
 .review-stats {
   display: flex;
   gap: 8px;
@@ -42,9 +124,9 @@
 }
 .review-stat {
   font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
+  font-weight: 800;
+  padding: 6px 11px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 .stat-pending  { background: #f3f4f6; color: #374151; }
@@ -52,15 +134,17 @@
 .stat-rejected { background: #fef2f2; color: #b91c1c; }
 
 .item-review-card {
-  border: 1.5px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 14px;
+  border: 1px solid rgba(148,163,184,0.14);
+  border-radius: 20px;
+  padding: 16px;
   margin-bottom: 12px;
-  transition: border-color 0.2s, background 0.2s;
-  background: white;
+  transition: border-color 0.2s, background 0.2s, transform 0.18s, box-shadow 0.18s;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 12px 28px rgba(15,23,42,0.06);
 }
-.item-review-card.accepted { border-color: #16a34a; background: #f0fdf4; }
-.item-review-card.rejected { border-color: #dc2626; background: #fef2f2; opacity: 0.75; }
+.item-review-card:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(15,23,42,0.10); }
+.item-review-card.accepted { border-color: #16a34a; background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%); }
+.item-review-card.rejected { border-color: #dc2626; background: linear-gradient(180deg, #fef2f2 0%, #fff1f2 100%); opacity: 0.85; }
 
 .item-review-inner {
   display: flex;
@@ -68,19 +152,19 @@
   gap: 12px;
 }
 .item-thumb {
-  width: 72px;
-  height: 72px;
-  border-radius: 10px;
+  width: 82px;
+  height: 82px;
+  border-radius: 16px;
   object-fit: cover;
   background: #f3f4f6;
   flex-shrink: 0;
   border: 1px solid #e5e7eb;
 }
 .item-thumb-placeholder {
-  width: 72px;
-  height: 72px;
-  border-radius: 10px;
-  background: #f3f4f6;
+  width: 82px;
+  height: 82px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -90,48 +174,43 @@
   border: 1px solid #e5e7eb;
 }
 .item-review-info { flex: 1; min-width: 0; }
-.item-review-name { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 2px; }
-.item-review-meta { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
-.item-review-value { font-size: 13px; font-weight: 600; color: #374151; }
+.item-review-name { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 3px; }
+.item-review-meta { font-size: 12px; color: #6b7280; margin-bottom: 8px; line-height: 1.45; }
+.item-review-value { font-size: 14px; font-weight: 800; color: #374151; }
 
 .review-actions {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
   flex-wrap: wrap;
 }
 .btn-accept {
   flex: 1;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border: none;
-  border-radius: 10px;
-  background: #16a34a;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   color: white;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
   min-width: 90px;
 }
-.btn-accept:hover { background: #15803d; }
 .btn-accept.done { background: #166534; cursor: default; }
-
 .btn-reject {
   flex: 1;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border: none;
-  border-radius: 10px;
-  background: #dc2626;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: white;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
   min-width: 90px;
 }
-.btn-reject:hover { background: #b91c1c; }
 .btn-reject.done { background: #7f1d1d; cursor: default; }
 
 .reason-row {
@@ -141,21 +220,20 @@
 .reason-row.visible { display: flex; gap: 8px; align-items: center; }
 .reason-row input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: 1.5px solid #fca5a5;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 13px;
   font-family: inherit;
   margin-top: 0;
 }
-.reason-row input:focus { outline: none; border-color: #dc2626; }
 .reason-confirm {
-  padding: 8px 14px;
+  padding: 9px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #dc2626;
   color: white;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
@@ -167,9 +245,9 @@
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 20px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
 }
 .chip-accepted { background: #dcfce7; color: #166534; }
 .chip-rejected { background: #fee2e2; color: #991b1b; }
@@ -177,42 +255,42 @@
 .chip-archived { background: #fee2e2; color: #991b1b; }
 
 .bulk-bar {
-  background: #0b1b2b;
+  background: linear-gradient(90deg, #08111d 0%, #0f2640 100%);
   color: white;
-  border-radius: 14px;
-  padding: 12px 16px;
+  border-radius: 18px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
   flex-wrap: wrap;
+  box-shadow: 0 16px 30px rgba(7,18,31,0.16);
 }
 .bulk-btn {
-  padding: 9px 16px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 10px;
-  font-weight: 700;
+  border-radius: 12px;
+  font-weight: 800;
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
 }
-.bulk-accept { background: #16a34a; color: white; }
-.bulk-accept:hover { background: #15803d; }
+.bulk-accept { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
 
 .empty-session {
   text-align: center;
-  padding: 40px 20px;
+  padding: 46px 20px;
   color: #9ca3af;
   font-size: 14px;
 }
-.empty-session .empty-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-session .empty-icon { font-size: 42px; margin-bottom: 10px; }
 
 @media (min-width: 700px) {
   .rv-layout {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 320px 1fr;
     gap: 16px;
     align-items: start;
   }
@@ -251,35 +329,46 @@
 
 <div class="container">
 
-  <div class="page-header-block">
-    <div class="page-header-icon">✅</div>
-    <div>
-      <div class="page-header-title">Review Visit</div>
-      <div class="page-header-sub">Accept or archive items photographed during initial visits</div>
+  <div class="review-hero">
+    <div class="review-kicker">Admin review queue</div>
+    <div class="review-hero-title">Approve what should stay in the system.</div>
+    <div class="review-hero-sub">Review intake sessions, accept the good inventory, archive the weak pieces, and assign work before the backlog spreads.</div>
+    <div class="review-hero-strip">
+      <div class="review-hero-box">
+        <strong>Review</strong>
+        <span>Session first</span>
+        <small>Each intake day stays grouped so decisions are easier to make in context.</small>
+      </div>
+      <div class="review-hero-box">
+        <strong>Accept</strong>
+        <span>Inventory gate</span>
+        <small>Only approved items move into active inventory and workflow.</small>
+      </div>
+      <div class="review-hero-box">
+        <strong>Assign</strong>
+        <span>Next owner</span>
+        <small>Push accepted items straight to the right employee from the same view.</small>
+      </div>
     </div>
   </div>
 
   <div class="rv-layout">
-
-    <!-- LEFT: Session list -->
     <div class="rv-sessions-panel">
-      <div class="card" style="padding-top:14px;padding-bottom:8px;">
+      <div class="session-panel-shell">
         <h2 style="margin-bottom:10px;">Intake Sessions</h2>
         <input id="search" placeholder="Search consigner..." oninput="renderSessions()" style="margin-bottom:10px;">
         <div id="sessionList"></div>
       </div>
     </div>
 
-    <!-- RIGHT: Item review -->
     <div id="reviewPanel">
-      <div class="card">
+      <div class="review-panel-shell">
         <div class="empty-session">
           <div class="empty-icon">👈</div>
           <div>Select a session to review its items</div>
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -289,7 +378,6 @@ if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
 
 let sessions = [];
 let currentSession = null;
-// Local override for reviewStatus per item (id -> 'accepted'|'rejected'|null)
 let localStatus = {};
 let employees = [];
 
@@ -304,7 +392,7 @@ async function load() {
     renderSessions();
   } catch (err) {
     document.getElementById('reviewPanel').innerHTML = `
-      <div class="card">
+      <div class="review-panel-shell">
         <div class="empty-session">
           <div class="empty-icon">⚠️</div>
           <div>Unable to load review sessions right now.</div>
@@ -313,9 +401,6 @@ async function load() {
   }
 }
 
-// =====================
-// SESSIONS PANEL
-// =====================
 function renderSessions() {
   const q = document.getElementById('search').value.toLowerCase();
   const el = document.getElementById('sessionList');
@@ -352,18 +437,12 @@ function renderSessions() {
   });
 }
 
-// =====================
-// OPEN SESSION
-// =====================
 function openSession(s) {
   currentSession = s;
   renderSessions();
   renderReview();
 }
 
-// =====================
-// EFFECTIVE STATUS
-// =====================
 function effectiveStatus(item) {
   if (localStatus[item.id] !== undefined) return localStatus[item.id];
   if (item.stage === 'Archived') return 'rejected';
@@ -372,13 +451,10 @@ function effectiveStatus(item) {
   return null;
 }
 
-// =====================
-// RENDER REVIEW PANEL
-// =====================
 function renderReview() {
   const panel = document.getElementById('reviewPanel');
   if (!currentSession) {
-    panel.innerHTML = `<div class="card"><div class="empty-session"><div class="empty-icon">👈</div><div>Select a session to review its items</div></div></div>`;
+    panel.innerHTML = `<div class="review-panel-shell"><div class="empty-session"><div class="empty-icon">👈</div><div>Select a session to review its items</div></div></div>`;
     return;
   }
   const items = currentSession.items || [];
@@ -387,7 +463,7 @@ function renderReview() {
   const pending  = items.filter(i => effectiveStatus(i) === null).length;
 
   let html = `
-    <div class="card">
+    <div class="review-panel-shell" style="padding:18px;">
       <div class="review-header">
         <div>
           <div class="review-title">${esc(currentSession.consigner)}</div>
@@ -404,24 +480,23 @@ function renderReview() {
   if (pending > 0) {
     html += `
       <div class="bulk-bar">
-        <span style="font-size:13px;font-weight:600;">${pending} item${pending !== 1 ? 's' : ''} awaiting review</span>
+        <span style="font-size:13px;font-weight:700;">${pending} item${pending !== 1 ? 's' : ''} awaiting review</span>
         <button class="bulk-btn bulk-accept" onclick="acceptAll()">Accept All Pending</button>
       </div>
     `;
   }
 
-  // Batch assign bar (hidden until checkboxes selected)
   if (accepted > 0) {
     const empOpts = employees.map(e => `<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
     html += `
-      <div id="batchAssignBar" style="display:none;background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:12px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span id="batchCheckCount" style="font-size:13px;font-weight:700;color:#374151;flex:1;min-width:80px;">0 selected</span>
+      <div id="batchAssignBar" style="display:none;background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:14px;padding:12px 14px;margin-bottom:12px;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span id="batchCheckCount" style="font-size:13px;font-weight:800;color:#374151;flex:1;min-width:80px;">0 selected</span>
         <select id="batchEmpSel" style="margin:0;font-size:13px;padding:8px 10px;flex:1;min-width:140px;">
           <option value="">— Assign to employee —</option>
           ${empOpts}
           <option value="__unassign__">— Remove Assignment —</option>
         </select>
-        <button onclick="batchAssignSelected()" style="padding:9px 14px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
+        <button onclick="batchAssignSelected()" style="padding:9px 14px;background:#7c3aed;color:white;border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
       </div>
     `;
   }
@@ -433,18 +508,16 @@ function renderReview() {
   items.forEach(item => {
     const status = effectiveStatus(item);
     const photo  = (item.photos && item.photos.length) ? item.photos[0] : null;
-
-    // Estimate display — show inline inputs if no estimate set
     const hasEstimate = item.estimatedValueLow > 0 || item.estimatedValueHigh > 0;
     const valHtml = hasEstimate
       ? `<div class="item-review-value">$${item.estimatedValueLow}–$${item.estimatedValueHigh}</div>`
       : `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
            <span style="font-size:12px;color:#9ca3af;white-space:nowrap;">$</span>
-           <input type="number" id="est-low-${item.id}" placeholder="Low" min="0" style="width:54px;padding:3px 5px;font-size:12px;border:1.5px solid #d1d5db;border-radius:6px;margin:0;">
+           <input type="number" id="est-low-${item.id}" placeholder="Low" min="0" style="width:54px;padding:4px 6px;font-size:12px;border:1.5px solid #d1d5db;border-radius:8px;margin:0;">
            <span style="font-size:11px;color:#9ca3af;">–</span>
            <span style="font-size:12px;color:#9ca3af;">$</span>
-           <input type="number" id="est-high-${item.id}" placeholder="High" min="0" style="width:54px;padding:3px 5px;font-size:12px;border:1.5px solid #d1d5db;border-radius:6px;margin:0;">
-           <button onclick="saveEstimate('${item.id}')" style="padding:3px 8px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>
+           <input type="number" id="est-high-${item.id}" placeholder="High" min="0" style="width:54px;padding:4px 6px;font-size:12px;border:1.5px solid #d1d5db;border-radius:8px;margin:0;">
+           <button onclick="saveEstimate('${item.id}')" style="padding:4px 9px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Save</button>
          </div>`;
 
     let chipHtml = '';
@@ -452,7 +525,6 @@ function renderReview() {
     else if (status === 'rejected') chipHtml = `<span class="status-chip chip-rejected">✕ Archived</span>`;
     else chipHtml = `<span class="status-chip chip-pending">Pending</span>`;
 
-    // Checkbox for accepted items (for batch assign)
     const chkHtml = status === 'accepted'
       ? `<input type="checkbox" class="rv-chk" data-id="${item.id}" onchange="updateBatchBar()" style="width:20px;height:20px;cursor:pointer;accent-color:#7c3aed;flex-shrink:0;margin-top:2px;">`
       : '';
@@ -476,7 +548,7 @@ function renderReview() {
       ).join('');
       actionsHtml = `
         <div class="review-actions">
-          ${status === 'accepted' ? `<a href="/item.html?id=${item.id}" style="flex:1;text-align:center;padding:9px 12px;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:700;text-decoration:none;">View Item →</a>` : ''}
+          ${status === 'accepted' ? `<a href="/item.html?id=${item.id}" style="flex:1;text-align:center;padding:10px 12px;border-radius:12px;background:#eff6ff;color:#1d4ed8;font-size:13px;font-weight:800;text-decoration:none;">View Item →</a>` : ''}
         </div>
         ${status === 'accepted' ? `
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
@@ -484,9 +556,9 @@ function renderReview() {
             <option value="">— Assign to employee —</option>
             ${empOptions}
           </select>
-          <button onclick="assignFromReview('${item.id}')" style="padding:9px 14px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
+          <button onclick="assignFromReview('${item.id}')" style="padding:10px 14px;background:#7c3aed;color:white;border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;">Assign</button>
         </div>
-        ${currentAssignee ? `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#7c3aed;font-weight:600;margin-top:5px;">👤 Assigned to ${esc(currentAssignee)}</div>` : `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#9ca3af;margin-top:5px;display:none;"></div>`}
+        ${currentAssignee ? `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#7c3aed;font-weight:700;margin-top:5px;">👤 Assigned to ${esc(currentAssignee)}</div>` : `<div id="assign-confirm-${item.id}" style="font-size:12px;color:#9ca3af;margin-top:5px;display:none;"></div>`}
         ` : ''}
       `;
     }
@@ -520,9 +592,6 @@ function renderReview() {
   panel.innerHTML = html;
 }
 
-// =====================
-// ACCEPT ITEM
-// =====================
 async function acceptItem(itemId) {
   localStatus[itemId] = 'accepted';
   renderReview();
@@ -535,9 +604,6 @@ async function acceptItem(itemId) {
   await refreshSession();
 }
 
-// =====================
-// REJECT / ARCHIVE ITEM
-// =====================
 function showRejectInput(itemId) {
   const row = document.getElementById(`reason-${itemId}`);
   if (row) {
@@ -561,9 +627,6 @@ async function confirmReject(itemId) {
   await refreshSession();
 }
 
-// =====================
-// ACCEPT ALL PENDING
-// =====================
 async function acceptAll() {
   const items = (currentSession.items || []).filter(i => effectiveStatus(i) === null);
   if (!items.length) return;
@@ -580,9 +643,6 @@ async function acceptAll() {
   await refreshSession();
 }
 
-// =====================
-// REFRESH SESSION DATA
-// =====================
 async function refreshSession() {
   const res = await fetch('/intake');
   sessions = await res.json();
@@ -593,9 +653,6 @@ async function refreshSession() {
   renderReview();
 }
 
-// =====================
-// ASSIGN FROM REVIEW
-// =====================
 async function assignFromReview(itemId) {
   const sel = document.getElementById('assign-sel-' + itemId);
   if (!sel) return;
@@ -613,11 +670,10 @@ async function assignFromReview(itemId) {
         confirm.style.display = 'block';
         confirm.textContent = assignedTo ? '👤 Assigned to ' + assignedTo : 'Assignment cleared';
         confirm.style.color = assignedTo ? '#7c3aed' : '#9ca3af';
-        confirm.style.fontWeight = '600';
+        confirm.style.fontWeight = '700';
         confirm.style.fontSize = '12px';
         confirm.style.marginTop = '5px';
       }
-      // Update local session data so re-render shows current assignee
       if (currentSession && currentSession.items) {
         const it = currentSession.items.find(function(i) { return i.id === itemId; });
         if (it) it.assignedTo = assignedTo || null;
@@ -626,9 +682,6 @@ async function assignFromReview(itemId) {
   } catch (err) { alert('Failed to assign item. Please try again.'); }
 }
 
-// =====================
-// BATCH ASSIGN (multi-select)
-// =====================
 function updateBatchBar() {
   const checked = document.querySelectorAll('.rv-chk:checked');
   const bar   = document.getElementById('batchAssignBar');
@@ -667,9 +720,6 @@ async function batchAssignSelected() {
   } catch(e) {}
 }
 
-// =====================
-// SAVE ESTIMATE
-// =====================
 async function saveEstimate(itemId) {
   const low  = parseFloat(document.getElementById('est-low-'  + itemId)?.value) || 0;
   const high = parseFloat(document.getElementById('est-high-' + itemId)?.value) || 0;
@@ -687,9 +737,6 @@ async function saveEstimate(itemId) {
   } catch(e) {}
 }
 
-// =====================
-// HELPERS
-// =====================
 function esc(v) {
   return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
