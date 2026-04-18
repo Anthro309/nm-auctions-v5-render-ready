@@ -70,13 +70,22 @@
   background: #eff6ff; color: #1d4ed8; white-space: nowrap; flex-shrink: 0;
 }
 .mode-toggle {
-  display: flex; gap: 8px; margin-bottom: 12px;
+  display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
 }
 .mode-btn {
   flex: 1; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 10px;
   background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #374151;
 }
 .mode-btn.active { background: #0b1b2b; color: white; border-color: #0b1b2b; }
+.mode-help-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.mode-help-wrap .mode-btn {
+  flex: 1;
+}
 </style>
 </head>
 <body>
@@ -160,7 +169,10 @@
   <div class="card" style="padding-top:14px;padding-bottom:14px;">
     <div class="mode-toggle">
       <button class="mode-btn active" id="modeConsigner" onclick="setMode('consigner')">By Consigner</button>
-      <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Actions <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Select multiple items using checkboxes, then advance their stage or assign them to an employee — all in one tap.')">?</button></button>
+      <div class="mode-help-wrap">
+        <button class="mode-btn" id="modeBatch" onclick="setMode('batch')">Batch Actions</button>
+        <button class="help-btn" onclick="showTip(this,'Select multiple items using checkboxes, then advance their stage or assign them to an employee — all in one tap.')">?</button>
+      </div>
     </div>
 
     <!-- BATCH BAR -->
@@ -319,7 +331,7 @@ async function runNLSearch(q) {
     });
     const data = await res.json();
     if (data.success) {
-      nlResults = data.results;
+      nlResults = data.results || [];
       const filterDesc = Object.entries(data.filters || {})
         .filter(([, v]) => v !== null && v !== undefined)
         .map(([k, v]) => `${k}: ${v}`).join(' · ');
@@ -336,9 +348,17 @@ function onSearchInput() {
     clearTimeout(nlTimer);
     const q = document.getElementById('search').value.trim();
     if (q.length >= 3) nlTimer = setTimeout(() => runNLSearch(q), 800);
+    if (!q.length) {
+      nlResults = null;
+      render();
+    }
   } else {
     render();
   }
+}
+
+function getInventoryItems(source) {
+  return (source || []).filter(i => i.stage !== 'Home Visit');
 }
 
 function getFiltered() {
@@ -346,9 +366,7 @@ function getFiltered() {
   const stageF = document.getElementById('stageFilter').value;
   const catF = document.getElementById('categoryFilter').value;
   const assignedF = document.getElementById('assignedFilter').value;
-  return allItems.filter(i => {
-    // Prospects (Home Visit) are never in the item library — manage them via Review Visit.
-    if (i.stage === 'Home Visit') return false;
+  return getInventoryItems(allItems).filter(i => {
     const matchQ = !q ||
       (i.name || '').toLowerCase().includes(q) ||
       (i.lotNumber || '').toLowerCase().includes(q) ||
@@ -362,35 +380,40 @@ function getFiltered() {
   });
 }
 
+function getActiveItems() {
+  if (nlMode && nlResults !== null) return getInventoryItems(nlResults);
+  return getFiltered();
+}
+
 function render() {
-  const filtered = nlMode && nlResults !== null ? nlResults : getFiltered();
+  const filtered = getActiveItems();
+  const inventoryTotal = getInventoryItems(allItems).length;
   updateFilterBadge();
   document.getElementById('itemCount').innerText =
     filtered.length + ' item' + (filtered.length !== 1 ? 's' : '') +
-    (allItems.length !== filtered.length ? ' of ' + allItems.length + ' total' : '');
-  currentMode === 'consigner' ? renderConsigner() : renderBatch();
+    (inventoryTotal !== filtered.length ? ' of ' + inventoryTotal + ' in inventory' : ' in inventory');
+  currentMode === 'consigner' ? renderConsigner(filtered) : renderBatch(filtered);
 }
 
-function renderConsigner() {
-  const filtered = getFiltered();
+function renderConsigner(filtered) {
   const sort = document.getElementById('sortFilter').value;
   const list = document.getElementById('list');
   list.innerHTML = '';
 
   if (!filtered.length) {
-    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
-    if (allItems.length === 0) {
+    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value || document.getElementById('categoryFilter').value || document.getElementById('assignedFilter').value;
+    if (getInventoryItems(allItems).length === 0) {
       list.innerHTML = `<div class="empty-state">
         <div class="empty-state-icon">📦</div>
-        <div class="empty-state-title">No items yet</div>
-        <div class="empty-state-sub">Start by logging a consigner's items using the Initial Visit page.</div>
+        <div class="empty-state-title">No inventory items yet</div>
+        <div class="empty-state-sub">Start by logging a consigner's items using the Initial Visit page, then accept them in Review Visit.</div>
         <button class="empty-state-btn" onclick="window.location.href='/initial-visit.html'">📋 Start Initial Visit</button>
       </div>`;
     } else {
       list.innerHTML = `<div class="empty-state">
-        <div class="empty-state-icon">🔍</div>
-        <div class="empty-state-title">No items match your filters</div>
-        <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or stage filter.' : 'Nothing to show.'}</div>
+        <div class="empty-state-icon">${nlMode ? '✨' : '🔍'}</div>
+        <div class="empty-state-title">${nlMode ? 'No AI matches found' : 'No items match your filters'}</div>
+        <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or filters.' : 'Nothing to show.'}</div>
         ${hasFilters ? '<button class="empty-state-btn" onclick="clearFilters()">Clear Filters</button>' : ''}
       </div>`;
     }
@@ -460,19 +483,19 @@ function renderConsigner() {
   });
 }
 
-function renderBatch() {
-  const filtered = getFiltered();
+function renderBatch(filtered) {
   const list = document.getElementById('list');
   list.innerHTML = '';
 
   if (!filtered.length) {
-    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value;
+    const hasFilters = document.getElementById('search').value.trim() || document.getElementById('stageFilter').value || document.getElementById('categoryFilter').value || document.getElementById('assignedFilter').value;
     list.innerHTML = `<div class="empty-state">
-      <div class="empty-state-icon">🔍</div>
-      <div class="empty-state-title">No items match your filters</div>
-      <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or stage filter.' : 'Nothing to show.'}</div>
+      <div class="empty-state-icon">${nlMode ? '✨' : '🔍'}</div>
+      <div class="empty-state-title">${nlMode ? 'No AI matches found' : 'No items match your filters'}</div>
+      <div class="empty-state-sub">${hasFilters ? 'Try adjusting your search or filters.' : 'Nothing to show.'}</div>
       ${hasFilters ? '<button class="empty-state-btn" onclick="clearFilters()">Clear Filters</button>' : ''}
     </div>`;
+    updateBatchCount();
     return;
   }
 
@@ -538,6 +561,7 @@ function updateBatchCount() {
   const checked = document.querySelectorAll('.item-chk:checked').length;
   document.getElementById('batchCount').innerText = checked + ' selected';
   document.getElementById('batchAdvBtn').disabled = checked === 0;
+  document.getElementById('batchAssignBtn').disabled = checked === 0;
 }
 
 async function batchAdvance() {
@@ -562,12 +586,12 @@ async function batchAdvance() {
     if (data.success) {
       await load();
       btn.innerText = `✓ Moved ${data.count}`;
-      setTimeout(() => { btn.innerText = 'Advance'; }, 2000);
+      setTimeout(() => { btn.innerText = 'Advance'; updateBatchCount(); }, 2000);
     }
   } catch (err) {
     alert('Batch advance failed');
     btn.innerText = 'Advance';
-    btn.disabled = false;
+    updateBatchCount();
   }
 }
 
@@ -595,12 +619,12 @@ async function batchAssign() {
     if (data.success) {
       await load();
       btn.innerText = `✓ Assigned ${data.count}`;
-      setTimeout(() => { btn.innerText = 'Assign'; btn.disabled = false; }, 2000);
+      setTimeout(() => { btn.innerText = 'Assign'; updateBatchCount(); }, 2000);
     }
   } catch (err) {
     alert('Batch assign failed');
     btn.innerText = 'Assign';
-    btn.disabled = false;
+    updateBatchCount();
   }
 }
 
