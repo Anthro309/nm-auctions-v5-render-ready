@@ -437,6 +437,18 @@ function logout() {
   window.location.href = '/';
 }
 
+function normalizeValue(value) {
+  return String(value ?? '').trim().toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
+}
+
+function setSelectValueByNormalizedText(selectId, value) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const target = normalizeValue(value);
+  const option = Array.from(select.options).find(opt => normalizeValue(opt.value || opt.textContent) === target);
+  select.value = option ? option.value : '';
+}
+
 // =========================
 // LOAD ITEM
 // =========================
@@ -489,8 +501,8 @@ function render() {
   document.getElementById('editDescription').value = item.description || '';
   document.getElementById('dimInput').value        = item.dimensions  || '';
   document.getElementById('notesInput').value      = item.additionalNotes || '';
-  if (item.condition) document.getElementById('conditionSelect').value = item.condition;
-  if (item.category)  document.getElementById('categorySelect').value  = item.category;
+  setSelectValueByNormalizedText('conditionSelect', item.condition);
+  setSelectValueByNormalizedText('categorySelect', item.category);
 
   // Repair banner
   const banner = document.getElementById('repairBanner');
@@ -785,7 +797,7 @@ async function printLabel() {
       <canvas id="plc${i}" style="width:0.78in;height:0.78in;flex-shrink:0;"></canvas>
       <div>
         <div class="avery-name">${escapeHtml(name)}</div>
-        <div class="avery-details">Lot ${escapeHtml(qrValue)} · ${date} · ${escapeHtml(code)}</div>
+        <div class="avery-details">Lot ${escapeHtml(qrLot)} · ${date} · ${escapeHtml(code)}</div>
       </div>
     `;
     grid.appendChild(div);
