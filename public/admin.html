@@ -343,6 +343,7 @@ async function submitPhoto() {
   if (!file) { showMsg(msg, 'Choose a photo first', false); return; }
   const form = new FormData();
   form.append('photo', file);
+  form.append('requestedBy', user.name);
   const res = await fetch(`/employees/${encodeURIComponent(targetEmployee)}/photo`, {
     method: 'POST',
     body: form
