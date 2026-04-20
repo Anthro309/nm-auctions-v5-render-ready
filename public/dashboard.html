@@ -11,234 +11,497 @@
   <meta name="apple-mobile-web-app-title" content="Auction Legacy">
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .dash-grid {
+    .hero-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-    @media (min-width: 600px) {
-      .dash-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
-    }
-    .dash-card {
-      background: white;
-      border-radius: 18px;
-      padding: 22px 18px;
-      box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 4px 16px rgba(15,23,42,0.06);
-      cursor: pointer;
-      transition: transform 0.18s ease, box-shadow 0.2s ease;
-      border: 1.5px solid transparent;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .dash-card:hover,
-    .dash-card:active {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 32px rgba(15,23,42,0.13);
-      border-color: rgba(37,99,235,0.18);
-    }
-    .dash-icon {
-      font-size: 32px;
-      margin-bottom: 6px;
-    }
-    .dash-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #111827;
-    }
-    .dash-sub {
-      font-size: 13px;
-      color: #6b7280;
-      line-height: 1.4;
-    }
-    @media (min-width: 600px) {
-      .dash-card { padding: 28px 24px; }
-      .dash-icon { font-size: 36px; }
-      .dash-title { font-size: 18px; }
-      .dash-sub { font-size: 14px; }
-    }
-    .welcome-banner {
-      background: linear-gradient(135deg, #0b1b2b 0%, #0f2d52 60%, #1a3a5f 100%);
-      border-radius: 20px;
-      padding: 22px 20px;
+      gap: 16px;
       margin-bottom: 16px;
+    }
+    @media (min-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1.7fr 1fr;
+        align-items: stretch;
+      }
+    }
+
+    .welcome-banner {
+      background:
+        radial-gradient(circle at top right, rgba(96,165,250,0.22), transparent 24%),
+        linear-gradient(135deg, #07121f 0%, #0c2340 52%, #123761 100%);
+      border-radius: 24px;
+      padding: 24px 22px;
       color: white;
       display: flex;
       align-items: center;
       gap: 16px;
       position: relative;
       overflow: hidden;
+      border: 1px solid rgba(96,165,250,0.18);
+      box-shadow: 0 24px 54px rgba(7,18,31,0.26);
+      min-height: 166px;
     }
     .welcome-banner::before {
       content: '';
       position: absolute;
-      top: -30px; right: -30px;
-      width: 140px; height: 140px;
+      top: -32px; right: -26px;
+      width: 150px; height: 150px;
       border-radius: 50%;
-      background: rgba(37,99,235,0.12);
+      background: rgba(37,99,235,0.16);
       pointer-events: none;
     }
     .welcome-banner::after {
       content: '';
       position: absolute;
-      bottom: -50px; right: 30px;
-      width: 100px; height: 100px;
+      bottom: -54px; right: 26px;
+      width: 110px; height: 110px;
       border-radius: 50%;
-      background: rgba(37,99,235,0.08);
+      background: rgba(14,165,233,0.11);
       pointer-events: none;
     }
     .welcome-avatar {
-      width: 58px;
-      height: 58px;
-      min-width: 58px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      width: 66px;
+      height: 66px;
+      min-width: 66px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
-      box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+      box-shadow: 0 10px 24px rgba(37,99,235,0.4);
       flex-shrink: 0;
       overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.14);
+      position: relative;
+      z-index: 1;
     }
-    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
-    .welcome-text { flex: 1; min-width: 0; }
+    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 16px; }
+    .welcome-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
     .welcome-greeting {
-      font-size: 13px;
-      opacity: 0.55;
-      font-weight: 600;
+      font-size: 12px;
+      opacity: 0.66;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 2px;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
     }
     .welcome-name {
-      font-size: 22px;
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 4px;
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1.08;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
     }
     .welcome-date {
-      font-size: 12px;
-      opacity: 0.45;
+      font-size: 13px;
+      color: rgba(226,232,240,0.74);
       font-weight: 500;
     }
     .welcome-badge {
-      background: rgba(37,99,235,0.28);
-      border: 1px solid rgba(37,99,235,0.4);
-      border-radius: 8px;
-      padding: 6px 10px;
+      background: rgba(37,99,235,0.25);
+      border: 1px solid rgba(96,165,250,0.34);
+      border-radius: 999px;
+      padding: 7px 12px;
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-weight: 800;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #93c5fd;
+      color: #bfdbfe;
       white-space: nowrap;
       flex-shrink: 0;
+      align-self: flex-start;
+      position: relative;
+      z-index: 1;
     }
     @media (min-width: 600px) {
-      .welcome-banner { padding: 28px 26px; border-radius: 22px; margin-bottom: 20px; }
-      .welcome-avatar { width: 68px; height: 68px; min-width: 68px; font-size: 32px; border-radius: 18px; }
-      .welcome-name { font-size: 26px; }
+      .welcome-banner { padding: 28px 28px; min-height: 184px; }
+      .welcome-avatar { width: 76px; height: 76px; min-width: 76px; font-size: 32px; border-radius: 20px; }
+      .welcome-name { font-size: 32px; }
     }
 
-    /* ── AI PHOTO STUDIO CARD ── */
+    .ops-pulse {
+      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.91) 100%);
+      border-radius: 24px;
+      padding: 20px 18px;
+      border: 1px solid rgba(148,163,184,0.16);
+      box-shadow: 0 18px 42px rgba(15,23,42,0.11);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .ops-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ops-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #2563eb;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .ops-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+      background: #eff6ff;
+      border-radius: 999px;
+      padding: 5px 10px;
+    }
+    .ops-title {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.08;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .ops-sub {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.55;
+      margin-top: 2px;
+    }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 2px;
+    }
+    .quick-action {
+      background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+      border: 1px solid rgba(37,99,235,0.16);
+      border-radius: 18px;
+      padding: 14px 14px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      box-shadow: 0 10px 20px rgba(37,99,235,0.08);
+    }
+    .quick-action:hover,
+    .quick-action:active {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 30px rgba(37,99,235,0.13);
+      border-color: rgba(37,99,235,0.28);
+    }
+    .quick-action-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 22px;
+      margin-bottom: 10px;
+      box-shadow: 0 12px 24px rgba(37,99,235,0.22);
+    }
+    .quick-action-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 3px;
+    }
+    .quick-action-sub {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 22px 0 14px;
+    }
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+    }
+    .section-title {
+      font-size: 23px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .section-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .stat-tile {
+      border-radius: 22px;
+      padding: 18px 14px 16px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+      min-height: 122px;
+    }
+    .stat-tile::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.48), transparent 55%);
+      pointer-events: none;
+    }
+    .stat-tile::after {
+      display: none;
+    }
+    .stat-number {
+      font-size: 34px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #475569;
+      margin-top: 8px;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-note {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.4;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-tile.stat-prospects {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border-color: rgba(37,99,235,0.18);
+    }
+    .stat-tile.stat-inventory {
+      background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%);
+      border-color: rgba(22,163,74,0.16);
+    }
+    .stat-tile.stat-photo {
+      background: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%);
+      border-color: rgba(234,88,12,0.16);
+    }
+    @media (max-width: 720px) {
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+      .stat-tile {
+        min-height: auto;
+      }
+    }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    @media (min-width: 600px) {
+      .dash-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    }
+    .dash-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.91) 100%);
+      border-radius: 22px;
+      padding: 20px 18px;
+      box-shadow: 0 16px 34px rgba(15,23,42,0.10);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      border: 1px solid rgba(148,163,184,0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      min-height: 176px;
+    }
+    .dash-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(37,99,235,0.06), transparent 45%);
+      pointer-events: none;
+    }
+    .dash-card::after {
+      content: '›';
+      position: absolute;
+      right: 16px;
+      bottom: 14px;
+      font-size: 24px;
+      color: rgba(148,163,184,0.75);
+      font-weight: 400;
+      transition: transform 0.18s ease, color 0.18s ease;
+    }
+    .dash-card:hover,
+    .dash-card:active {
+      transform: translateY(-5px);
+      box-shadow: 0 22px 44px rgba(15,23,42,0.14);
+      border-color: rgba(37,99,235,0.24);
+    }
+    .dash-card:hover::after,
+    .dash-card:active::after {
+      transform: translateX(3px);
+      color: #2563eb;
+    }
+    .dash-icon-wrap {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+      position: relative;
+      z-index: 1;
+    }
+    .dash-icon {
+      font-size: 28px;
+      margin-bottom: 0;
+    }
+    .dash-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #111827;
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+    }
+    .dash-sub {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+      position: relative;
+      z-index: 1;
+      max-width: 90%;
+    }
+    .dash-chip {
+      margin-top: auto;
+      align-self: flex-start;
+      background: #f8fafc;
+      border: 1px solid rgba(148,163,184,0.20);
+      color: #475569;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+    @media (min-width: 600px) {
+      .dash-card { padding: 22px 20px; min-height: 188px; }
+      .dash-title { font-size: 18px; }
+      .dash-sub { font-size: 14px; }
+    }
+
     .photo-studio-card {
       display: flex;
       align-items: center;
       gap: 14px;
-      background: linear-gradient(90deg, #0f2d52 0%, #1a3a6e 60%, #1e3a5f 100%);
-      border-radius: 16px;
-      padding: 14px 18px;
+      background: linear-gradient(90deg, #07121f 0%, #0d2642 58%, #143761 100%);
+      border-radius: 22px;
+      padding: 16px 18px;
       margin-top: 14px;
       cursor: pointer;
-      border: 1px solid rgba(37,99,235,0.3);
+      border: 1px solid rgba(37,99,235,0.24);
       transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 18px 34px rgba(7,18,31,0.18);
     }
     .photo-studio-card:hover,
     .photo-studio-card:active {
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(37,99,235,0.2);
+      box-shadow: 0 22px 42px rgba(37,99,235,0.2);
     }
     .photo-studio-icon {
       font-size: 24px;
-      width: 44px; height: 44px; min-width: 44px;
+      width: 48px; height: 48px; min-width: 48px;
       background: rgba(37,99,235,0.25);
-      border-radius: 11px;
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
     }
     .photo-studio-text { flex: 1; min-width: 0; }
     .photo-studio-title {
-      font-size: 15px; font-weight: 700; color: white; margin-bottom: 2px;
+      font-size: 15px; font-weight: 800; color: white; margin-bottom: 3px;
     }
     .photo-studio-sub {
-      font-size: 12px; color: rgba(255,255,255,0.5);
+      font-size: 12px; color: rgba(255,255,255,0.70);
     }
     .photo-studio-arrow {
       font-size: 22px; color: rgba(255,255,255,0.35); flex-shrink: 0;
     }
     @media (min-width: 600px) {
-      .photo-studio-card { padding: 16px 22px; margin-top: 18px; }
+      .photo-studio-card { padding: 18px 22px; margin-top: 18px; }
       .photo-studio-title { font-size: 16px; }
     }
 
-    /* ── WORD OF THE DAY ── */
     .wotd-card {
-      background: linear-gradient(135deg, #0b1b2b 0%, #112236 100%);
-      border-radius: 18px;
-      padding: 20px 20px 22px;
-      margin-top: 6px;
+      background:
+        radial-gradient(circle at top right, rgba(249,115,22,0.16), transparent 24%),
+        linear-gradient(135deg, #08111d 0%, #112236 100%);
+      border-radius: 24px;
+      padding: 22px 20px 24px;
+      margin-top: 16px;
       color: white;
       position: relative;
       overflow: hidden;
-    }
-    .wotd-card::before {
-      content: '';
-      position: absolute;
-      top: -20px; right: -20px;
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      background: rgba(234,88,12,0.1);
-      pointer-events: none;
+      box-shadow: 0 20px 44px rgba(8,17,29,0.24);
+      border: 1px solid rgba(249,115,22,0.16);
     }
     .wotd-label {
       font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
+      font-weight: 900;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #f97316;
-      margin-bottom: 8px;
+      color: #fb923c;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
     .wotd-word {
-      font-size: 26px;
-      font-weight: 800;
+      font-size: 28px;
+      font-weight: 900;
       margin-bottom: 4px;
-      line-height: 1.2;
+      line-height: 1.15;
     }
     .wotd-pronunciation {
       font-size: 12px;
-      opacity: 0.4;
+      color: rgba(226,232,240,0.72);
       font-style: italic;
       margin-bottom: 10px;
     }
     .wotd-def {
       font-size: 14px;
-      opacity: 0.75;
-      line-height: 1.55;
+      color: rgba(255,255,255,0.86);
+      line-height: 1.6;
     }
     .wotd-example {
       font-size: 12px;
-      opacity: 0.4;
+      color: rgba(226,232,240,0.68);
       margin-top: 8px;
       font-style: italic;
-      line-height: 1.5;
+      line-height: 1.55;
     }
     @media (min-width: 600px) {
       .wotd-card { padding: 24px 26px 26px; }
-      .wotd-word { font-size: 30px; }
+      .wotd-word { font-size: 32px; }
     }
   </style>
 </head>
@@ -273,41 +536,74 @@
 
 <div class="container">
 
-  <div id="welcomeCard" class="welcome-banner" style="display:none;">
-    <div class="welcome-avatar">
-      <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
+  <div class="hero-grid">
+    <div id="welcomeCard" class="welcome-banner" style="display:none;">
+      <div class="welcome-avatar">
+        <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
+      </div>
+      <div class="welcome-text">
+        <div class="welcome-greeting" id="welcomeGreeting">Good morning</div>
+        <div class="welcome-name" id="welcomeName"></div>
+        <div class="welcome-date" id="welcomeDate"></div>
+      </div>
+      <div class="welcome-badge" id="welcomeRole">Employee</div>
     </div>
-    <div class="welcome-text">
-      <div class="welcome-greeting" id="welcomeGreeting">Good morning</div>
-      <div class="welcome-name" id="welcomeName"></div>
-      <div class="welcome-date" id="welcomeDate"></div>
+
+    <div class="ops-pulse">
+      <div class="ops-kicker">
+        <div class="ops-label">Operations Pulse</div>
+        <div class="ops-pill">Live Workflow</div>
+      </div>
+      <div>
+        <div class="ops-title">Move intake to sold faster.</div>
+        <div class="ops-sub">Track every item from initial visit to pickup, keep assignments clear, and keep the team working from the same screen.</div>
+      </div>
+      <div class="quick-actions">
+        <div class="quick-action" onclick="window.location.href='/scanner.html'">
+          <div class="quick-action-icon">📷</div>
+          <div class="quick-action-title">Scan Now</div>
+          <div class="quick-action-sub">Open the scanner and move items through the workflow.</div>
+        </div>
+        <div class="quick-action" onclick="window.location.href='/initial-visit.html'">
+          <div class="quick-action-icon">📋</div>
+          <div class="quick-action-title">Start Intake</div>
+          <div class="quick-action-sub">Create a new initial visit and print labels fast.</div>
+        </div>
+      </div>
     </div>
-    <div class="welcome-badge" id="welcomeRole">Employee</div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Today at a glance</div>
+      <div class="section-title">Studio workflow</div>
+      <div class="section-sub">A clearer snapshot of what is waiting, active, and ready to shoot.</div>
+    </div>
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
+    <div class="stat-tile stat-prospects" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
       <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
       <div class="stat-label">Prospects</div>
+      <div class="stat-note">Items waiting for review before they enter inventory.</div>
     </div>
-    <div class="stat-tile" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="Items received and in active workflow">
+    <div class="stat-tile stat-inventory" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="Items received and in active workflow">
       <div class="stat-number skeleton" id="statInStudio" style="min-height:34px;">—</div>
       <div class="stat-label">In Inventory</div>
+      <div class="stat-note">Active items currently moving through studio operations.</div>
     </div>
-    <div class="stat-tile" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" style="cursor:pointer;" title="View items ready to photograph">
+    <div class="stat-tile stat-photo" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" style="cursor:pointer;" title="View items ready to photograph">
       <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
       <div class="stat-label">Ready to Photograph</div>
+      <div class="stat-note">Items staged and ready for the photo queue.</div>
     </div>
-
   </div>
 
-  <!-- Onboarding banner — shown only when inventory is empty -->
   <div id="onboardingBanner" class="onboarding-banner" style="display:none;">
     <div class="onboarding-title" id="onboardingTitle"></div>
     <div class="onboarding-steps" id="onboardingSteps"></div>
   </div>
 
-  <!-- MY ASSIGNMENTS (notification card) -->
   <div id="assignmentsCard" class="card" style="display:none;margin-bottom:16px;padding-bottom:4px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h2 style="margin:0;">🔔 My Assignments</h2>
@@ -316,64 +612,77 @@
     <div id="assignmentsList"></div>
   </div>
 
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Core tools</div>
+      <div class="section-title">Run the floor</div>
+      <div class="section-sub">The actions your team uses most, redesigned to feel more like a real operations app.</div>
+    </div>
+  </div>
+
   <div class="dash-grid">
 
     <div class="dash-card" onclick="window.location.href='/initial-visit.html'">
-      <div class="dash-icon">📋</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">📋</div></div>
       <div class="dash-title">Initial Visit</div>
-      <div class="dash-sub">Capture consignments & print labels</div>
+      <div class="dash-sub">Capture consignments, generate labels, and start the chain of custody cleanly.</div>
+      <div class="dash-chip">Intake</div>
     </div>
 
     <div class="dash-card" id="reviewVisitCard" onclick="window.location.href='/review-visit.html'">
-      <div class="dash-icon">✅</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">✅</div></div>
       <div class="dash-title">Review Visit</div>
-      <div class="dash-sub">Accept or archive post-visit items</div>
+      <div class="dash-sub">Approve worthwhile items, archive the rest, and assign work before backlog grows.</div>
+      <div class="dash-chip">Admin flow</div>
     </div>
 
     <div class="dash-card" onclick="window.location.href='/scanner.html'">
-      <div class="dash-icon">📷</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">📷</div></div>
       <div class="dash-title">Scanner</div>
-      <div class="dash-sub">Scan items & advance workflow stages</div>
+      <div class="dash-sub">Scan labels instantly, log touches, and push items through the workflow with fewer mistakes.</div>
+      <div class="dash-chip">Fast action</div>
     </div>
 
     <div class="dash-card" onclick="window.location.href='/items.html'">
-      <div class="dash-icon">📦</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">📦</div></div>
       <div class="dash-title">Item Library</div>
-      <div class="dash-sub">Browse & search all consigned items</div>
+      <div class="dash-sub">Browse, search, batch assign, and keep every item easy to find under pressure.</div>
+      <div class="dash-chip">Inventory</div>
     </div>
 
     <div class="dash-card" id="reportsGridCard" onclick="window.location.href='/reports.html'">
-      <div class="dash-icon">📊</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">📊</div></div>
       <div class="dash-title">Reports</div>
-      <div class="dash-sub">Generate & view daily lot reports</div>
+      <div class="dash-sub">Track lot flow, daily output, and what each consigner or team member has in motion.</div>
+      <div class="dash-chip">Reporting</div>
     </div>
 
     <div class="dash-card" id="eventsGridCard" onclick="window.location.href='/events.html'">
-      <div class="dash-icon">🏷️</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">🏷️</div></div>
       <div class="dash-title">Auction Events</div>
-      <div class="dash-sub">View & manage upcoming auction events</div>
+      <div class="dash-sub">Build events, assign lots, and prepare sold results without bouncing between systems.</div>
+      <div class="dash-chip">Sales</div>
     </div>
 
     <div class="dash-card" id="clientPortalCard" onclick="window.location.href='/client-portal.html'" style="display:none;">
-      <div class="dash-icon">🔗</div>
+      <div class="dash-icon-wrap"><div class="dash-icon">🔗</div></div>
       <div class="dash-title">Client Portal</div>
-      <div class="dash-sub">Share with consigners to view item status</div>
+      <div class="dash-sub">Share cleaner visibility with consigners so item status is easier to understand externally.</div>
+      <div class="dash-chip">Consigners</div>
     </div>
 
   </div>
 
-  <!-- Photo Studio shortcut (admin only) -->
   <div class="photo-studio-card" id="photoStudioShortcut" onclick="window.location.href='/photo-upload.html'">
     <div class="photo-studio-icon">📸</div>
     <div class="photo-studio-text">
       <div class="photo-studio-title">Photo Studio</div>
-      <div class="photo-studio-sub">Upload &amp; pair today's photos with items</div>
+      <div class="photo-studio-sub">Upload, clean up, and pair today’s photos with the right items faster.</div>
     </div>
     <div class="photo-studio-arrow">›</div>
   </div>
 
-  <!-- Word of the Day -->
-  <div class="wotd-card" id="wotdCard" style="margin-top:16px;">
+  <div class="wotd-card" id="wotdCard">
     <div class="wotd-label">🔥 Word of the Day</div>
     <div class="wotd-word" id="wotdWord"></div>
     <div class="wotd-pronunciation" id="wotdPronun"></div>
@@ -397,7 +706,6 @@
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user) window.location.href = '/';
 
-  // Gate admin-only dashboard elements
   if (user && user.isAdmin) {
     document.getElementById('clientPortalCard').style.display = 'flex';
   } else {
@@ -406,7 +714,6 @@
     document.getElementById('photoStudioShortcut').style.display = 'none';
   }
 
-  // Welcome banner
   if (user && user.name) {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -422,9 +729,7 @@
     document.getElementById('welcomeCard').style.display = 'flex';
   }
 
-  // Word of the Day — AI generated, cached daily on server
   async function loadWOTD() {
-    const card = document.getElementById('wotdCard');
     document.getElementById('wotdWord').innerText = '…';
     try {
       const res = await fetch('/word-of-day');
@@ -450,20 +755,13 @@
     try {
       const res = await fetch('/items');
       const items = await res.json();
-      const today = new Date().toLocaleDateString();
-
-      // Prospects = items at Home Visit (logged but not yet accepted/received)
       const prospects = items.filter(i => i.stage === 'Home Visit');
-
-      // In Inventory = received and actively in workflow (not prospect, not picked up, not archived)
       const totalInventory = items.filter(i =>
         i.stage !== 'Home Visit' &&
         i.stage !== 'Picked Up' &&
         i.stage !== 'Missing at Drop Off' &&
         i.stage !== 'Archived'
       );
-
-      // Ready to photograph = items at "Review & Cleaning" stage
       const readyToPhoto = items.filter(i => i.stage === 'Review & Cleaning');
 
       const statProspects = document.getElementById('statProspects');
@@ -478,7 +776,6 @@
       statInStudio.classList.remove('skeleton');
       statReady.classList.remove('skeleton');
 
-      // Show role-specific onboarding tips when nothing received yet
       if (totalInventory.length === 0 && prospects.length === 0) {
         const banner = document.getElementById('onboardingBanner');
         const adminTips = [
@@ -519,9 +816,6 @@
 
   loadStats();
 
-  // =========================
-  // ASSIGNMENTS (notification section)
-  // =========================
   function escDash(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   async function loadAssignments() {
@@ -535,7 +829,6 @@
       const list = document.getElementById('assignmentsList');
       const badge = document.getElementById('assignBadge');
 
-      // Deduplicate: explicit notifications take priority over generic assigned items
       const notifItemIds = new Set(notifications.map(n => String(n.itemId)));
       const uniqueAssigned = assigned.filter(i => !notifItemIds.has(String(i.id)));
       const total = notifications.length + uniqueAssigned.length;
@@ -546,8 +839,6 @@
       badge.textContent = total;
 
       const rows = [];
-
-      // Explicit notifications (have a dismiss ID)
       notifications.forEach(n => {
         rows.push(`
           <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
@@ -560,7 +851,6 @@
           </div>`);
       });
 
-      // Assigned items without explicit notification
       uniqueAssigned.forEach((i, idx) => {
         const isLast = idx === uniqueAssigned.length - 1;
         rows.push(`
@@ -590,7 +880,6 @@
   }
 
   loadAssignments();
-
 </script>
 
 <script src="/nav.js"></script>

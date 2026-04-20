@@ -7,53 +7,339 @@
 <link rel="stylesheet" href="/styles.css">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
-.item-name {
-  font-size: 20px;
+.scanner-hero {
+  background:
+    radial-gradient(circle at top right, rgba(96,165,250,0.20), transparent 25%),
+    linear-gradient(135deg, #07121f 0%, #0b2340 55%, #123861 100%);
+  color: white;
+  border-radius: 24px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(96,165,250,0.18);
+  box-shadow: 0 24px 54px rgba(7,18,31,0.22);
+}
+.scanner-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.scanner-kicker {
+  font-size: 11px;
   font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  margin-bottom: 6px;
+}
+.scanner-title {
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.scanner-sub {
+  font-size: 13px;
+  color: rgba(226,232,240,0.74);
+  line-height: 1.55;
+  max-width: 560px;
+}
+.scanner-badge {
+  background: rgba(37,99,235,0.24);
+  border: 1px solid rgba(96,165,250,0.30);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #dbeafe;
+  white-space: nowrap;
+}
+.hero-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.hero-metric {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px 12px;
+}
+.hero-metric-value {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.hero-metric-label {
+  font-size: 11px;
+  color: rgba(226,232,240,0.76);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.hero-metric-sub {
+  font-size: 11px;
+  color: rgba(226,232,240,0.56);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+@media (max-width: 720px) {
+  .scanner-hero-top { flex-direction: column; }
+  .hero-strip { grid-template-columns: 1fr; }
+}
+
+.scanner-shell {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 18px 44px rgba(15,23,42,0.10);
+  border: 1px solid rgba(148,163,184,0.14);
+  margin-bottom: 16px;
+}
+.scanner-shell-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.shell-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.shell-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.scanner-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.quick-pill {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.status-bar {
+  background: linear-gradient(90deg, #08111d 0%, #0e2238 100%);
+  color: #bfdbfe;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  border: 1px solid rgba(96,165,250,0.16);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 12px 28px rgba(7,18,31,0.16);
+}
+
+.info-hint {
+  border-radius: 16px;
+}
+
+.scanner-form-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 16px 34px rgba(15,23,42,0.08);
+}
+.search-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.scan-input {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.04em;
+  padding: 18px !important;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+.scanner-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-camera {
+  width: 100%;
+  background: linear-gradient(135deg, #0b1b2b, #17385f);
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 0;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 16px 30px rgba(11,27,43,0.22);
+}
+.btn-camera:hover { background: linear-gradient(135deg, #10233b, #1b4774); }
+.btn-stop {
+  width: 100%;
+  background: #dc2626;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.search-results { margin-top: 2px; }
+.search-result-row {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 22px rgba(15,23,42,0.05);
+}
+.search-result-row:active,
+.search-result-row:hover { background: #f1f7ff; }
+.search-result-name { font-size: 14px; font-weight: 800; color: #111827; }
+.search-result-meta { font-size: 12px; color: #6b7280; margin-top: 3px; }
+
+.camera-shell {
+  background: linear-gradient(180deg, #08111d 0%, #0e2238 100%);
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 20px 40px rgba(7,18,31,0.20);
+  border: 1px solid rgba(96,165,250,0.14);
+}
+#cameraVideo {
+  width: 100%;
+  border-radius: 16px;
+  background: #000;
+  display: block;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.item-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 20px 42px rgba(15,23,42,0.10);
+}
+.item-overview {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.item-preview {
+  width: 104px;
+  height: 104px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.item-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.item-preview-empty {
+  font-size: 34px;
+  opacity: 0.42;
+}
+.item-name {
+  font-size: 24px;
+  font-weight: 900;
   color: #111827;
   margin-bottom: 4px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
 }
 .item-lot {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 6px;
-}
-.item-stage {
-  display: inline-block;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 999px;
   margin-bottom: 10px;
 }
-.item-last-handled {
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 12px;
-}
-.item-assigned {
-  font-size: 12px;
-  color: #7c3aed;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-.action-row {
+.item-chip-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
+.item-stage {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+.item-chip {
+  display: inline-block;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.18);
+}
+.item-last-handled {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.item-assigned {
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 12px;
+}
 .btn-view {
   flex: 1;
-  padding: 12px;
+  min-width: 150px;
+  padding: 13px;
   border: 1.5px solid #2563eb;
   background: white;
   color: #2563eb;
-  border-radius: 10px;
+  border-radius: 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   text-align: center;
   font-family: inherit;
@@ -62,44 +348,45 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  box-shadow: 0 10px 20px rgba(37,99,235,0.08);
 }
 .btn-view:hover { background: #eff6ff; }
 .btn-view.consigner { border-color: #7c3aed; color: #7c3aed; }
 .btn-view.consigner:hover { background: #f5f3ff; }
 
 .stage-mover {
-  background: #f8fafc;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  border: 1.5px solid rgba(37,99,235,0.16);
+  border-radius: 18px;
+  padding: 16px;
   margin-top: 4px;
 }
 .stage-mover-title {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-  margin-bottom: 8px;
+  letter-spacing: 0.10em;
+  color: #2563eb;
+  margin-bottom: 10px;
 }
 .stage-mover select {
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   margin-top: 0;
 }
 .btn-move {
   width: 100%;
-  background: #16a34a;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   color: white;
-  padding: 13px;
+  padding: 14px;
   border: none;
-  border-radius: 10px;
+  border-radius: 14px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   font-family: inherit;
 }
-.btn-move:hover { background: #15803d; }
+.btn-move:hover { background: linear-gradient(135deg, #169547, #166534); }
 .btn-move:disabled { opacity: 0.5; cursor: default; }
 
 .scan-recorded {
@@ -107,65 +394,22 @@
   background: #16a34a;
   color: white;
   padding: 13px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
   display: none;
-  margin-top: 8px;
+  margin-top: 12px;
 }
-.search-results { margin-top: 10px; }
-.search-result-row {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  background: white;
-}
-.search-result-row:active { background: #f1f5f9; }
-.search-result-name { font-size: 14px; font-weight: 700; color: #111827; }
-.search-result-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.scan-input {
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  letter-spacing: 0.04em;
-  padding: 18px !important;
-}
-.btn-camera {
-  width: 100%;
-  background: #0b1b2b;
-  color: white;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.15s;
-}
-.btn-camera:hover { background: #1a3a5c; }
-.btn-stop {
-  width: 100%;
-  background: #dc2626;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 10px;
-}
-#cameraVideo {
-  width: 100%;
-  border-radius: 12px;
-  background: #000;
-  display: block;
+
+@media (max-width: 640px) {
+  .item-overview {
+    grid-template-columns: 1fr;
+  }
+  .item-preview {
+    width: 100%;
+    height: 180px;
+  }
 }
 </style>
 </head>
@@ -201,52 +445,97 @@
 
 <div class="container">
 
-  <div class="page-header-block">
-    <div class="page-header-icon">📷</div>
-    <div>
-      <div class="page-header-title">Scanner</div>
-      <div class="page-header-sub">Scan QR codes or search by name</div>
+  <div class="scanner-hero">
+    <div class="scanner-hero-top">
+      <div>
+        <div class="scanner-kicker">Workflow scanner</div>
+        <div class="scanner-title">Scan. confirm. move on.</div>
+        <div class="scanner-sub">Use camera scanning, direct lot lookup, or quick search to open an item and push it to the next correct stage without losing context.</div>
+      </div>
+      <div class="scanner-badge">Live intake</div>
+    </div>
+    <div class="hero-strip">
+      <div class="hero-metric">
+        <div class="hero-metric-value">QR</div>
+        <div class="hero-metric-label">Camera ready</div>
+        <div class="hero-metric-sub">Use your device camera to scan and open items instantly.</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hero-metric-value">Lot</div>
+        <div class="hero-metric-label">Manual lookup</div>
+        <div class="hero-metric-sub">Paste or type any lot number when a label will not scan.</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hero-metric-value">Move</div>
+        <div class="hero-metric-label">Stage control</div>
+        <div class="hero-metric-sub">Open the item, confirm the stage, and move it forward from one screen.</div>
+      </div>
     </div>
   </div>
 
-  <div id="statusBar" class="status-bar">📡 Ready — scan a QR code or enter a lot number</div>
+  <div class="scanner-shell">
+    <div class="scanner-shell-head">
+      <div>
+        <div class="shell-title">Scanner</div>
+        <div class="shell-sub">Scan QR codes or search by name, lot, or consigner.</div>
+      </div>
+      <div class="scanner-actions">
+        <div class="quick-pill">Fast lookup</div>
+        <div class="quick-pill">Stage movement</div>
+      </div>
+    </div>
 
-  <div class="info-hint">
-    <span class="info-hint-icon">💡</span>
-    <span>QR codes now link directly — scan with any camera app to open an item. Use the scanner here to log scans and move items through the workflow.</span>
+    <div id="statusBar" class="status-bar">📡 Ready — scan a QR code or enter a lot number</div>
+
+    <div class="info-hint">
+      <span class="info-hint-icon">💡</span>
+      <span>QR codes now link directly. Scan with any camera app to open an item, or use the scanner here to log scans and move it through workflow.</span>
+    </div>
+
+    <div class="scanner-form-card">
+      <div class="search-stack">
+        <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
+        <div class="scanner-row">
+          <button type="button" class="btn-camera" onclick="startCamera()" style="flex:1;">
+            📷 Use Camera to Scan QR Code
+          </button>
+          <button type="button" class="help-btn" onclick="showTip(this,'Point your camera at the QR code on the item label. The app will find the item automatically.')" aria-label="Scanner help">?</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="card">
-    <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
-    <button class="btn-camera" onclick="startCamera()">
-      📷 Use Camera to Scan QR Code
-      <button class="help-btn" onclick="event.stopPropagation();showTip(this,'Point your camera at the QR code on the item label. The app will find the item automatically.')">?</button>
-    </button>
-    <div class="search-results" id="searchResults"></div>
-  </div>
-
-  <div id="cameraCard" class="card" style="display:none;">
+  <div id="cameraCard" class="camera-shell" style="display:none;">
     <video id="cameraVideo" autoplay playsinline muted></video>
     <canvas id="cameraCanvas" style="display:none;"></canvas>
     <button class="btn-stop" onclick="stopCamera()">✕ Cancel Camera</button>
   </div>
 
-  <div id="itemBox" class="card" style="display:none;">
-    <div class="item-name" id="itemName"></div>
-    <div class="item-lot" id="lotDisplay"></div>
-    <div class="item-stage" id="stageDisplay"></div>
-    <div class="item-last-handled" id="lastHandledDisplay"></div>
-    <div class="item-assigned" id="assignedDisplay" style="display:none;"></div>
+  <div id="itemBox" class="item-panel" style="display:none;">
+    <div class="item-overview">
+      <div class="item-preview" id="itemPreview">
+        <div class="item-preview-empty">📦</div>
+      </div>
+      <div>
+        <div class="item-name" id="itemName"></div>
+        <div class="item-lot" id="lotDisplay"></div>
+        <div class="item-chip-row">
+          <div class="item-stage" id="stageDisplay"></div>
+          <div class="item-chip" id="itemCategoryChip">Category</div>
+        </div>
+        <div class="item-last-handled" id="lastHandledDisplay"></div>
+        <div class="item-assigned" id="assignedDisplay" style="display:none;"></div>
+      </div>
+    </div>
 
-    <!-- View buttons -->
     <div class="action-row">
       <a id="viewItemBtn" href="#" class="btn-view" target="_blank">🔍 View Item</a>
       <a id="viewConsignerBtn" href="#" class="btn-view consigner" target="_blank">👤 All Consigner Items</a>
     </div>
 
-    <!-- Stage mover -->
     <div class="stage-mover">
-      <div class="stage-mover-title">Move to Stage</div>
+      <div class="stage-mover-title">Move to stage</div>
       <select id="stagePicker">
         <option value="">— Select stage —</option>
         <option>Home Visit</option>
@@ -264,7 +553,7 @@
 
     <div class="scan-recorded" id="scanRecorded">✓ Scan Recorded</div>
 
-    <button onclick="resetScanner()" style="width:100%;margin-top:10px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;">✕ Clear / Scan Another</button>
+    <button onclick="resetScanner()" style="width:100%;margin-top:12px;background:#f3f4f6;color:#374151;border:none;border-radius:14px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:none;">✕ Clear / Scan Another</button>
   </div>
 
 </div>
@@ -288,14 +577,32 @@ function log(msg) {
   document.getElementById('statusBar').innerText = msg;
 }
 
-// ── Extract lot code from a scanned value (handles full URLs or bare lot codes) ──
-function extractLotCode(raw) {
+function parseScannedValue(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return { lot: '', id: '', raw: '' };
   try {
-    const url = new URL(raw);
-    return url.searchParams.get('lot') || url.searchParams.get('id') || raw;
+    const url = new URL(value);
+    return {
+      lot: url.searchParams.get('lot') || '',
+      id: url.searchParams.get('id') || '',
+      raw: value
+    };
   } catch {
-    return raw; // not a URL, treat as bare lot code
+    return { lot: value, id: '', raw: value };
   }
+}
+
+async function loadFromScannedValue(raw) {
+  const parsed = parseScannedValue(raw);
+  if (parsed.lot) {
+    await loadItemByLot(parsed.lot);
+    return;
+  }
+  if (parsed.id) {
+    await loadItemById(parsed.id);
+    return;
+  }
+  log('No usable lot code found');
 }
 
 const scanInput = document.getElementById('scanInput');
@@ -306,7 +613,7 @@ scanInput.addEventListener('keypress', function(e) {
     clearTimeout(searchTimer);
     document.getElementById('searchResults').innerHTML = '';
     const val = this.value.trim();
-    loadItemByLot(extractLotCode(val));
+    loadFromScannedValue(val);
   }
 });
 
@@ -365,9 +672,9 @@ async function startCamera() {
           const codes = await detector.detect(video);
           if (codes.length) {
             stopCamera();
-            const lotCode = extractLotCode(codes[0].rawValue);
-            document.getElementById('scanInput').value = lotCode;
-            loadItemByLot(lotCode);
+            const scanned = codes[0].rawValue;
+            document.getElementById('scanInput').value = scanned;
+            loadFromScannedValue(scanned);
           }
         } catch {}
       }, 400);
@@ -384,9 +691,9 @@ async function startCamera() {
         const code = jsQR(img.data, img.width, img.height);
         if (code) {
           stopCamera();
-          const lotCode = extractLotCode(code.data);
-          document.getElementById('scanInput').value = lotCode;
-          loadItemByLot(lotCode);
+          const scanned = code.data;
+          document.getElementById('scanInput').value = scanned;
+          loadFromScannedValue(scanned);
         }
       }, 400);
     }
@@ -416,12 +723,20 @@ async function loadItemByLot(lotCode) {
 }
 
 async function loadItemById(itemId) {
+  if (!itemId) { log('No item ID entered'); return; }
+  log('Looking up...');
   try {
     const res = await fetch(`/items/${itemId}`);
     const item = await res.json();
-    if (!item || !item.id) return;
+    if (!item || !item.id) {
+      log('Item not found — check the QR code');
+      return;
+    }
     showItem(item);
-  } catch {}
+    recordScan(item.id);
+  } catch {
+    log('Error loading item');
+  }
 }
 
 function showItem(item) {
@@ -430,10 +745,18 @@ function showItem(item) {
   document.getElementById('itemBox').style.display = 'block';
   document.getElementById('itemName').innerText = item.name || 'No name';
   document.getElementById('stageDisplay').innerText = item.stage || '—';
+  document.getElementById('itemCategoryChip').innerText = item.category || 'Uncategorized';
   document.getElementById('lotDisplay').innerText = 'Lot: ' + (item.lotNumber || '—') + ' · ' + (item.consigner || '—');
 
+  const preview = document.getElementById('itemPreview');
+  if (item.photos && item.photos[0]) {
+    preview.innerHTML = `<img src="${item.photos[0]}" alt="${esc(item.name || 'Item')}">`;
+  } else {
+    preview.innerHTML = '<div class="item-preview-empty">📦</div>';
+  }
+
   const lastEl = document.getElementById('lastHandledDisplay');
-  lastEl.innerText = item.lastHandledBy ? 'Last handled by: ' + item.lastHandledBy : '';
+  lastEl.innerText = item.lastHandledBy ? 'Last handled by: ' + item.lastHandledBy : 'No recent scan recorded';
 
   const assignEl = document.getElementById('assignedDisplay');
   if (item.assignedTo) {
@@ -511,12 +834,15 @@ async function recordScan(itemId) {
   } catch {}
 }
 
-// ── Auto-load from ?lot= param (e.g. opened from external QR scan on mobile) ──
+// ── Auto-load from ?lot= or ?id= param (e.g. opened from external QR scan on mobile) ──
 (function() {
   const p = new URLSearchParams(window.location.search);
   const lot = p.get('lot');
+  const id = p.get('id');
   if (lot) {
     loadItemByLot(lot);
+  } else if (id) {
+    loadItemById(id);
   }
 })();
 </script>

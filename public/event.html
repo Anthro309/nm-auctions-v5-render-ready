@@ -208,7 +208,16 @@ async function removeLot(itemId) {
   const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
   const name = item ? (item.name || 'this item') : 'this item';
   if (!confirm(`Remove "${name}" from this event?\n\nThis won't delete the item — it just unassigns it from the event.`)) return;
-  await fetch(`/events/${evId}/lots/${itemId}`, { method: 'DELETE' });
+  const res = await fetch(`/events/${evId}/lots/${itemId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employee: user.name })
+  });
+  const data = await res.json();
+  if (!data.success) {
+    alert(data.message || 'Failed to remove lot from event');
+    return;
+  }
   await load();
 }
 
@@ -256,11 +265,16 @@ function searchToAdd(input) {
 async function assignLot(itemId) {
   document.getElementById('addLotResults').style.display = 'none';
   document.getElementById('addLotSearch').value = '';
-  await fetch(`/events/${evId}/assign`, {
+  const res = await fetch(`/events/${evId}/assign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ itemId, employee: user.name })
   });
+  const data = await res.json();
+  if (!data.success) {
+    alert(data.message || 'Failed to assign lot');
+    return;
+  }
   await load();
 }
 
@@ -292,11 +306,16 @@ async function autoAssignAll(btn) {
 }
 
 async function setStatus(status) {
-  await fetch(`/events/${evId}`, {
+  const res = await fetch(`/events/${evId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status, employee: user.name })
   });
+  const data = await res.json();
+  if (!data.success) {
+    alert(data.message || 'Failed to update event status');
+    return;
+  }
   await load();
 }
 

@@ -42,6 +42,33 @@ function getRoleLabel(u) {
   return ROLE_LABELS[u.role] || (u.isAdmin ? 'Admin' : 'Staff');
 }
 
+function encStr(v) {
+  return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function highlightActiveSidebarLink() {
+  var links = document.querySelectorAll('#sidebar nav a');
+  var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+  links.forEach(function (link) {
+    var href = (link.getAttribute('href') || '').replace(/\/$/, '') || '/';
+    link.classList.toggle('active', href === currentPath);
+  });
+}
+
+// ── KEYBOARD / ESCAPE HANDLER ──
+(function () {
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      var sidebar = document.getElementById('sidebar');
+      var overlay = document.getElementById('overlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('show');
+      var dropdown = document.getElementById('navBellDropdown');
+      if (dropdown) dropdown.classList.remove('open');
+    }
+  });
+}());
+
 // ── SHARED NAVBAR INIT ──
 (function () {
   var u = JSON.parse(localStorage.getItem('user') || 'null');
@@ -59,14 +86,6 @@ function getRoleLabel(u) {
       el.textContent = (u.name || '?')[0].toUpperCase();
     }
   }
-
-  // Highlight active sidebar link
-  var links = document.querySelectorAll('#sidebar nav a');
-  var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-  links.forEach(function (link) {
-    var href = link.getAttribute('href').replace(/\/$/, '') || '/';
-    if (href === currentPath) link.classList.add('active');
-  });
 
   // Build sidebar user block
   var sidebarHeader = document.querySelector('.sidebar-header');
@@ -86,7 +105,7 @@ function getRoleLabel(u) {
       '<div style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:0.07em;text-transform:uppercase;font-weight:600;">Studio Operations</div>';
   }
 
-  // Inject Admin + Client Portal + Payouts links for admins
+  // Inject admin-only sidebar links
   if (u.isAdmin) {
     var nav = document.querySelector('#sidebar nav');
     if (nav) {
@@ -122,24 +141,15 @@ function getRoleLabel(u) {
     }
   }
 
-  // Re-highlight after injecting links
-  links = document.querySelectorAll('#sidebar nav a');
-  links.forEach(function (link) {
-    var href = link.getAttribute('href').replace(/\/$/, '') || '/';
-    if (href === currentPath) link.classList.add('active');
-  });
-
+  highlightActiveSidebarLink();
   injectNotificationBell(u);
 }());
-
-function encStr(v) {
-  return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 // ── NOTIFICATION BELL ──
 function injectNotificationBell(u) {
   var navbar = document.querySelector('.navbar');
   if (!navbar || !u) return;
+  if (document.getElementById('navBell')) return;
 
   if (!document.getElementById('navbell-styles')) {
     var style = document.createElement('style');
@@ -149,7 +159,7 @@ function injectNotificationBell(u) {
       .nav-bell-icon { font-size:19px; line-height:1; opacity:0.7; transition:opacity 0.12s; }
       .nav-bell:hover .nav-bell-icon { opacity:1; }
       .nav-bell-badge { position:absolute; top:-1px; right:1px; background:#dc2626; color:white; font-size:9.5px; font-weight:800; min-width:15px; height:15px; border-radius:99px; display:none; align-items:center; justify-content:center; padding:0 3px; border:2px solid #0b1b2b; }
-      .nav-bell-dropdown { position:fixed; top:68px; right:8px; width:300px; max-height:400px; overflow-y:auto; background:white; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.15); z-index:9999; display:none; border:1px solid #e5e7eb; }
+      .nav-bell-dropdown { position:fixed; top:68px; right:8px; width:300px; max-width:calc(100vw - 16px); max-height:400px; overflow-y:auto; background:white; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.15); z-index:9999; display:none; border:1px solid #e5e7eb; }
       .nav-bell-dropdown.open { display:block; }
       .nav-bell-header { padding:13px 15px 9px; font-size:13px; font-weight:700; color:#111827; border-bottom:1px solid #f3f4f6; display:flex; align-items:center; justify-content:space-between; }
       .nav-bell-item { padding:11px 15px; border-bottom:1px solid #f3f4f6; cursor:pointer; transition:background 0.1s; }
