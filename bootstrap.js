@@ -14,10 +14,6 @@ function fileDefault(name) {
   return JSON.stringify([], null, 2);
 }
 
-function ensureFile(filePath, defaultContent) {
-  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, defaultContent);
-}
-
 function replaceWithSymlink(targetPath, sourcePath, type) {
   try {
     if (fs.existsSync(targetPath) || fs.lstatSync(targetPath)) {
@@ -66,7 +62,8 @@ function enablePersistentData() {
     'notifications.json',
     'intake.json',
     'lot-counter.json',
-    'events.json'
+    'events.json',
+    'payouts.json'
   ];
 
   jsonFiles.forEach((name) => {
