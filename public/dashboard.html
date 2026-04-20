@@ -11,99 +11,87 @@
   <meta name="apple-mobile-web-app-title" content="Auction Legacy">
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .hero-grid {
+    .hero-stack {
       display: grid;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    @media (min-width: 900px) {
-      .hero-grid {
-        grid-template-columns: 1.7fr 1fr;
-        align-items: stretch;
-      }
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
     .welcome-banner {
       background:
-        radial-gradient(circle at top right, rgba(96,165,250,0.22), transparent 24%),
+        radial-gradient(circle at top right, rgba(96,165,250,0.18), transparent 24%),
         linear-gradient(135deg, #07121f 0%, #0c2340 52%, #123761 100%);
-      border-radius: 24px;
-      padding: 24px 22px;
+      border-radius: 20px;
+      padding: 14px 16px;
       color: white;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       position: relative;
       overflow: hidden;
-      border: 1px solid rgba(96,165,250,0.18);
-      box-shadow: 0 24px 54px rgba(7,18,31,0.26);
-      min-height: 166px;
+      border: 1px solid rgba(96,165,250,0.16);
+      box-shadow: 0 16px 34px rgba(7,18,31,0.22);
+      min-height: 94px;
     }
     .welcome-banner::before {
       content: '';
       position: absolute;
-      top: -32px; right: -26px;
-      width: 150px; height: 150px;
+      top: -28px; right: -18px;
+      width: 96px; height: 96px;
       border-radius: 50%;
-      background: rgba(37,99,235,0.16);
-      pointer-events: none;
-    }
-    .welcome-banner::after {
-      content: '';
-      position: absolute;
-      bottom: -54px; right: 26px;
-      width: 110px; height: 110px;
-      border-radius: 50%;
-      background: rgba(14,165,233,0.11);
+      background: rgba(37,99,235,0.14);
       pointer-events: none;
     }
     .welcome-avatar {
-      width: 66px;
-      height: 66px;
-      min-width: 66px;
-      border-radius: 18px;
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      border-radius: 14px;
       background: linear-gradient(135deg, #3b82f6, #1d4ed8);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      box-shadow: 0 10px 24px rgba(37,99,235,0.4);
+      font-size: 20px;
+      box-shadow: 0 10px 20px rgba(37,99,235,0.25);
       flex-shrink: 0;
       overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.14);
+      border: 2px solid rgba(255,255,255,0.12);
       position: relative;
       z-index: 1;
     }
-    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 16px; }
+    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 12px; }
     .welcome-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
     .welcome-greeting {
-      font-size: 12px;
+      font-size: 10px;
       opacity: 0.66;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 6px;
+      letter-spacing: 0.10em;
+      margin-bottom: 3px;
     }
     .welcome-name {
-      font-size: 26px;
+      font-size: 21px;
       font-weight: 900;
-      line-height: 1.08;
-      margin-bottom: 6px;
+      line-height: 1.05;
+      margin-bottom: 3px;
       letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .welcome-date {
-      font-size: 13px;
-      color: rgba(226,232,240,0.74);
+      font-size: 12px;
+      color: rgba(226,232,240,0.72);
       font-weight: 500;
     }
     .welcome-badge {
-      background: rgba(37,99,235,0.25);
-      border: 1px solid rgba(96,165,250,0.34);
+      background: rgba(37,99,235,0.22);
+      border: 1px solid rgba(96,165,250,0.28);
       border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 11px;
+      padding: 5px 10px;
+      font-size: 10px;
       font-weight: 800;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       color: #bfdbfe;
       white-space: nowrap;
@@ -112,100 +100,52 @@
       position: relative;
       z-index: 1;
     }
-    @media (min-width: 600px) {
-      .welcome-banner { padding: 28px 28px; min-height: 184px; }
-      .welcome-avatar { width: 76px; height: 76px; min-width: 76px; font-size: 32px; border-radius: 20px; }
-      .welcome-name { font-size: 32px; }
-    }
 
-    .ops-pulse {
-      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.91) 100%);
-      border-radius: 24px;
-      padding: 20px 18px;
-      border: 1px solid rgba(148,163,184,0.16);
-      box-shadow: 0 18px 42px rgba(15,23,42,0.11);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .ops-kicker {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .ops-label {
-      font-size: 11px;
-      font-weight: 800;
-      color: #2563eb;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .ops-pill {
-      font-size: 11px;
-      font-weight: 800;
-      color: #0f172a;
-      background: #eff6ff;
-      border-radius: 999px;
-      padding: 5px 10px;
-    }
-    .ops-title {
-      font-size: 24px;
-      font-weight: 900;
-      line-height: 1.08;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-    }
-    .ops-sub {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.55;
-      margin-top: 2px;
-    }
-    .quick-actions {
+    .hero-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 2px;
     }
-    .quick-action {
-      background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
-      border: 1px solid rgba(37,99,235,0.16);
-      border-radius: 18px;
-      padding: 14px 14px;
+    .hero-action {
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 16px;
+      padding: 12px 14px;
       cursor: pointer;
+      box-shadow: 0 12px 24px rgba(15,23,42,0.08);
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      box-shadow: 0 10px 20px rgba(37,99,235,0.08);
     }
-    .quick-action:hover,
-    .quick-action:active {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 30px rgba(37,99,235,0.13);
-      border-color: rgba(37,99,235,0.28);
+    .hero-action:hover,
+    .hero-action:active {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 32px rgba(15,23,42,0.10);
+      border-color: rgba(37,99,235,0.18);
     }
-    .quick-action-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    .hero-action-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .hero-action-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 22px;
-      margin-bottom: 10px;
-      box-shadow: 0 12px 24px rgba(37,99,235,0.22);
+      font-size: 18px;
     }
-    .quick-action-title {
+    .hero-action-title {
       font-size: 14px;
       font-weight: 800;
       color: #0f172a;
-      margin-bottom: 3px;
     }
-    .quick-action-sub {
+    .hero-action-sub {
       font-size: 12px;
       color: #64748b;
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     .section-head {
@@ -213,54 +153,52 @@
       align-items: end;
       justify-content: space-between;
       gap: 12px;
-      margin: 22px 0 14px;
+      margin: 16px 0 10px;
     }
     .section-eyebrow {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       color: #2563eb;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
     .section-title {
-      font-size: 23px;
+      font-size: 20px;
       font-weight: 900;
       color: #0f172a;
       letter-spacing: -0.02em;
     }
     .section-sub {
-      font-size: 13px;
+      font-size: 12px;
       color: #64748b;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
     .stat-tile {
-      border-radius: 22px;
-      padding: 18px 14px 16px;
+      border-radius: 18px;
+      padding: 14px 14px 13px;
       text-align: left;
       position: relative;
       overflow: hidden;
-      min-height: 122px;
+      min-height: 102px;
+      cursor: pointer;
     }
     .stat-tile::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.48), transparent 55%);
+      background: linear-gradient(135deg, rgba(255,255,255,0.46), transparent 55%);
       pointer-events: none;
     }
-    .stat-tile::after {
-      display: none;
-    }
     .stat-number {
-      font-size: 34px;
+      font-size: 28px;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
@@ -268,9 +206,9 @@
       z-index: 1;
     }
     .stat-label {
-      font-size: 11px;
+      font-size: 10px;
       color: #475569;
-      margin-top: 8px;
+      margin-top: 7px;
       font-weight: 800;
       letter-spacing: 0.10em;
       text-transform: uppercase;
@@ -278,79 +216,71 @@
       z-index: 1;
     }
     .stat-note {
-      font-size: 12px;
+      font-size: 11px;
       color: #64748b;
-      margin-top: 8px;
-      line-height: 1.4;
+      margin-top: 6px;
+      line-height: 1.35;
       position: relative;
       z-index: 1;
     }
     .stat-tile.stat-prospects {
       background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-      border-color: rgba(37,99,235,0.18);
+      border: 1px solid rgba(37,99,235,0.14);
     }
     .stat-tile.stat-inventory {
       background: linear-gradient(180deg, #ffffff 0%, #f5fff8 100%);
-      border-color: rgba(22,163,74,0.16);
+      border: 1px solid rgba(22,163,74,0.14);
     }
     .stat-tile.stat-photo {
       background: linear-gradient(180deg, #ffffff 0%, #fff8f2 100%);
-      border-color: rgba(234,88,12,0.16);
-    }
-    @media (max-width: 720px) {
-      .stat-grid {
-        grid-template-columns: 1fr;
-      }
-      .stat-tile {
-        min-height: auto;
-      }
+      border: 1px solid rgba(234,88,12,0.14);
     }
 
     .dash-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
+      gap: 12px;
     }
-    @media (min-width: 600px) {
-      .dash-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    @media (min-width: 700px) {
+      .dash-grid { grid-template-columns: repeat(3, 1fr); }
     }
     .dash-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.91) 100%);
-      border-radius: 22px;
-      padding: 20px 18px;
-      box-shadow: 0 16px 34px rgba(15,23,42,0.10);
+      background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 100%);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 14px 28px rgba(15,23,42,0.08);
       cursor: pointer;
       transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      border: 1px solid rgba(148,163,184,0.16);
+      border: 1px solid rgba(148,163,184,0.14);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       position: relative;
       overflow: hidden;
-      min-height: 176px;
+      min-height: 150px;
     }
     .dash-card::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(37,99,235,0.06), transparent 45%);
+      background: linear-gradient(135deg, rgba(37,99,235,0.05), transparent 45%);
       pointer-events: none;
     }
     .dash-card::after {
       content: '›';
       position: absolute;
-      right: 16px;
-      bottom: 14px;
-      font-size: 24px;
-      color: rgba(148,163,184,0.75);
+      right: 14px;
+      bottom: 12px;
+      font-size: 22px;
+      color: rgba(148,163,184,0.72);
       font-weight: 400;
       transition: transform 0.18s ease, color 0.18s ease;
     }
     .dash-card:hover,
     .dash-card:active {
-      transform: translateY(-5px);
-      box-shadow: 0 22px 44px rgba(15,23,42,0.14);
-      border-color: rgba(37,99,235,0.24);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 38px rgba(15,23,42,0.12);
+      border-color: rgba(37,99,235,0.22);
     }
     .dash-card:hover::after,
     .dash-card:active::after {
@@ -358,9 +288,9 @@
       color: #2563eb;
     }
     .dash-icon-wrap {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
       background: linear-gradient(135deg, #eff6ff, #dbeafe);
       display: flex;
       align-items: center;
@@ -370,11 +300,10 @@
       z-index: 1;
     }
     .dash-icon {
-      font-size: 28px;
-      margin-bottom: 0;
+      font-size: 24px;
     }
     .dash-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #111827;
       position: relative;
@@ -382,126 +311,43 @@
       margin-top: 2px;
     }
     .dash-sub {
-      font-size: 13px;
+      font-size: 12px;
       color: #64748b;
-      line-height: 1.5;
+      line-height: 1.4;
       position: relative;
       z-index: 1;
-      max-width: 90%;
+      max-width: 92%;
     }
     .dash-chip {
       margin-top: auto;
       align-self: flex-start;
       background: #f8fafc;
-      border: 1px solid rgba(148,163,184,0.20);
+      border: 1px solid rgba(148,163,184,0.18);
       color: #475569;
       border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 11px;
+      padding: 4px 9px;
+      font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       position: relative;
       z-index: 1;
     }
-    @media (min-width: 600px) {
-      .dash-card { padding: 22px 20px; min-height: 188px; }
-      .dash-title { font-size: 18px; }
-      .dash-sub { font-size: 14px; }
+
+    .card.compact-assignments {
+      padding-bottom: 4px;
+      margin-bottom: 12px;
     }
 
-    .photo-studio-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: linear-gradient(90deg, #07121f 0%, #0d2642 58%, #143761 100%);
-      border-radius: 22px;
-      padding: 16px 18px;
-      margin-top: 14px;
-      cursor: pointer;
-      border: 1px solid rgba(37,99,235,0.24);
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 18px 34px rgba(7,18,31,0.18);
-    }
-    .photo-studio-card:hover,
-    .photo-studio-card:active {
-      transform: translateY(-2px);
-      box-shadow: 0 22px 42px rgba(37,99,235,0.2);
-    }
-    .photo-studio-icon {
-      font-size: 24px;
-      width: 48px; height: 48px; min-width: 48px;
-      background: rgba(37,99,235,0.25);
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-    }
-    .photo-studio-text { flex: 1; min-width: 0; }
-    .photo-studio-title {
-      font-size: 15px; font-weight: 800; color: white; margin-bottom: 3px;
-    }
-    .photo-studio-sub {
-      font-size: 12px; color: rgba(255,255,255,0.70);
-    }
-    .photo-studio-arrow {
-      font-size: 22px; color: rgba(255,255,255,0.35); flex-shrink: 0;
-    }
-    @media (min-width: 600px) {
-      .photo-studio-card { padding: 18px 22px; margin-top: 18px; }
-      .photo-studio-title { font-size: 16px; }
-    }
-
-    .wotd-card {
-      background:
-        radial-gradient(circle at top right, rgba(249,115,22,0.16), transparent 24%),
-        linear-gradient(135deg, #08111d 0%, #112236 100%);
-      border-radius: 24px;
-      padding: 22px 20px 24px;
-      margin-top: 16px;
-      color: white;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 20px 44px rgba(8,17,29,0.24);
-      border: 1px solid rgba(249,115,22,0.16);
-    }
-    .wotd-label {
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #fb923c;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .wotd-word {
-      font-size: 28px;
-      font-weight: 900;
-      margin-bottom: 4px;
-      line-height: 1.15;
-    }
-    .wotd-pronunciation {
-      font-size: 12px;
-      color: rgba(226,232,240,0.72);
-      font-style: italic;
-      margin-bottom: 10px;
-    }
-    .wotd-def {
-      font-size: 14px;
-      color: rgba(255,255,255,0.86);
-      line-height: 1.6;
-    }
-    .wotd-example {
-      font-size: 12px;
-      color: rgba(226,232,240,0.68);
-      margin-top: 8px;
-      font-style: italic;
-      line-height: 1.55;
-    }
-    @media (min-width: 600px) {
-      .wotd-card { padding: 24px 26px 26px; }
-      .wotd-word { font-size: 32px; }
+    @media (max-width: 720px) {
+      .hero-actions,
+      .stat-grid,
+      .dash-grid {
+        grid-template-columns: 1fr;
+      }
+      .welcome-name {
+        font-size: 19px;
+      }
     }
   </style>
 </head>
@@ -536,7 +382,7 @@
 
 <div class="container">
 
-  <div class="hero-grid">
+  <div class="hero-stack">
     <div id="welcomeCard" class="welcome-banner" style="display:none;">
       <div class="welcome-avatar">
         <img src="/icon-192.png" alt="AL" onerror="this.style.display='none'">
@@ -549,26 +395,20 @@
       <div class="welcome-badge" id="welcomeRole">Employee</div>
     </div>
 
-    <div class="ops-pulse">
-      <div class="ops-kicker">
-        <div class="ops-label">Operations Pulse</div>
-        <div class="ops-pill">Live Workflow</div>
-      </div>
-      <div>
-        <div class="ops-title">Move intake to sold faster.</div>
-        <div class="ops-sub">Track every item from initial visit to pickup, keep assignments clear, and keep the team working from the same screen.</div>
-      </div>
-      <div class="quick-actions">
-        <div class="quick-action" onclick="window.location.href='/scanner.html'">
-          <div class="quick-action-icon">📷</div>
-          <div class="quick-action-title">Scan Now</div>
-          <div class="quick-action-sub">Open the scanner and move items through the workflow.</div>
+    <div class="hero-actions">
+      <div class="hero-action" onclick="window.location.href='/scanner.html'">
+        <div class="hero-action-top">
+          <div class="hero-action-icon">📷</div>
+          <div class="hero-action-title">Scan Now</div>
         </div>
-        <div class="quick-action" onclick="window.location.href='/initial-visit.html'">
-          <div class="quick-action-icon">📋</div>
-          <div class="quick-action-title">Start Intake</div>
-          <div class="quick-action-sub">Create a new initial visit and print labels fast.</div>
+        <div class="hero-action-sub">Move items through workflow fast.</div>
+      </div>
+      <div class="hero-action" onclick="window.location.href='/initial-visit.html'">
+        <div class="hero-action-top">
+          <div class="hero-action-icon">📋</div>
+          <div class="hero-action-title">Start Intake</div>
         </div>
+        <div class="hero-action-sub">Create a visit and print labels.</div>
       </div>
     </div>
   </div>
@@ -577,25 +417,25 @@
     <div>
       <div class="section-eyebrow">Today at a glance</div>
       <div class="section-title">Studio workflow</div>
-      <div class="section-sub">A clearer snapshot of what is waiting, active, and ready to shoot.</div>
+      <div class="section-sub">What is waiting, active, and ready to shoot.</div>
     </div>
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile stat-prospects" id="statProspectsTile" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
-      <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
+    <div class="stat-tile stat-prospects" id="statProspectsTile" onclick="window.location.href='/review-visit.html'" title="Items logged at home visit — pending review and acceptance">
+      <div class="stat-number skeleton" id="statProspects" style="min-height:28px;">—</div>
       <div class="stat-label">Prospects</div>
-      <div class="stat-note">Items waiting for review before they enter inventory.</div>
+      <div class="stat-note">Pending review.</div>
     </div>
-    <div class="stat-tile stat-inventory" onclick="window.location.href='/items.html'" style="cursor:pointer;" title="Items received and in active workflow">
-      <div class="stat-number skeleton" id="statInStudio" style="min-height:34px;">—</div>
+    <div class="stat-tile stat-inventory" onclick="window.location.href='/items.html'" title="Items received and in active workflow">
+      <div class="stat-number skeleton" id="statInStudio" style="min-height:28px;">—</div>
       <div class="stat-label">In Inventory</div>
-      <div class="stat-note">Active items currently moving through studio operations.</div>
+      <div class="stat-note">Active in workflow.</div>
     </div>
-    <div class="stat-tile stat-photo" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" style="cursor:pointer;" title="View items ready to photograph">
-      <div class="stat-number skeleton" id="statReady" style="min-height:34px;">—</div>
-      <div class="stat-label">Ready to Photograph</div>
-      <div class="stat-note">Items staged and ready for the photo queue.</div>
+    <div class="stat-tile stat-photo" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'" title="View items ready to photograph">
+      <div class="stat-number skeleton" id="statReady" style="min-height:28px;">—</div>
+      <div class="stat-label">Ready to Shoot</div>
+      <div class="stat-note">Queued for photos.</div>
     </div>
   </div>
 
@@ -604,7 +444,7 @@
     <div class="onboarding-steps" id="onboardingSteps"></div>
   </div>
 
-  <div id="assignmentsCard" class="card" style="display:none;margin-bottom:16px;padding-bottom:4px;">
+  <div id="assignmentsCard" class="card compact-assignments" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h2 style="margin:0;">🔔 My Assignments</h2>
       <span id="assignBadge" style="background:#dc2626;color:white;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:none;"></span>
@@ -616,78 +456,59 @@
     <div>
       <div class="section-eyebrow">Core tools</div>
       <div class="section-title">Run the floor</div>
-      <div class="section-sub">The actions your team uses most, redesigned to feel more like a real operations app.</div>
+      <div class="section-sub">Main actions your team uses most.</div>
     </div>
   </div>
 
   <div class="dash-grid">
-
     <div class="dash-card" onclick="window.location.href='/initial-visit.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📋</div></div>
       <div class="dash-title">Initial Visit</div>
-      <div class="dash-sub">Capture consignments, generate labels, and start the chain of custody cleanly.</div>
+      <div class="dash-sub">Capture consignments and print labels.</div>
       <div class="dash-chip">Intake</div>
     </div>
 
     <div class="dash-card" id="reviewVisitCard" onclick="window.location.href='/review-visit.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">✅</div></div>
       <div class="dash-title">Review Visit</div>
-      <div class="dash-sub">Approve worthwhile items, archive the rest, and assign work before backlog grows.</div>
-      <div class="dash-chip">Admin flow</div>
+      <div class="dash-sub">Approve items and assign work.</div>
+      <div class="dash-chip">Admin</div>
     </div>
 
     <div class="dash-card" onclick="window.location.href='/scanner.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📷</div></div>
       <div class="dash-title">Scanner</div>
-      <div class="dash-sub">Scan labels instantly, log touches, and push items through the workflow with fewer mistakes.</div>
+      <div class="dash-sub">Scan labels and update stages.</div>
       <div class="dash-chip">Fast action</div>
     </div>
 
     <div class="dash-card" onclick="window.location.href='/items.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📦</div></div>
       <div class="dash-title">Item Library</div>
-      <div class="dash-sub">Browse, search, batch assign, and keep every item easy to find under pressure.</div>
+      <div class="dash-sub">Browse, search, and batch assign items.</div>
       <div class="dash-chip">Inventory</div>
     </div>
 
     <div class="dash-card" id="reportsGridCard" onclick="window.location.href='/reports.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">📊</div></div>
       <div class="dash-title">Reports</div>
-      <div class="dash-sub">Track lot flow, daily output, and what each consigner or team member has in motion.</div>
+      <div class="dash-sub">Daily output and consigner activity.</div>
       <div class="dash-chip">Reporting</div>
     </div>
 
     <div class="dash-card" id="eventsGridCard" onclick="window.location.href='/events.html'">
       <div class="dash-icon-wrap"><div class="dash-icon">🏷️</div></div>
       <div class="dash-title">Auction Events</div>
-      <div class="dash-sub">Build events, assign lots, and prepare sold results without bouncing between systems.</div>
+      <div class="dash-sub">Assign lots and process sales.</div>
       <div class="dash-chip">Sales</div>
     </div>
 
     <div class="dash-card" id="clientPortalCard" onclick="window.location.href='/client-portal.html'" style="display:none;">
       <div class="dash-icon-wrap"><div class="dash-icon">🔗</div></div>
       <div class="dash-title">Client Portal</div>
-      <div class="dash-sub">Share cleaner visibility with consigners so item status is easier to understand externally.</div>
+      <div class="dash-sub">Check consigner status and visibility.</div>
       <div class="dash-chip">Consigners</div>
     </div>
-
-  </div>
-
-  <div class="photo-studio-card" id="photoStudioShortcut" onclick="window.location.href='/photo-upload.html'">
-    <div class="photo-studio-icon">📸</div>
-    <div class="photo-studio-text">
-      <div class="photo-studio-title">Photo Studio</div>
-      <div class="photo-studio-sub">Upload, clean up, and pair today’s photos with the right items faster.</div>
-    </div>
-    <div class="photo-studio-arrow">›</div>
-  </div>
-
-  <div class="wotd-card" id="wotdCard">
-    <div class="wotd-label">🔥 Word of the Day</div>
-    <div class="wotd-word" id="wotdWord"></div>
-    <div class="wotd-pronunciation" id="wotdPronun"></div>
-    <div class="wotd-def" id="wotdDef"></div>
-    <div class="wotd-example" id="wotdEx"></div>
   </div>
 
 </div>
@@ -711,7 +532,6 @@
   } else {
     document.getElementById('reportsGridCard').style.display = 'none';
     document.getElementById('reviewVisitCard').style.display = 'none';
-    document.getElementById('photoStudioShortcut').style.display = 'none';
     const prospectsTile = document.getElementById('statProspectsTile');
     if (prospectsTile) {
       prospectsTile.onclick = () => { window.location.href = '/items.html?stage=Home+Visit'; };
@@ -733,28 +553,6 @@
     document.getElementById('welcomeRole').innerText = user.isAdmin ? 'Admin' : 'Employee';
     document.getElementById('welcomeCard').style.display = 'flex';
   }
-
-  async function loadWOTD() {
-    document.getElementById('wotdWord').innerText = '…';
-    try {
-      const res = await fetch('/word-of-day');
-      const data = await res.json();
-      if (!data.word) throw new Error('No word returned');
-      document.getElementById('wotdWord').innerText = data.word;
-      document.getElementById('wotdPronun').innerText = data.pronun || '';
-      document.getElementById('wotdDef').innerText = data.def || '';
-      document.getElementById('wotdEx').innerText = data.ex || '';
-      if (data.stale) {
-        document.querySelector('.wotd-label').innerText = '🔥 Word of the Day (yesterday\'s — refreshing soon)';
-      }
-    } catch (err) {
-      document.getElementById('wotdWord').innerText = 'Lot-nesia';
-      document.getElementById('wotdPronun').innerText = '/lɒt.ˈniː.ziə/';
-      document.getElementById('wotdDef').innerText = 'The total inability to remember where you placed an item 11 minutes after scanning it into the system.';
-      document.getElementById('wotdEx').innerText = '"Full lot-nesia. It was in my hand the whole time."';
-    }
-  }
-  loadWOTD();
 
   async function loadStats() {
     try {
@@ -784,21 +582,21 @@
       if (totalInventory.length === 0 && prospects.length === 0) {
         const banner = document.getElementById('onboardingBanner');
         const adminTips = [
-          ['Initial Visit', 'Log a consigner\'s items — AI generates titles &amp; price estimates, then print QR labels'],
-          ['Review Visit', 'Accept items to keep in the workflow or archive ones that aren\'t worth processing'],
-          ['Assign to Employees', 'Assign items to team members from any item page, in batch from Item Library, or directly in Review Visit'],
-          ['Scanner', 'Scan QR labels from any camera app to check items in and move them through workflow stages'],
-          ['Photo Studio', 'Upload today\'s photos and pair them with inventory items'],
-          ['Auction Events', 'Create events at /events.html, add items to lots, and import auction results when done'],
-          ['Reports', 'Generate daily lot reports and track consigner activity from the Reports page'],
+          ['Initial Visit', 'Log a consigner\'s items and print QR labels'],
+          ['Review Visit', 'Accept items to keep in the workflow or archive them'],
+          ['Assign to Employees', 'Assign items from item pages, Item Library, or Review Visit'],
+          ['Scanner', 'Scan QR labels and move items through workflow stages'],
+          ['Photo Studio', 'Upload today\'s photos and pair them with items'],
+          ['Auction Events', 'Create events, add lots, and import auction results'],
+          ['Reports', 'Generate daily lot reports and track activity'],
         ];
         const employeeTips = [
-          ['Check My Assignments', 'Items assigned to you appear above — tap any item to open it and start working'],
-          ['Scanner', 'Use the Scanner to scan a QR label and move an item to the next workflow stage'],
-          ['Add Reference Photos', 'Open any item and tap "Upload Photo" or "Take Photo" to add close-up reference images'],
-          ['Update Item Details', 'Edit title, description, dimensions, condition, and notes directly on any item page'],
-          ['Item Library', 'Browse and search all consigned items — filter by stage, consigner, or category'],
-          ['Auction Events', 'View upcoming auction events and see which lots have been added'],
+          ['Check My Assignments', 'Open assigned items and start working'],
+          ['Scanner', 'Scan a QR label and move an item to the next stage'],
+          ['Add Reference Photos', 'Add close-up photos from any item page'],
+          ['Update Item Details', 'Edit title, description, dimensions, condition, and notes'],
+          ['Item Library', 'Browse and search consigned items by stage or consigner'],
+          ['Auction Events', 'View upcoming auction events and assigned lots'],
         ];
         const tips = user && user.isAdmin ? adminTips : employeeTips;
         document.getElementById('onboardingTitle').innerHTML = user && user.isAdmin
