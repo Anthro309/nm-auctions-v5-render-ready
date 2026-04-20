@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
@@ -20,6 +21,16 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 app.use(express.json({ limit: '10mb' }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'nm-auctions-secret-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    maxAge: 8 * 60 * 60 * 1000 // 8 hours
+  }
+}));
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
@@ -33,6 +44,7 @@ const WOTD_FILE          = 'wotd.json';
 const NOTIFICATIONS_FILE = 'notifications.json';
 const INTAKE_FILE        = 'intake.json';
 const LOT_COUNTER_FILE   = 'lot-counter.json';
+const PAYOUTS_FILE       = 'payouts.json';
 
 // =========================
 // HELPERS
@@ -151,6 +163,7 @@ ensureArrayFile(ITEMS_FILE);
 ensureArrayFile(REPORTS_FILE);
 ensureArrayFile(NOTIFICATIONS_FILE);
 ensureArrayFile(INTAKE_FILE);
+ensureArrayFile(PAYOUTS_FILE);
 ensureUsersExist();
 
 // =========================
@@ -226,7 +239,26 @@ app.post('/login', (req, res) => {
          u.pin === String(pin || '')
   );
   if (!user) return res.status(401).json({ success: false, message: 'Invalid login' });
-  res.json({ success: true, user: { name: user.name, isAdmin: !!user.isAdmin, photo: user.photo || null } });
+  const userPayload = { name: user.name, isAdmin: !!user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'staff'), photo: user.photo || null };
+  req.session.user = userPayload;
+  res.json({ success: true, user: userPayload });
+});
+
+// =========================
+// LOGOUT
+// =========================
+app.post('/logout', (req, res) => {
+  req.session.destroy(() => res.json({ success: true }));
+});
+
+// =========================
+// SESSION CHECK
+// =========================
+app.get('/api/me', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.json({ success: true, user: req.session.user });
+  }
+  res.status(401).json({ success: false, message: 'Not authenticated' });
 });
 
 // =========================
@@ -263,6 +295,24 @@ app.delete('/employees/:name', (req, res) => {
   if (!target) return res.status(404).json({ success: false, message: 'Not found' });
   if (target.isAdmin) return res.status(400).json({ success: false, message: 'Cannot remove an admin' });
   users = users.filter(u => u.name !== req.params.name);
+  writeJSON(USERS_FILE, users);
+  res.json({ success: true });
+});
+
+// =========================
+// EMPLOYEES — UPDATE ROLE
+// =========================
+app.post('/employees/:name/role', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const validRoles = ['admin', 'intake', 'photo', 'fulfillment', 'staff'];
+  const { role } = req.body;
+  if (!validRoles.includes(role)) return res.status(400).json({ success: false, message: 'Invalid role' });
+  const users = readJSON(USERS_FILE);
+  const user = users.find(u => u.name === req.params.name);
+  if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+  user.role = role;
+  if (role === 'admin') user.isAdmin = true;
+  else if (user.isAdmin && role !== 'admin') user.isAdmin = false;
   writeJSON(USERS_FILE, users);
   res.json({ success: true });
 });
@@ -575,6 +625,98 @@ app.post('/items/:id/sell', (req, res) => {
   addLog(item, { employee: employee || 'system', action: 'item sold', note: `$${item.soldPrice} · ${item.commission}% commission · $${item.payout} payout` });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
+});
+
+// =========================
+// PAYOUTS — LIST
+// =========================
+app.get('/payouts', (req, res) => {
+  const payouts = readJSON(PAYOUTS_FILE);
+  res.json(payouts);
+});
+
+// =========================
+// PAYOUTS — CREATE
+// =========================
+app.post('/payouts', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const { consigner, code, items: itemIds, totalAmount, commission, notes, employee } = req.body;
+  if (!consigner || !totalAmount) return res.status(400).json({ success: false, message: 'consigner and totalAmount required' });
+  const payouts = readJSON(PAYOUTS_FILE);
+  const payout = {
+    id: generateId(),
+    consigner: consigner.trim(),
+    code: (code || '').toUpperCase(),
+    itemIds: Array.isArray(itemIds) ? itemIds : [],
+    totalAmount: parseFloat(parseFloat(totalAmount).toFixed(2)),
+    commission: parseFloat(commission) || 30,
+    status: 'pending',
+    notes: notes || '',
+    createdAt: new Date().toISOString(),
+    createdBy: employee || 'system',
+    paidAt: null,
+    paidBy: null
+  };
+  payouts.push(payout);
+  writeJSON(PAYOUTS_FILE, payouts);
+  res.status(201).json({ success: true, payout });
+});
+
+// =========================
+// PAYOUTS — MARK PAID
+// =========================
+app.post('/payouts/:id/pay', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const payouts = readJSON(PAYOUTS_FILE);
+  const payout = payouts.find(p => p.id === req.params.id);
+  if (!payout) return res.status(404).json({ success: false, message: 'Payout not found' });
+  payout.status = 'paid';
+  payout.paidAt = new Date().toISOString();
+  payout.paidBy = req.body.employee || 'system';
+  writeJSON(PAYOUTS_FILE, payouts);
+  res.json({ success: true, payout });
+});
+
+// =========================
+// PAYOUTS — DELETE
+// =========================
+app.delete('/payouts/:id', (req, res) => {
+  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  let payouts = readJSON(PAYOUTS_FILE);
+  const idx = payouts.findIndex(p => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Payout not found' });
+  payouts.splice(idx, 1);
+  writeJSON(PAYOUTS_FILE, payouts);
+  res.json({ success: true });
+});
+
+// =========================
+// PAYOUTS — CONSIGNER SUMMARY (auto-calculate from sold items)
+// =========================
+app.get('/payouts/summary/:code', (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const items = readJSON(ITEMS_FILE);
+  const payouts = readJSON(PAYOUTS_FILE);
+  const consignerItems = items.filter(i => i.code === code);
+  if (!consignerItems.length) return res.status(404).json({ success: false, message: 'No items for this consigner code' });
+
+  const sold = consignerItems.filter(i => i.soldPrice);
+  const unpaid = sold.filter(i => {
+    const paidIds = payouts.filter(p => p.status === 'paid').flatMap(p => p.itemIds);
+    return !paidIds.includes(String(i.id));
+  });
+
+  res.json({
+    success: true,
+    consigner: consignerItems[0].consigner,
+    code,
+    totalItems: consignerItems.length,
+    soldItems: sold.length,
+    totalRevenue: sold.reduce((s, i) => s + (i.soldPrice || 0), 0),
+    totalPayout: sold.reduce((s, i) => s + (i.payout || 0), 0),
+    unpaidPayout: unpaid.reduce((s, i) => s + (i.payout || 0), 0),
+    unpaidItems: unpaid.map(i => ({ id: i.id, name: i.name, lotNumber: i.lotNumber, soldPrice: i.soldPrice, payout: i.payout, commission: i.commission }))
+  });
 });
 
 // =========================
