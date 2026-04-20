@@ -212,11 +212,17 @@ function escapeHtml(v) {
 
 async function generateReport() {
   try {
-    const res = await fetch('/closeout', { method: 'POST' });
+    const res = await fetch('/closeout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name, requestedBy: user.name })
+    });
     const data = await res.json();
     if (data.success) {
       renderReport(data.report);
       loadHistory();
+    } else {
+      alert(data.message || 'Failed to generate report');
     }
   } catch (err) {
     alert('Failed to generate report');
@@ -427,28 +433,28 @@ function printConsignerReport() {
       <div style="text-align:center;"><div style="font-size:20px;font-weight:900;">$${Number(s.avgSalePrice).toLocaleString()}</div><div style="font-size:10px;color:#6b7280;text-transform:uppercase;">Avg Sale</div></div>
     </div>`;
 
-  [
-    { label: 'Active Items',    items: data.active    },
-    { label: 'Sold Items',      items: data.sold      },
-    { label: 'Pending Review',  items: data.prospects },
-    { label: 'Archived',        items: data.archived  }
-  ].forEach(sec => {
-    if (!sec.items.length) return;
-    html += `<h3 style="margin:16px 0 6px;">${sec.label} (${sec.items.length})</h3>`;
-    html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-    html += '<tr style="background:#f1f5f9;"><th style="text-align:left;padding:5px 8px;">Lot</th><th style="text-align:left;padding:5px 8px;">Item</th><th style="text-align:left;padding:5px 8px;">Category</th><th style="text-align:left;padding:5px 8px;">Stage</th><th style="text-align:right;padding:5px 8px;">Sold Price</th><th style="text-align:right;padding:5px 8px;">Payout</th></tr>';
-    sec.items.forEach(i => {
-      html += `<tr style="border-bottom:1px solid #e5e7eb;">
-        <td style="padding:5px 8px;">${escapeHtml(i.lotNumber)}</td>
-        <td style="padding:5px 8px;font-weight:600;">${escapeHtml(i.name)}</td>
-        <td style="padding:5px 8px;">${escapeHtml(i.category)}</td>
-        <td style="padding:5px 8px;">${escapeHtml(i.stage)}</td>
-        <td style="padding:5px 8px;text-align:right;">${i.soldPrice ? '$' + Number(i.soldPrice).toLocaleString() : '—'}</td>
-        <td style="padding:5px 8px;text-align:right;">${i.payout ? '$' + Number(i.payout).toLocaleString() : '—'}</td>
-      </tr>`;
+    [
+      { label: 'Active Items',    items: data.active    },
+      { label: 'Sold Items',      items: data.sold      },
+      { label: 'Pending Review',  items: data.prospects },
+      { label: 'Archived',        items: data.archived  }
+    ].forEach(sec => {
+      if (!sec.items.length) return;
+      html += `<h3 style="margin:16px 0 6px;">${sec.label} (${sec.items.length})</h3>`;
+      html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+      html += '<tr style="background:#f1f5f9;"><th style="text-align:left;padding:5px 8px;">Lot</th><th style="text-align:left;padding:5px 8px;">Item</th><th style="text-align:left;padding:5px 8px;">Category</th><th style="text-align:left;padding:5px 8px;">Stage</th><th style="text-align:right;padding:5px 8px;">Sold Price</th><th style="text-align:right;padding:5px 8px;">Payout</th></tr>';
+      sec.items.forEach(i => {
+        html += `<tr style="border-bottom:1px solid #e5e7eb;">
+          <td style="padding:5px 8px;">${escapeHtml(i.lotNumber)}</td>
+          <td style="padding:5px 8px;font-weight:600;">${escapeHtml(i.name)}</td>
+          <td style="padding:5px 8px;">${escapeHtml(i.category)}</td>
+          <td style="padding:5px 8px;">${escapeHtml(i.stage)}</td>
+          <td style="padding:5px 8px;text-align:right;">${i.soldPrice ? '$' + Number(i.soldPrice).toLocaleString() : '—'}</td>
+          <td style="padding:5px 8px;text-align:right;">${i.payout ? '$' + Number(i.payout).toLocaleString() : '—'}</td>
+        </tr>`;
+      });
+      html += '</table>';
     });
-    html += '</table>';
-  });
 
   if (data.sold.length) {
     html += `
