@@ -582,7 +582,7 @@
   </div>
 
   <div class="stat-grid" id="statsRow">
-    <div class="stat-tile stat-prospects" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
+    <div class="stat-tile stat-prospects" id="statProspectsTile" onclick="window.location.href='/review-visit.html'" style="cursor:pointer;" title="Items logged at home visit — pending review and acceptance">
       <div class="stat-number skeleton" id="statProspects" style="min-height:34px;">—</div>
       <div class="stat-label">Prospects</div>
       <div class="stat-note">Items waiting for review before they enter inventory.</div>
@@ -712,6 +712,11 @@
     document.getElementById('reportsGridCard').style.display = 'none';
     document.getElementById('reviewVisitCard').style.display = 'none';
     document.getElementById('photoStudioShortcut').style.display = 'none';
+    const prospectsTile = document.getElementById('statProspectsTile');
+    if (prospectsTile) {
+      prospectsTile.onclick = () => { window.location.href = '/items.html?stage=Home+Visit'; };
+      prospectsTile.title = 'Home visit items currently pending review';
+    }
   }
 
   if (user && user.name) {
