@@ -163,10 +163,13 @@ async function createEvent() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name, date,
+        name,
+        date,
         description: document.getElementById('newDesc').value.trim(),
         category: 'general',
         commissionRate: document.getElementById('newCommission').value,
+        employee: user.name,
+        requestedBy: user.name,
         createdBy: user.name
       })
     });
