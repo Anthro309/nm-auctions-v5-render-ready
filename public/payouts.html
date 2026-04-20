@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payouts | Auction Legacy</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    @media (min-width: 600px) { .summary-grid { gap: 14px; } }
+
+    .tab-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid #e5e7eb;
+      background: white;
+      color: #6b7280;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .tab.active {
+      background: #0b1b2b;
+      color: white;
+      border-color: #0b1b2b;
+    }
+
+    .consigner-row {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: box-shadow 0.12s, border-color 0.12s;
+    }
+    .consigner-row:hover { box-shadow: 0 3px 12px rgba(15,23,42,0.08); border-color: #d1d5db; }
+    .consigner-avatar {
+      width: 42px; height: 42px; min-width: 42px;
+      border-radius: 11px;
+      background: #0b1b2b;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: white;
+    }
+    .consigner-name  { font-size: 14.5px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+    .consigner-meta  { font-size: 12px; color: #6b7280; }
+    .consigner-amount { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .consigner-total { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: -0.02em; }
+    .consigner-sub   { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 2000; display: none; align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    @media (min-width: 600px) { .modal-backdrop { align-items: center; } }
+
+    .modal {
+      background: white; border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px;
+      width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    @media (min-width: 600px) { .modal { border-radius: 20px; } }
+
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; color: #111827; }
+    .modal-sub   { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
+
+    .item-check-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .item-check-row:last-child { border-bottom: none; }
+    .item-check-name { flex: 1; font-size: 13.5px; font-weight: 600; color: #111827; }
+    .item-check-lot  { font-size: 12px; color: #6b7280; }
+    .item-check-price { font-size: 14px; font-weight: 700; color: #111827; margin-left: auto; flex-shrink: 0; }
+
+    .payout-history-item {
+      padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .payout-history-item:last-child { border-bottom: none; }
+    .payout-status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .payout-status-dot.paid    { background: #16a34a; }
+    .payout-status-dot.pending { background: #f59e0b; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
+  <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;">
+    <div class="nav-logo">AL</div>
+    <span class="nav-title">Auction Legacy</span>
+  </div>
+  <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;">
+    <div id="navAvatar" class="nav-avatar"></div>
+  </div>
+</div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header"></div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/review-visit.html"><span class="sidebar-icon">✅</span> Review Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
+    <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+    <a href="/payouts.html"><span class="sidebar-icon">💳</span> Payouts</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div class="page-header-icon">💳</div>
+    <div>
+      <div class="page-header-title">Payouts</div>
+      <div class="page-header-sub">Consigner reconciliation &amp; payout tracking</div>
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="summary-grid">
+    <div class="stat-tile">
+      <div class="stat-number skeleton" id="statTotal" style="min-height:28px;">—</div>
+      <div class="stat-label">Total Owed</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number skeleton" id="statPaid" style="min-height:28px;">—</div>
+      <div class="stat-label">Paid Out</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-number skeleton" id="statPending" style="min-height:28px;">—</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-row">
+    <button class="tab active" onclick="setTab('unpaid',this)">Unpaid</button>
+    <button class="tab" onclick="setTab('all',this)">All Consigners</button>
+    <button class="tab" onclick="setTab('history',this)">History</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar-row" id="searchRow">
+    <input id="searchInput" type="text" placeholder="Search consigner…" oninput="renderTab()" style="margin-top:0;" />
+  </div>
+
+  <div id="listArea"></div>
+
+</div>
+
+<!-- Consigner Detail Modal -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div class="modal-title" id="modalName">—</div>
+        <div class="modal-sub" id="modalCode">—</div>
+      </div>
+      <button onclick="closeModal()" style="background:#f3f4f6;color:#374151;padding:8px 14px;font-size:13px;border-radius:8px;font-weight:600;">Close</button>
+    </div>
+
+    <div id="modalContent"></div>
+
+    <div id="createPayoutSection" style="margin-top:20px;display:none;">
+      <div class="field-label" style="margin-top:0;">Notes (optional)</div>
+      <input id="payoutNotes" type="text" placeholder="e.g. Check #1234, Venmo, cash" style="margin-top:6px;" />
+      <button id="createPayoutBtn" onclick="createPayout()" style="width:100%;margin-top:12px;">
+        Create Payout
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+  }
+
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
+
+  let allItems = [];
+  let payoutsData = [];
+  let currentTab = 'unpaid';
+  let selectedConsigner = null;
+
+  async function loadData() {
+    const [itemsRes, payoutsRes] = await Promise.all([fetch('/items'), fetch('/payouts')]);
+    allItems = await itemsRes.json();
+    payoutsData = await payoutsRes.json();
+    computeStats();
+    renderTab();
+  }
+
+  function computeStats() {
+    const sold = allItems.filter(i => i.soldPrice);
+    const paidIds = new Set(payoutsData.filter(p => p.status === 'paid').flatMap(p => p.itemIds));
+    const totalOwed = sold.reduce((s, i) => s + (i.payout || 0), 0);
+    const totalPaid = sold.filter(i => paidIds.has(String(i.id))).reduce((s, i) => s + (i.payout || 0), 0);
+    const pending = totalOwed - totalPaid;
+
+    function fmt(n) { return n >= 1000 ? '$' + (n/1000).toFixed(1) + 'k' : '$' + n.toFixed(0); }
+
+    document.getElementById('statTotal').textContent  = fmt(totalOwed);
+    document.getElementById('statPaid').textContent   = fmt(totalPaid);
+    document.getElementById('statPending').textContent = fmt(pending);
+    ['statTotal','statPaid','statPending'].forEach(id => document.getElementById(id).classList.remove('skeleton'));
+  }
+
+  function getConsignerGroups() {
+    const paidIds = new Set(payoutsData.filter(p => p.status === 'paid').flatMap(p => p.itemIds));
+    const groups = {};
+    allItems.filter(i => i.soldPrice).forEach(i => {
+      const key = i.code || 'UNKNOWN';
+      if (!groups[key]) groups[key] = { consigner: i.consigner || 'Unknown', code: key, sold: [], unpaidPayout: 0, totalPayout: 0 };
+      groups[key].sold.push(i);
+      groups[key].totalPayout += (i.payout || 0);
+      if (!paidIds.has(String(i.id))) groups[key].unpaidPayout += (i.payout || 0);
+    });
+    return Object.values(groups);
+  }
+
+  function setTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('searchRow').style.display = tab === 'history' ? 'none' : 'flex';
+    renderTab();
+  }
+
+  function renderTab() {
+    const area = document.getElementById('listArea');
+    const q = (document.getElementById('searchInput').value || '').toLowerCase();
+
+    if (currentTab === 'history') { renderHistory(area); return; }
+
+    const groups = getConsignerGroups().filter(g => {
+      if (currentTab === 'unpaid' && g.unpaidPayout <= 0) return false;
+      if (q && !g.consigner.toLowerCase().includes(q) && !g.code.toLowerCase().includes(q)) return false;
+      return true;
+    }).sort((a, b) => b.unpaidPayout - a.unpaidPayout);
+
+    if (!groups.length) {
+      area.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💳</div><div class="empty-state-title">' +
+        (currentTab === 'unpaid' ? 'All caught up!' : 'No consigners found') +
+        '</div><div class="empty-state-sub">' +
+        (currentTab === 'unpaid' ? 'No outstanding payouts at this time.' : 'No sold items yet.') +
+        '</div></div>';
+      return;
+    }
+
+    area.innerHTML = groups.map(g => {
+      const initials = (g.consigner || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      return `<div class="consigner-row" onclick="openConsigner('${esc(g.code)}')">
+        <div class="consigner-avatar">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="consigner-name">${esc(g.consigner)}</div>
+          <div class="consigner-meta">${esc(g.code)} · ${g.sold.length} item${g.sold.length !== 1 ? 's' : ''} sold</div>
+        </div>
+        <div class="consigner-amount">
+          <div class="consigner-total">${g.unpaidPayout > 0 ? '$' + g.unpaidPayout.toFixed(2) : '<span style="color:#16a34a;font-size:14px;">✓ Paid</span>'}</div>
+          <div class="consigner-sub">${g.unpaidPayout > 0 ? 'unpaid' : 'total $' + g.totalPayout.toFixed(2)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderHistory(area) {
+    const sorted = [...payoutsData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (!sorted.length) {
+      area.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No payout history</div><div class="empty-state-sub">Created payouts will appear here.</div></div>';
+      return;
+    }
+    area.innerHTML = '<div class="card">' + sorted.map(p => {
+      const d = new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `<div class="payout-history-item">
+        <div class="payout-status-dot ${p.status}"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#111827;">${esc(p.consigner)}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:1px;">${esc(p.code)} · ${d}${p.notes ? ' · ' + esc(p.notes) : ''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:15px;font-weight:800;color:#111827;">$${p.totalAmount.toFixed(2)}</div>
+          <div style="font-size:11px;margin-top:1px;">
+            ${p.status === 'paid'
+              ? '<span style="color:#16a34a;font-weight:600;">Paid</span>'
+              : '<button onclick="markPaid(\'' + p.id + '\')" style="padding:4px 10px;font-size:11px;border-radius:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-weight:700;box-shadow:none;transform:none;">Mark Paid</button>'}
+          </div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  async function openConsigner(code) {
+    selectedConsigner = code;
+    try {
+      const res = await fetch('/payouts/summary/' + encodeURIComponent(code));
+      const data = await res.json();
+      if (!data.success) return;
+
+      document.getElementById('modalName').textContent = data.consigner || code;
+      document.getElementById('modalCode').textContent = code + ' · ' + data.soldItems + ' sold · $' + (data.totalRevenue || 0).toFixed(2) + ' revenue';
+
+      const hasUnpaid = data.unpaidItems && data.unpaidItems.length > 0;
+      const section = document.getElementById('createPayoutSection');
+      const btn = document.getElementById('createPayoutBtn');
+      section.style.display = hasUnpaid ? 'block' : 'none';
+      if (hasUnpaid) btn.textContent = 'Create Payout — $' + data.unpaidPayout.toFixed(2);
+
+      document.getElementById('modalContent').innerHTML =
+        (hasUnpaid ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#92400e;font-weight:600;">
+          💰 $${data.unpaidPayout.toFixed(2)} unpaid across ${data.unpaidItems.length} item${data.unpaidItems.length !== 1 ? 's' : ''}
+        </div>` : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#15803d;font-weight:600;">
+          ✓ All items paid out — $${data.totalPayout.toFixed(2)} total
+        </div>`) +
+        '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin-bottom:8px;">Unpaid Items</div>' +
+        (hasUnpaid ? data.unpaidItems.map(i =>
+          `<div class="item-check-row">
+            <div style="flex:1;min-width:0;">
+              <div class="item-check-name">${esc(i.name || 'Unnamed')}</div>
+              <div class="item-check-lot">Lot ${esc(i.lotNumber || '—')} · ${i.commission || 30}% commission</div>
+            </div>
+            <div class="item-check-price">$${(i.payout || 0).toFixed(2)}</div>
+          </div>`
+        ).join('') : '<div style="font-size:13px;color:#9ca3af;padding:10px 0;">No unpaid items.</div>');
+
+      document.getElementById('detailModal').classList.add('open');
+    } catch (e) { console.error(e); }
+  }
+
+  function closeModal() {
+    document.getElementById('detailModal').classList.remove('open');
+    selectedConsigner = null;
+  }
+
+  async function createPayout() {
+    if (!selectedConsigner) return;
+    const btn = document.getElementById('createPayoutBtn');
+    btn.disabled = true;
+    try {
+      const res = await fetch('/payouts/summary/' + encodeURIComponent(selectedConsigner));
+      const data = await res.json();
+      if (!data.success || !data.unpaidItems.length) return;
+
+      await fetch('/payouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consigner: data.consigner,
+          code: selectedConsigner,
+          items: data.unpaidItems.map(i => String(i.id)),
+          totalAmount: data.unpaidPayout,
+          commission: 30,
+          notes: document.getElementById('payoutNotes').value.trim(),
+          requestedBy: user.name,
+          employee: user.name
+        })
+      });
+      await loadData();
+      closeModal();
+    } catch (e) { console.error(e); }
+    btn.disabled = false;
+  }
+
+  async function markPaid(id) {
+    await fetch('/payouts/' + id + '/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: user.name, requestedBy: user.name })
+    });
+    await loadData();
+  }
+
+  function esc(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  document.getElementById('detailModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  loadData();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>

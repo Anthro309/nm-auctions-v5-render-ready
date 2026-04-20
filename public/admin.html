@@ -229,23 +229,28 @@ async function load() {
   const employees = await res.json();
   const grid = document.getElementById('employeeGrid');
 
+  const ROLE_COLORS = { admin:'purple', intake:'green', photo:'blue', fulfillment:'gold', staff:'gray' };
+  const ROLE_LABELS = { admin:'Admin', intake:'Intake', photo:'Photography', fulfillment:'Fulfillment', staff:'Staff' };
+
   grid.innerHTML = employees.map(e => {
     const initial = (e.name || '?')[0].toUpperCase();
-    const avatarHtml = e.photo
-      ? `<img src="${e.photo}" alt="${e.name}">`
-      : initial;
-    const roleLabel = e.isAdmin
-      ? `<div class="emp-role admin-badge">Admin</div>`
-      : `<div class="emp-role">Employee</div>`;
+    const avatarHtml = e.photo ? `<img src="${e.photo}" alt="${e.name}">` : initial;
+    const role = e.role || (e.isAdmin ? 'admin' : 'staff');
+    const roleClass = ROLE_COLORS[role] || 'gray';
+    const roleLabel = ROLE_LABELS[role] || role;
     const removeBtn = !e.isAdmin
       ? `<button class="btn-sm btn-remove" onclick="removeEmployee('${e.name}')">Remove</button>`
       : '';
+    const roleOptions = ['admin','intake','photo','fulfillment','staff'].map(r =>
+      `<option value="${r}" ${role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`
+    ).join('');
     return `
       <div class="emp-card">
         <div class="emp-avatar">${avatarHtml}</div>
         <div class="emp-name">${e.name}</div>
-        ${roleLabel}
+        <span class="role-badge ${roleClass}" style="margin-bottom:12px;">${roleLabel}</span>
         <div class="emp-actions">
+          <select onchange="changeRole('${e.name}', this.value)" style="margin-top:0;padding:8px 10px;font-size:12px;border-radius:8px;">${roleOptions}</select>
           <button class="btn-sm btn-photo" onclick="openPhotoModal('${e.name}')">📷 Photo</button>
           <button class="btn-sm btn-pin" onclick="openPinModal('${e.name}')">🔑 Change PIN</button>
           ${removeBtn}
@@ -361,6 +366,18 @@ async function submitPhoto() {
   }
 }
 
+// ── CHANGE ROLE ──
+async function changeRole(name, role) {
+  const res = await fetch(`/employees/${encodeURIComponent(name)}/role`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role, requestedBy: user.name })
+  });
+  const data = await res.json();
+  if (data.success) load();
+  else alert(data.message || 'Failed to update role');
+}
+
 // ── HELPER ──
 function showMsg(el, text, success) {
   el.textContent = text;
@@ -372,5 +389,6 @@ function showMsg(el, text, success) {
 
 load();
 </script>
+<script src="/nav.js"></script>
 </body>
 </html>
