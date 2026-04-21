@@ -361,7 +361,7 @@
     <div class="search-bar-row">
       <input id="search" placeholder="Search items, lots, consigners…" oninput="onSearchInput()">
       <button id="filterToggleBtn" onclick="toggleFilterPanel()" style="width:auto;padding:10px 14px;font-size:13px;font-weight:700;border-radius:14px;background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb;flex-shrink:0;margin-top:0;font-family:inherit;cursor:pointer;">⚙️ Filter<span id="filterBadge" class="filter-badge" style="display:none;"></span></button>
-      <button id="nlBtn" onclick="toggleNL()" style="width:auto;padding:10px 14px;font-size:13px;border-radius:14px;background:#7c3aed;flex-shrink:0;margin-top:0;" title="AI Natural Language Search">✨ AI</button>
+      <button id="nlBtn" onclick="toggleNL()" style="display:none;" title="AI Natural Language Search">✨ AI</button>
     </div>
     <div id="nlStatus" style="display:none;font-size:12px;color:#7c3aed;font-weight:700;margin-bottom:10px;padding:10px 12px;background:#f5f3ff;border-radius:12px;"></div>
 
@@ -441,7 +441,7 @@
 <script>
 let allItems = [];
 let currentMode = 'consigner';
-let nlMode = false;
+let nlMode = true;
 let nlResults = null;
 let nlTimer = null;
 const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -533,9 +533,6 @@ function clearFilters() {
 
 function toggleNL() {
   nlMode = !nlMode;
-  const btn = document.getElementById('nlBtn');
-  btn.style.background = nlMode ? '#5b21b6' : '#7c3aed';
-  btn.innerText = nlMode ? '✕ AI' : '✨ AI';
   if (!nlMode) {
     nlResults = null;
     document.getElementById('nlStatus').style.display = 'none';
