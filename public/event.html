@@ -70,12 +70,28 @@
 <body>
 
 <div class="navbar">
-  <div class="nav-left" onclick="window.location.href='/events.html'">‹</div>
+  <div class="nav-left" onclick="toggleMenu()">☰</div>
   <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
   <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
 </div>
 
-<div id="overlay" class="overlay" onclick="document.getElementById('overlay').classList.remove('show')"></div>
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header"></div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/review-visit.html"><span class="sidebar-icon">✅</span> Review Visit</a>
+    <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+    <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+    <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
+    <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+  </nav>
+</div>
+
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
 <div class="container">
 
@@ -131,6 +147,11 @@
 <script>
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user) window.location.href = '/';
+
+function toggleMenu() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
 
 function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -211,7 +232,7 @@ async function removeLot(itemId) {
   const res = await fetch(`/events/${evId}/lots/${itemId}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ employee: user.name })
+    body: JSON.stringify({ employee: user.name, requestedBy: user.name })
   });
   const data = await res.json();
   if (!data.success) {
@@ -232,7 +253,7 @@ async function moveLot(itemId) {
   await fetch(`/items/${itemId}/move-event`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ toEventId, employee: user?.name || 'system' })
+    body: JSON.stringify({ toEventId, employee: user?.name || 'system', requestedBy: user?.name || 'system' })
   });
   await load();
 }
@@ -268,7 +289,7 @@ async function assignLot(itemId) {
   const res = await fetch(`/events/${evId}/assign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ itemId, employee: user.name })
+    body: JSON.stringify({ itemId, employee: user.name, requestedBy: user.name })
   });
   const data = await res.json();
   if (!data.success) {
@@ -296,7 +317,7 @@ async function autoAssignAll(btn) {
   for (const item of eligible.slice(0, 20)) {
     const r = await fetch(`/items/${item.id}/auto-assign-event`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: user.name })
+      body: JSON.stringify({ employee: user.name, requestedBy: user.name })
     });
     const d = await r.json();
     if (d.success && d.event && String(d.event.id) === String(evId)) count++;
@@ -309,7 +330,7 @@ async function setStatus(status) {
   const res = await fetch(`/events/${evId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, employee: user.name })
+    body: JSON.stringify({ status, employee: user.name, requestedBy: user.name })
   });
   const data = await res.json();
   if (!data.success) {

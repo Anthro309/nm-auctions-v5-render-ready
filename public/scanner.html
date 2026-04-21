@@ -423,10 +423,7 @@
 </div>
 
 <div id="sidebar" class="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-title">Auction Legacy</div>
-    <div class="sidebar-sub">Studio Operations</div>
-  </div>
+  <div class="sidebar-header"></div>
   <nav>
     <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
@@ -788,7 +785,7 @@ async function moveToStage() {
     const res = await fetch(`/items/${currentItem.id}/stage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage, employee: getEmployee() })
+      body: JSON.stringify({ stage, employee: getEmployee(), requestedBy: getEmployee() })
     });
 
     let data = null;
