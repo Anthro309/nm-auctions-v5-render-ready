@@ -1718,7 +1718,12 @@ app.get('/events', (req, res) => {
 });
 
 app.post('/events', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const requester = requesterName(req.body);
+  console.log('[POST /events] requester:', requester, '| body keys:', Object.keys(req.body));
+  if (!requireAdmin(req.body)) {
+    console.log('[POST /events] 403 — requester not found or not admin:', requester);
+    return res.status(403).json({ success: false, message: 'Admin only — received requestedBy: ' + requester });
+  }
   const { name, date, description, category, commissionRate, createdBy } = req.body;
   if (!name || !date) return res.status(400).json({ success: false, message: 'name and date required' });
   const events = readJSON(EVENTS_FILE);
@@ -1734,7 +1739,13 @@ app.post('/events', (req, res) => {
     createdBy: createdBy || 'system'
   };
   events.push(ev);
-  writeJSON(EVENTS_FILE, events);
+  try {
+    writeJSON(EVENTS_FILE, events);
+    console.log('[POST /events] created event:', ev.id, ev.name);
+  } catch (writeErr) {
+    console.error('[POST /events] writeJSON failed:', writeErr.message);
+    return res.status(500).json({ success: false, message: 'Failed to save event: ' + writeErr.message });
+  }
   res.json({ success: true, event: ev });
 });
 

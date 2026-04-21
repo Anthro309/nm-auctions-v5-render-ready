@@ -184,9 +184,11 @@ async function createEvent() {
   }
 
   btn.disabled = true;
-  btn.textContent = 'Creating…';
+  btn.textContent = '⏳ Creating…';
+  btn.style.opacity = '0.7';
   const msgEl = document.getElementById('createMsg');
-  msgEl.style.display = 'none';
+  msgEl.style.cssText = 'display:block;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;background:#eff6ff;color:#1d4ed8;';
+  msgEl.textContent = 'Sending to server…';
 
   try {
     const payload = {
@@ -228,6 +230,7 @@ async function createEvent() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Create Event';
+    btn.style.opacity = '';
   }
 }
 
