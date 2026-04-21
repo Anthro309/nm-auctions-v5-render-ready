@@ -651,7 +651,6 @@ async function searchByName(q) {
   } catch (err) { /* silent */ }
 }
 
-// ── CAMERA QR SCANNING ──
 let cameraStream = null;
 let scanLoop = null;
 
@@ -679,7 +678,6 @@ async function startCamera() {
         } catch {}
       }, 400);
     } else {
-      // jsQR fallback
       const canvas = document.getElementById('cameraCanvas');
       const ctx = canvas.getContext('2d');
       scanLoop = setInterval(() => {
@@ -766,12 +764,9 @@ function showItem(item) {
     assignEl.style.display = 'none';
   }
 
-  // View links
   document.getElementById('viewItemBtn').href = '/item.html?id=' + item.id;
-  const consignerCode = item.code || '';
-  document.getElementById('viewConsignerBtn').href = '/items.html?consigner=' + encodeURIComponent(item.consigner || consignerCode);
+  document.getElementById('viewConsignerBtn').href = '/consigner.html?code=' + encodeURIComponent(item.code || '');
 
-  // Pre-select current stage in picker
   const picker = document.getElementById('stagePicker');
   picker.value = '';
 
@@ -779,7 +774,6 @@ function showItem(item) {
   log('Loaded: ' + (item.name || item.lotNumber));
 }
 
-// ── MOVE TO STAGE ──
 async function moveToStage() {
   if (!currentItem) return;
   const stage = document.getElementById('stagePicker').value;
@@ -796,18 +790,28 @@ async function moveToStage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stage, employee: getEmployee() })
     });
-    const data = await res.json();
-    if (data.success) {
-      currentItem = data.item;
-      document.getElementById('stageDisplay').innerText = stage;
-      document.getElementById('scanRecorded').innerText = `✓ Moved to: ${stage}`;
-      document.getElementById('scanRecorded').style.display = 'block';
-      document.getElementById('stagePicker').value = '';
-      btn.innerText = '✓ Moved';
-      setTimeout(() => { btn.innerText = 'Move Item'; btn.disabled = false; }, 2000);
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (_) {
+      data = { success: false, message: 'Server returned an invalid response' };
     }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || ('Move failed (' + res.status + ')'));
+    }
+
+    currentItem = data.item;
+    document.getElementById('stageDisplay').innerText = stage;
+    document.getElementById('scanRecorded').innerText = `✓ Moved to: ${stage}`;
+    document.getElementById('scanRecorded').style.display = 'block';
+    document.getElementById('stagePicker').value = '';
+    btn.innerText = '✓ Moved';
+    setTimeout(() => { btn.innerText = 'Move Item'; btn.disabled = false; }, 2000);
   } catch (err) {
-    log('Move failed');
+    log('Move failed: ' + (err.message || 'Unknown error'));
+    alert('Move failed: ' + (err.message || 'Unknown error'));
     btn.innerText = 'Move Item';
     btn.disabled = false;
   }
@@ -834,7 +838,6 @@ async function recordScan(itemId) {
   } catch {}
 }
 
-// ── Auto-load from ?lot= or ?id= param (e.g. opened from external QR scan on mobile) ──
 (function() {
   const p = new URLSearchParams(window.location.search);
   const lot = p.get('lot');
