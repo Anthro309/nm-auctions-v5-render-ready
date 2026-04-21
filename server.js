@@ -31,7 +31,13 @@ app.use(session({
     maxAge: 8 * 60 * 60 * 1000 // 8 hours
   }
 }));
-app.use(express.static('public'));
+app.use(express.static('public', {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  }
+}));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
@@ -97,7 +103,7 @@ function getUserByName(name) {
 }
 
 function requesterName(payload = {}) {
-  return String(payload.requestedBy || payload.employee || '').trim();
+  return String(payload.requestedBy || payload.employee || payload.createdBy || '').trim();
 }
 
 function requireAdmin(payload = {}) {

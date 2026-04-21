@@ -136,8 +136,9 @@ function toggleMenu() {
 
 function showCreateMessage(text, ok = false) {
   const msg = document.getElementById('createMsg');
-  msg.style.cssText = `display:block;padding:10px;border-radius:10px;font-size:13px;font-weight:600;background:${ok ? '#ecfdf5' : '#fef2f2'};color:${ok ? '#047857' : '#dc2626'};`;
+  msg.style.cssText = `display:block;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:700;background:${ok ? '#ecfdf5' : '#fef2f2'};color:${ok ? '#047857' : '#dc2626'};border:1px solid ${ok ? '#bbf7d0' : '#fecaca'};margin-top:12px;`;
   msg.innerText = text;
+  if (!ok) msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function toggleCreate() {
@@ -183,16 +184,17 @@ async function createEvent() {
   }
 
   btn.disabled = true;
-  btn.innerText = 'Creating…';
-  document.getElementById('createMsg').style.display = 'none';
+  btn.textContent = 'Creating…';
+  const msgEl = document.getElementById('createMsg');
+  msgEl.style.display = 'none';
 
   try {
     const payload = {
       name,
       date,
-      description: document.getElementById('newDesc').value.trim(),
+      description: (document.getElementById('newDesc') || {}).value?.trim() || '',
       category: 'general',
-      commissionRate: document.getElementById('newCommission').value,
+      commissionRate: (document.getElementById('newCommission') || {}).value || 35,
       employee: user.name,
       requestedBy: user.name,
       createdBy: user.name
@@ -208,7 +210,7 @@ async function createEvent() {
     try {
       data = await res.json();
     } catch (_) {
-      data = { success: false, message: 'Server returned an invalid response' };
+      data = { success: false, message: 'Server returned an invalid response (HTTP ' + res.status + ')' };
     }
 
     if (!res.ok || !data.success) {
@@ -218,15 +220,14 @@ async function createEvent() {
     showCreateMessage('✅ Event created!', true);
     document.getElementById('newName').value = '';
     document.getElementById('newDate').value = '';
-    document.getElementById('newDesc').value = '';
-    setTimeout(() => { toggleCreate(); load(); }, 800);
+    if (document.getElementById('newDesc')) document.getElementById('newDesc').value = '';
+    setTimeout(() => { toggleCreate(); load(); }, 1000);
   } catch (err) {
     console.error('Create event failed:', err);
     showCreateMessage('❌ ' + (err.message || 'Failed to create event'));
-    alert('Create event failed: ' + (err.message || 'Unknown error'));
   } finally {
     btn.disabled = false;
-    btn.innerText = 'Create Event';
+    btn.textContent = 'Create Event';
   }
 }
 
