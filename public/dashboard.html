@@ -148,6 +148,63 @@
       line-height: 1.4;
     }
 
+    .wotd-compact {
+      background:
+        radial-gradient(circle at top right, rgba(249,115,22,0.12), transparent 24%),
+        linear-gradient(135deg, #08111d 0%, #112236 100%);
+      border-radius: 18px;
+      padding: 14px 16px;
+      color: white;
+      box-shadow: 0 16px 32px rgba(8,17,29,0.18);
+      border: 1px solid rgba(249,115,22,0.12);
+    }
+    .wotd-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .wotd-label {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fb923c;
+    }
+    .wotd-pill {
+      font-size: 10px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+    .wotd-word {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 2px;
+    }
+    .wotd-pronunciation {
+      font-size: 11px;
+      color: rgba(226,232,240,0.66);
+      font-style: italic;
+      margin-bottom: 8px;
+    }
+    .wotd-def {
+      font-size: 13px;
+      color: rgba(255,255,255,0.86);
+      line-height: 1.55;
+    }
+    .wotd-example {
+      font-size: 11px;
+      color: rgba(226,232,240,0.66);
+      margin-top: 7px;
+      font-style: italic;
+      line-height: 1.45;
+    }
+
     .section-head {
       display: flex;
       align-items: end;
@@ -411,6 +468,17 @@
         <div class="hero-action-sub">Create a visit and print labels.</div>
       </div>
     </div>
+
+    <div class="wotd-compact" id="wotdCard">
+      <div class="wotd-top">
+        <div class="wotd-label">🔥 Word of the Day</div>
+        <div class="wotd-pill">Studio edition</div>
+      </div>
+      <div class="wotd-word" id="wotdWord">…</div>
+      <div class="wotd-pronunciation" id="wotdPronun"></div>
+      <div class="wotd-def" id="wotdDef"></div>
+      <div class="wotd-example" id="wotdEx"></div>
+    </div>
   </div>
 
   <div class="section-head">
@@ -553,6 +621,28 @@
     document.getElementById('welcomeRole').innerText = user.isAdmin ? 'Admin' : 'Employee';
     document.getElementById('welcomeCard').style.display = 'flex';
   }
+
+  async function loadWOTD() {
+    document.getElementById('wotdWord').innerText = '…';
+    try {
+      const res = await fetch('/word-of-day');
+      const data = await res.json();
+      if (!data.word) throw new Error('No word returned');
+      document.getElementById('wotdWord').innerText = data.word;
+      document.getElementById('wotdPronun').innerText = data.pronun || '';
+      document.getElementById('wotdDef').innerText = data.def || '';
+      document.getElementById('wotdEx').innerText = data.ex || '';
+      if (data.stale) {
+        document.querySelector('.wotd-pill').innerText = 'Cached tease';
+      }
+    } catch (err) {
+      document.getElementById('wotdWord').innerText = 'Bidgasm';
+      document.getElementById('wotdPronun').innerText = '/bid-gaz-um/';
+      document.getElementById('wotdDef').innerText = 'The suspiciously intense rush that hits when the bids climb, the room gets loud, and a lot starts looking way hotter than it did five minutes ago.';
+      document.getElementById('wotdEx').innerText = '“James caught a full bidgasm when that walnut cabinet started a bidding war.”';
+    }
+  }
+  loadWOTD();
 
   async function loadStats() {
     try {
