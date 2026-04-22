@@ -157,7 +157,9 @@ async function createEvent() {
   }
 
   btn.disabled = true;
-  msg.style.display = 'none';
+  btn.textContent = '⏳ Creating…';
+  msg.style.cssText = 'display:block;padding:10px;background:#eff6ff;color:#1d4ed8;border-radius:10px;font-size:13px;font-weight:600;';
+  msg.innerText = 'Creating event…';
   try {
     const res = await fetch('/events', {
       method: 'POST',
@@ -167,69 +169,76 @@ async function createEvent() {
         description: document.getElementById('newDesc').value.trim(),
         category: 'general',
         commissionRate: document.getElementById('newCommission').value,
+        requestedBy: user.name,
         createdBy: user.name
       })
     });
-    if (!res.ok) throw new Error('Server error ' + res.status);
-    const data = await res.json();
-    if (data.success) {
-      msg.style.cssText = 'display:block;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
-      msg.innerText = '✅ Event created!';
-      document.getElementById('newName').value = '';
-      document.getElementById('newDate').value = '';
-      document.getElementById('newDesc').value = '';
-      setTimeout(() => { toggleCreate(); load(); }, 1000);
-    } else {
-      msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
-      msg.innerText = '❌ ' + (data.message || 'Failed to create event');
+    let data = null;
+    try { data = await res.json(); } catch (_) { data = { success: false, message: 'Invalid response (HTTP ' + res.status + ')' }; }
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || ('Server error ' + res.status));
     }
+    msg.style.cssText = 'display:block;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '✅ Event created!';
+    document.getElementById('newName').value = '';
+    document.getElementById('newDate').value = '';
+    document.getElementById('newDesc').value = '';
+    setTimeout(() => { toggleCreate(); load(); }, 1000);
   } catch (err) {
     msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
     msg.innerText = '❌ ' + (err.message || 'Network error — please try again');
   } finally {
     btn.disabled = false;
+    btn.textContent = 'Create Event';
   }
 }
 
 async function load() {
-  const res = await fetch('/events');
-  const events = await res.json();
-
-  events.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const upcoming = events.filter(e => e.status === 'upcoming').length;
-  document.getElementById('eventsSub').innerText =
-    events.length + ' total · ' + upcoming + ' upcoming';
-
   const el = document.getElementById('eventsList');
-  if (!events.length) {
-    el.innerHTML = '<div class="card" style="text-align:center;color:#6b7280;">No events yet. Create your first auction event above.</div>';
-    return;
-  }
+  try {
+    const res = await fetch('/events');
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const events = await res.json();
+    if (!Array.isArray(events)) throw new Error('Invalid response from server');
 
-  el.innerHTML = '';
-  events.forEach(ev => {
-    const div = document.createElement('div');
-    div.className = 'event-card';
-    const dateStr = new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
-    div.innerHTML = `
-      <div class="event-header">
-        <div>
-          <div class="event-name">${escHtml(ev.name)}</div>
-          <div class="event-date">📅 ${dateStr}</div>
+    events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const upcoming = events.filter(e => e.status === 'upcoming').length;
+    document.getElementById('eventsSub').innerText =
+      events.length + ' total · ' + upcoming + ' upcoming';
+
+    if (!events.length) {
+      el.innerHTML = '<div class="card" style="text-align:center;color:#6b7280;">No events yet. Create your first auction event above.</div>';
+      return;
+    }
+
+    el.innerHTML = '';
+    events.forEach(ev => {
+      const div = document.createElement('div');
+      div.className = 'event-card';
+      const dateStr = new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+      div.innerHTML = `
+        <div class="event-header">
+          <div>
+            <div class="event-name">${escHtml(ev.name)}</div>
+            <div class="event-date">📅 ${dateStr}</div>
+          </div>
+          <span class="event-status ${escHtml(ev.status)}">${escHtml(ev.status)}</span>
         </div>
-        <span class="event-status ${escHtml(ev.status)}">${escHtml(ev.status)}</span>
-      </div>
-      <div class="event-meta">
-        <span class="event-stat"><strong>${ev.lots?.length || 0}</strong> lots assigned</span>
-        <span class="event-stat"><strong>${ev.commissionRate || 35}%</strong> commission</span>
-        ${ev.category !== 'general' ? `<span class="event-stat">Focus: <strong>${escHtml(ev.category)}</strong></span>` : ''}
-        ${ev.description ? `<span class="event-stat">${escHtml(ev.description)}</span>` : ''}
-      </div>
-    `;
-    div.onclick = () => { window.location.href = '/event.html?id=' + ev.id; };
-    el.appendChild(div);
-  });
+        <div class="event-meta">
+          <span class="event-stat"><strong>${ev.lots?.length || 0}</strong> lots assigned</span>
+          <span class="event-stat"><strong>${ev.commissionRate || 35}%</strong> commission</span>
+          ${ev.category !== 'general' ? `<span class="event-stat">Focus: <strong>${escHtml(ev.category)}</strong></span>` : ''}
+          ${ev.description ? `<span class="event-stat">${escHtml(ev.description)}</span>` : ''}
+        </div>
+      `;
+      div.onclick = () => { window.location.href = '/event.html?id=' + ev.id; };
+      el.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Load events failed:', err);
+    el.innerHTML = '<div class="card" style="text-align:center;color:#dc2626;">Failed to load auction events. Please refresh.</div>';
+  }
 }
 
 load();

@@ -1650,7 +1650,12 @@ app.post('/events', (req, res) => {
     createdBy: createdBy || 'system'
   };
   events.push(ev);
-  writeJSON(EVENTS_FILE, events);
+  try {
+    writeJSON(EVENTS_FILE, events);
+  } catch (writeErr) {
+    console.error('[POST /events] writeJSON failed:', writeErr.message);
+    return res.status(500).json({ success: false, message: 'Failed to save event: ' + writeErr.message });
+  }
   res.json({ success: true, event: ev });
 });
 
