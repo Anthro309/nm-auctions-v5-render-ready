@@ -6,67 +6,6 @@ const multer = require('multer');
 const OpenAI = require('openai');
 const crypto = require('crypto');
 
-// =========================
-// PERSISTENT DATA SETUP
-// Links JSON files to the Render persistent disk when DATA_DIR is set.
-// =========================
-(function enablePersistentData() {
-  const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : null;
-  if (!dataDir) return;
-
-  function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
-
-  function fileDefault(name) {
-    if (name === 'wotd.json') return JSON.stringify({ date: null, word: null, used: [] }, null, 2);
-    if (name === 'lot-counter.json') return JSON.stringify({}, null, 2);
-    return JSON.stringify([], null, 2);
-  }
-
-  function replaceWithSymlink(target, source) {
-    try {
-      const stat = fs.lstatSync(target);
-      if (stat.isSymbolicLink()) {
-        if (path.resolve(path.dirname(target), fs.readlinkSync(target)) === path.resolve(source)) return;
-        fs.unlinkSync(target);
-      } else if (stat.isDirectory()) {
-        fs.rmSync(target, { recursive: true, force: true });
-      } else {
-        fs.unlinkSync(target);
-      }
-    } catch (_) {}
-    fs.symlinkSync(source, target, process.platform === 'win32' ? 'junction' : 'file');
-  }
-
-  ensureDir(dataDir);
-  ensureDir(path.join(dataDir, 'uploads'));
-
-  ['users.json','items.json','reports.json','wotd.json','notifications.json',
-   'intake.json','lot-counter.json','events.json','payouts.json'].forEach(name => {
-    const repoFile = path.join(__dirname, name);
-    const dataFile = path.join(dataDir, name);
-    if (!fs.existsSync(dataFile)) {
-      try {
-        if (fs.existsSync(repoFile) && !fs.lstatSync(repoFile).isSymbolicLink())
-          fs.copyFileSync(repoFile, dataFile);
-        else
-          fs.writeFileSync(dataFile, fileDefault(name));
-      } catch (_) { fs.writeFileSync(dataFile, fileDefault(name)); }
-    }
-    replaceWithSymlink(repoFile, dataFile);
-  });
-
-  const uploadsLink = path.join(__dirname, 'public', 'uploads');
-  try {
-    const stat = fs.lstatSync(uploadsLink);
-    if (!stat.isSymbolicLink()) fs.rmSync(uploadsLink, { recursive: true, force: true });
-    else if (path.resolve(path.dirname(uploadsLink), fs.readlinkSync(uploadsLink)) === path.resolve(path.join(dataDir, 'uploads'))) return;
-    else fs.unlinkSync(uploadsLink);
-  } catch (_) {}
-  fs.symlinkSync(path.join(dataDir, 'uploads'), uploadsLink, process.platform === 'win32' ? 'junction' : 'dir');
-
-  console.log(`📦 Persistent data linked to ${dataDir}`);
-})();
-
 const app = express();
 const PORT = process.env.PORT || 10000;
 
