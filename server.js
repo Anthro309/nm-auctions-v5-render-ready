@@ -9,17 +9,38 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Trust Render's TLS proxy so secure cookies work correctly
+app.set('trust proxy', 1);
+
 // =========================
-// SAFE OPENAI INIT
+// DATA DIRECTORY
+// When DATA_DIR is set (Render), write all JSON files there so they
+// survive redeploys. Falls back to the repo root for local dev.
 // =========================
-let client = null;
-if (process.env.OPENAI_API_KEY) {
-  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  console.log('✅ OpenAI initialized');
-} else {
-  console.log('⚠️ OPENAI_API_KEY missing - AI disabled');
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname);
+
+if (process.env.DATA_DIR) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+  console.log(`📦 Persistent data dir: ${DATA_DIR}`);
 }
 
+// =========================
+// FILE PATHS
+// =========================
+const USERS_FILE         = path.join(DATA_DIR, 'users.json');
+const ITEMS_FILE         = path.join(DATA_DIR, 'items.json');
+const REPORTS_FILE       = path.join(DATA_DIR, 'reports.json');
+const WOTD_FILE          = path.join(DATA_DIR, 'wotd.json');
+const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+const INTAKE_FILE        = path.join(DATA_DIR, 'intake.json');
+const LOT_COUNTER_FILE   = path.join(DATA_DIR, 'lot-counter.json');
+const PAYOUTS_FILE       = path.join(DATA_DIR, 'payouts.json');
+
+// =========================
+// MIDDLEWARE
+// =========================
 app.use(express.json({ limit: '10mb' }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'nm-auctions-secret-2025',
@@ -35,16 +56,15 @@ app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
-// FILE PATHS
+// SAFE OPENAI INIT
 // =========================
-const USERS_FILE         = 'users.json';
-const ITEMS_FILE         = 'items.json';
-const REPORTS_FILE       = 'reports.json';
-const WOTD_FILE          = 'wotd.json';
-const NOTIFICATIONS_FILE = 'notifications.json';
-const INTAKE_FILE        = 'intake.json';
-const LOT_COUNTER_FILE   = 'lot-counter.json';
-const PAYOUTS_FILE       = 'payouts.json';
+let client = null;
+if (process.env.OPENAI_API_KEY) {
+  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  console.log('✅ OpenAI initialized');
+} else {
+  console.log('⚠️ OPENAI_API_KEY missing - AI disabled');
+}
 
 // =========================
 // HELPERS
