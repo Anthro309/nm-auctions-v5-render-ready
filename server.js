@@ -88,7 +88,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 8 * 60 * 60 * 1000 // 8 hours
   }
 }));
@@ -150,10 +150,8 @@ function ensureUsersExist() {
   }
 }
 
-function requireAdmin(reqBody) {
-  const users = readJSON(USERS_FILE);
-  const u = users.find(u => u.name === reqBody.requestedBy);
-  return u && u.isAdmin;
+function requireAdmin(req) {
+  return !!(req.session && req.session.user && req.session.user.isAdmin);
 }
 
 function monthLetterForDate(date = new Date()) {
@@ -334,7 +332,7 @@ app.get('/employees', (req, res) => {
 // EMPLOYEES — ADD
 // =========================
 app.post('/employees', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { name, pin, isAdmin } = req.body;
   if (!name || !pin) return res.status(400).json({ success: false, message: 'Name and PIN required' });
   const users = readJSON(USERS_FILE);
@@ -350,7 +348,7 @@ app.post('/employees', (req, res) => {
 // EMPLOYEES — REMOVE
 // =========================
 app.delete('/employees/:name', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   let users = readJSON(USERS_FILE);
   const target = users.find(u => u.name === req.params.name);
   if (!target) return res.status(404).json({ success: false, message: 'Not found' });
@@ -364,7 +362,7 @@ app.delete('/employees/:name', (req, res) => {
 // EMPLOYEES — UPDATE ROLE
 // =========================
 app.post('/employees/:name/role', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   const validRoles = ['admin', 'intake', 'photo', 'fulfillment', 'staff'];
   const { role } = req.body;
   if (!validRoles.includes(role)) return res.status(400).json({ success: false, message: 'Invalid role' });
@@ -383,8 +381,8 @@ app.post('/employees/:name/role', (req, res) => {
 // =========================
 app.post('/employees/:name/pin', (req, res) => {
   // Allow if requester is admin OR changing their own PIN
-  const isSelf = req.body.requestedBy === req.params.name;
-  if (!isSelf && !requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  const isSelf = req.session?.user?.name === req.params.name;
+  if (!isSelf && !requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { newPin } = req.body;
   if (!newPin || String(newPin).length < 4) return res.status(400).json({ success: false, message: 'PIN must be at least 4 digits' });
   const users = readJSON(USERS_FILE);
@@ -700,7 +698,7 @@ app.get('/payouts', (req, res) => {
 // PAYOUTS — CREATE
 // =========================
 app.post('/payouts', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { consigner, code, items: itemIds, totalAmount, commission, notes, employee } = req.body;
   if (!consigner || !totalAmount) return res.status(400).json({ success: false, message: 'consigner and totalAmount required' });
   const payouts = readJSON(PAYOUTS_FILE);
@@ -727,7 +725,7 @@ app.post('/payouts', (req, res) => {
 // PAYOUTS — MARK PAID
 // =========================
 app.post('/payouts/:id/pay', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   const payouts = readJSON(PAYOUTS_FILE);
   const payout = payouts.find(p => p.id === req.params.id);
   if (!payout) return res.status(404).json({ success: false, message: 'Payout not found' });
@@ -742,7 +740,7 @@ app.post('/payouts/:id/pay', (req, res) => {
 // PAYOUTS — DELETE
 // =========================
 app.delete('/payouts/:id', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin only' });
   let payouts = readJSON(PAYOUTS_FILE);
   const idx = payouts.findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Payout not found' });
@@ -1739,9 +1737,14 @@ app.patch('/events/:id', (req, res) => {
 });
 
 app.delete('/events/:id', (req, res) => {
+  const eid = String(req.params.id);
   let events = readJSON(EVENTS_FILE);
-  events = events.filter(e => String(e.id) !== String(req.params.id));
+  events = events.filter(e => String(e.id) !== eid);
   writeJSON(EVENTS_FILE, events);
+  const items = readJSON(ITEMS_FILE);
+  let itemsChanged = false;
+  items.forEach(i => { if (String(i.eventId) === eid) { delete i.eventId; itemsChanged = true; } });
+  if (itemsChanged) writeJSON(ITEMS_FILE, items);
   res.json({ success: true });
 });
 

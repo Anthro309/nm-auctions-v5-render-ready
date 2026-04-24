@@ -95,7 +95,7 @@ function highlightActiveSidebarLink() {
     sidebarHeader.innerHTML =
       '<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">' +
         '<div style="width:40px;height:40px;min-width:40px;border-radius:11px;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:white;overflow:hidden;">' +
-          (u.photo ? '<img src="' + u.photo + '" style="width:100%;height:100%;object-fit:cover;" />' : (u.name || '?')[0].toUpperCase()) +
+          (u.photo ? '<img src="' + encStr(u.photo) + '" style="width:100%;height:100%;object-fit:cover;" />' : (u.name || '?')[0].toUpperCase()) +
         '</div>' +
         '<div style="min-width:0;">' +
           '<div style="font-size:14px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + encStr(u.name) + '</div>' +

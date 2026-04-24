@@ -205,10 +205,16 @@
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user || !user.isAdmin) window.location.href = '/dashboard.html';
 
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function escJs(v) { return JSON.stringify(String(v ?? '')); }
+
 // Nav avatar
 const navAvatar = document.getElementById('navAvatar');
 if (user.photo) {
-  navAvatar.innerHTML = `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  const img = document.createElement('img');
+  img.src = user.photo;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+  navAvatar.appendChild(img);
 } else {
   navAvatar.textContent = (user.name || '?')[0].toUpperCase();
 }
@@ -231,12 +237,13 @@ async function load() {
 
   grid.innerHTML = employees.map(e => {
     const initial = (e.name || '?')[0].toUpperCase();
-    const avatarHtml = e.photo ? `<img src="${e.photo}" alt="${e.name}">` : initial;
+    const avatarHtml = e.photo ? `<img src="${esc(e.photo)}" alt="${esc(e.name)}">` : initial;
     const role = e.role || (e.isAdmin ? 'admin' : 'staff');
     const roleClass = ROLE_COLORS[role] || 'gray';
     const roleLabel = ROLE_LABELS[role] || role;
+    const nameJs = escJs(e.name);
     const removeBtn = !e.isAdmin
-      ? `<button class="btn-sm btn-remove" onclick="removeEmployee('${e.name}')">Remove</button>`
+      ? `<button class="btn-sm btn-remove" onclick="removeEmployee(${nameJs})">Remove</button>`
       : '';
     const roleOptions = ['admin','intake','photo','fulfillment','staff'].map(r =>
       `<option value="${r}" ${role === r ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`
@@ -244,12 +251,12 @@ async function load() {
     return `
       <div class="emp-card">
         <div class="emp-avatar">${avatarHtml}</div>
-        <div class="emp-name">${e.name}</div>
-        <span class="role-badge ${roleClass}" style="margin-bottom:12px;">${roleLabel}</span>
+        <div class="emp-name">${esc(e.name)}</div>
+        <span class="role-badge ${roleClass}" style="margin-bottom:12px;">${esc(roleLabel)}</span>
         <div class="emp-actions">
-          <select onchange="changeRole('${e.name}', this.value)" style="margin-top:0;padding:8px 10px;font-size:12px;border-radius:8px;">${roleOptions}</select>
-          <button class="btn-sm btn-photo" onclick="openPhotoModal('${e.name}')">📷 Photo</button>
-          <button class="btn-sm btn-pin" onclick="openPinModal('${e.name}')">🔑 Change PIN</button>
+          <select onchange="changeRole(${nameJs}, this.value)" style="margin-top:0;padding:8px 10px;font-size:12px;border-radius:8px;">${roleOptions}</select>
+          <button class="btn-sm btn-photo" onclick="openPhotoModal(${nameJs})">📷 Photo</button>
+          <button class="btn-sm btn-pin" onclick="openPinModal(${nameJs})">🔑 Change PIN</button>
           ${removeBtn}
         </div>
       </div>
