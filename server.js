@@ -1645,7 +1645,7 @@ app.post('/intake', (req, res) => {
 // =========================
 // EVENTS — AUCTION SALES
 // =========================
-const EVENTS_FILE = 'events.json';
+const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 ensureArrayFile(EVENTS_FILE);
 
 app.get('/events', (req, res) => {
