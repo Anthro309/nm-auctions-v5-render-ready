@@ -8,7 +8,7 @@ const crypto = require('crypto');
 
 // =========================
 // PERSISTENT DATA SETUP
-// Runs whether started via bootstrap.js or node server.js directly
+// Links JSON files to the Render persistent disk when DATA_DIR is set.
 // =========================
 (function enablePersistentData() {
   const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : null;
@@ -92,13 +92,7 @@ app.use(session({
     maxAge: 8 * 60 * 60 * 1000 // 8 hours
   }
 }));
-app.use(express.static('public', {
-  setHeaders(res, filePath) {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-store');
-    }
-  }
-}));
+app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
@@ -156,34 +150,10 @@ function ensureUsersExist() {
   }
 }
 
-function getUserByName(name) {
-  const normalized = String(name || '').trim().toLowerCase();
-  if (!normalized) return null;
+function requireAdmin(reqBody) {
   const users = readJSON(USERS_FILE);
-  return users.find(u => String(u.name || '').trim().toLowerCase() === normalized) || null;
-}
-
-function requesterName(payload = {}) {
-  return String(payload.requestedBy || payload.employee || payload.createdBy || '').trim();
-}
-
-function requireAdmin(payload = {}) {
-  const u = getUserByName(requesterName(payload));
-  return !!(u && u.isAdmin);
-}
-
-function requireKnownEmployee(payload = {}) {
-  return !!getUserByName(requesterName(payload));
-}
-
-function canModifyEmployee(targetName, payload = {}) {
-  const requester = getUserByName(requesterName(payload));
-  const target = getUserByName(targetName);
-  return !!(requester && target && (requester.isAdmin || requester.name === target.name));
-}
-
-function validPin(pin) {
-  return /^\d{4,}$/.test(String(pin || ''));
+  const u = users.find(u => u.name === reqBody.requestedBy);
+  return u && u.isAdmin;
 }
 
 function monthLetterForDate(date = new Date()) {
@@ -245,12 +215,6 @@ function safeJsonParse(text, fallback = null) {
   } catch {
     return fallback;
   }
-}
-
-function cleanupUploadedFile(filePath) {
-  try {
-    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  } catch (_) {}
 }
 
 // =========================
@@ -373,7 +337,6 @@ app.post('/employees', (req, res) => {
   if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { name, pin, isAdmin } = req.body;
   if (!name || !pin) return res.status(400).json({ success: false, message: 'Name and PIN required' });
-  if (!validPin(pin)) return res.status(400).json({ success: false, message: 'PIN must be at least 4 digits' });
   const users = readJSON(USERS_FILE);
   if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) {
     return res.status(400).json({ success: false, message: 'Employee already exists' });
@@ -389,11 +352,10 @@ app.post('/employees', (req, res) => {
 app.delete('/employees/:name', (req, res) => {
   if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   let users = readJSON(USERS_FILE);
-  const target = getUserByName(req.params.name);
+  const target = users.find(u => u.name === req.params.name);
   if (!target) return res.status(404).json({ success: false, message: 'Not found' });
   if (target.isAdmin) return res.status(400).json({ success: false, message: 'Cannot remove an admin' });
-  if (requesterName(req.body) === target.name) return res.status(400).json({ success: false, message: 'Cannot remove yourself' });
-  users = users.filter(u => u.name !== target.name);
+  users = users.filter(u => u.name !== req.params.name);
   writeJSON(USERS_FILE, users);
   res.json({ success: true });
 });
@@ -420,14 +382,15 @@ app.post('/employees/:name/role', (req, res) => {
 // EMPLOYEES — CHANGE PIN
 // =========================
 app.post('/employees/:name/pin', (req, res) => {
-  if (!canModifyEmployee(req.params.name, req.body)) return res.status(403).json({ success: false, message: 'Not allowed' });
+  // Allow if requester is admin OR changing their own PIN
+  const isSelf = req.body.requestedBy === req.params.name;
+  if (!isSelf && !requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { newPin } = req.body;
-  if (!validPin(newPin)) return res.status(400).json({ success: false, message: 'PIN must be at least 4 digits' });
+  if (!newPin || String(newPin).length < 4) return res.status(400).json({ success: false, message: 'PIN must be at least 4 digits' });
   const users = readJSON(USERS_FILE);
-  const user = getUserByName(req.params.name);
+  const user = users.find(u => u.name === req.params.name);
   if (!user) return res.status(404).json({ success: false, message: 'Not found' });
-  const stored = users.find(u => u.name === user.name);
-  stored.pin = String(newPin);
+  user.pin = String(newPin);
   writeJSON(USERS_FILE, users);
   res.json({ success: true });
 });
@@ -437,20 +400,13 @@ app.post('/employees/:name/pin', (req, res) => {
 // =========================
 app.post('/employees/:name/photo', upload.single('photo'), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-  if (!canModifyEmployee(req.params.name, req.body)) {
-    cleanupUploadedFile(req.file.path);
-    return res.status(403).json({ success: false, message: 'Not allowed' });
-  }
+  // Anyone can upload their own photo; only admin can upload for others
   const users = readJSON(USERS_FILE);
-  const user = getUserByName(req.params.name);
-  if (!user) {
-    cleanupUploadedFile(req.file.path);
-    return res.status(404).json({ success: false, message: 'Not found' });
-  }
-  const stored = users.find(u => u.name === user.name);
-  stored.photo = `/uploads/${req.file.filename}`;
+  const user = users.find(u => u.name === req.params.name);
+  if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+  user.photo = `/uploads/${req.file.filename}`;
   writeJSON(USERS_FILE, users);
-  res.json({ success: true, photo: stored.photo });
+  res.json({ success: true, photo: user.photo });
 });
 
 // =========================
@@ -521,7 +477,6 @@ app.get('/notifications', (req, res) => {
 
 app.post('/notifications/dismiss', (req, res) => {
   const { employee, notificationId } = req.body;
-  if (!getUserByName(employee)) return res.status(403).json({ success: false, message: 'Unknown employee' });
   const notifications = readJSON(NOTIFICATIONS_FILE);
   if (notificationId) {
     const n = notifications.find(n => String(n.id) === String(notificationId) && n.employee === employee);
@@ -538,7 +493,6 @@ app.post('/notifications/dismiss', (req, res) => {
 // ADD ITEMS (INTAKE)
 // =========================
 app.post('/items', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const { name, description, category, condition, consigner, code, number, part, photos, employee } = req.body || {};
 
@@ -644,10 +598,8 @@ app.get('/items/search', (req, res) => {
 // BATCH STAGE ADVANCE
 // =========================
 app.post('/items/batch-stage', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const { ids, stage, employee } = req.body;
-  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ success: false, message: 'No item IDs provided' });
   if (!validStage(stage)) return res.status(400).json({ success: false, message: 'Invalid stage' });
   let count = 0;
   ids.forEach(id => {
@@ -655,8 +607,6 @@ app.post('/items/batch-stage', (req, res) => {
     if (item) {
       const fromStage = item.stage;
       item.stage = stage;
-      item.lastHandledBy = employee || 'system';
-      item.lastHandledAt = new Date().toISOString();
       addLog(item, { employee: employee || 'system', action: 'stage changed', fromStage, toStage: stage });
       count++;
     }
@@ -679,7 +629,6 @@ app.get('/items/by-lot/:lot', (req, res) => {
 // EDIT ITEM
 // =========================
 app.put('/items/:id', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -697,7 +646,6 @@ app.put('/items/:id', (req, res) => {
 // DELETE ITEM
 // =========================
 app.delete('/items/:id', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   let items = readJSON(ITEMS_FILE);
   const idx = items.findIndex(i => String(i.id) === String(req.params.id));
   if (idx === -1) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -710,7 +658,6 @@ app.delete('/items/:id', (req, res) => {
 // ADD NOTE
 // =========================
 app.post('/items/:id/note', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -727,7 +674,6 @@ app.post('/items/:id/note', (req, res) => {
 // RECORD SALE
 // =========================
 app.post('/items/:id/sell', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -914,7 +860,6 @@ app.get('/items/:id', (req, res) => {
 // UPDATE STAGE
 // =========================
 app.post('/items/:id/stage', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -925,11 +870,6 @@ app.post('/items/:id/stage', (req, res) => {
 
   const fromStage = item.stage;
   item.stage = newStage;
-  item.lastHandledBy = employee;
-  item.lastHandledAt = new Date().toISOString();
-  if (item.pendingHandoff && item.pendingHandoff.requestedStage === newStage) {
-    item.pendingHandoff = null;
-  }
   addLog(item, { employee, action: 'stage changed', fromStage, toStage: newStage });
   writeJSON(ITEMS_FILE, items);
 
@@ -962,7 +902,6 @@ app.post('/items/:id/stage', (req, res) => {
 // ARCHIVE ITEM (reject during post-visit review)
 // =========================
 app.post('/items/:id/archive', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -976,7 +915,6 @@ app.post('/items/:id/archive', (req, res) => {
   item.archivedAt = new Date().toISOString();
   item.archivedBy = employee;
   item.archiveReason = reason;
-  item.pendingHandoff = null;
 
   addLog(item, { employee, action: 'archived (rejected)', fromStage, toStage: 'Archived', reason });
   writeJSON(ITEMS_FILE, items);
@@ -987,7 +925,6 @@ app.post('/items/:id/archive', (req, res) => {
 // REVIEW ACCEPT (accept item during post-visit review)
 // =========================
 app.post('/items/:id/review-accept', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -998,7 +935,6 @@ app.post('/items/:id/review-accept', (req, res) => {
   item.reviewedBy   = employee;
   // Advance stage from Home Visit → Received at Studio so item enters inventory
   if (item.stage === 'Home Visit') item.stage = 'Received at Studio';
-  item.pendingHandoff = null;
 
   addLog(item, { employee, action: 'accepted in review — moved to Received at Studio' });
   writeJSON(ITEMS_FILE, items);
@@ -1009,14 +945,12 @@ app.post('/items/:id/review-accept', (req, res) => {
 // ASSIGN ITEM TO EMPLOYEE
 // =========================
 app.post('/items/:id/assign', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
   const employee = req.body.employee || 'system';
   const assignedTo = req.body.assignedTo || null;
-  if (assignedTo && !getUserByName(assignedTo)) return res.status(400).json({ success: false, message: 'Assigned employee not found' });
 
   item.assignedTo = assignedTo;
   item.assignedAt = new Date().toISOString();
@@ -1037,13 +971,10 @@ app.post('/items/:id/assign', (req, res) => {
 // BATCH ASSIGN ITEMS TO EMPLOYEE
 // =========================
 app.post('/items/batch-assign', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const { ids, assignedTo, employee } = req.body;
   if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ success: false, message: 'No item IDs provided' });
-  if (assignedTo && !getUserByName(assignedTo)) return res.status(400).json({ success: false, message: 'Assigned employee not found' });
 
-  const notifications = readJSON(NOTIFICATIONS_FILE);
   let count = 0;
   ids.forEach(id => {
     const item = items.find(i => String(i.id) === String(id));
@@ -1052,15 +983,11 @@ app.post('/items/batch-assign', (req, res) => {
       item.assignedAt = new Date().toISOString();
       item.assignedBy = employee || 'system';
       addLog(item, { employee: employee || 'system', action: assignedTo ? `assigned to ${assignedTo}` : 'unassigned' });
-      if (assignedTo) {
-        notifications.push({ id: generateId(), employee: assignedTo, type: 'assignment', itemId: String(item.id), itemName: item.name, lotNumber: item.lotNumber, assignedBy: employee || 'system', at: new Date().toISOString(), dismissed: false });
-      }
       count++;
     }
   });
 
   writeJSON(ITEMS_FILE, items);
-  writeJSON(NOTIFICATIONS_FILE, notifications);
   res.json({ success: true, count });
 });
 
@@ -1068,7 +995,6 @@ app.post('/items/batch-assign', (req, res) => {
 // RECORD SCAN (employee touch log, no stage change)
 // =========================
 app.post('/items/:id/scan', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1085,7 +1011,6 @@ app.post('/items/:id/scan', (req, res) => {
 // REPAIR FLAG
 // =========================
 app.post('/items/:id/repair-flag', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1106,7 +1031,6 @@ app.post('/items/:id/repair-flag', (req, res) => {
 // SAVE LOCATION
 // =========================
 app.post('/items/:id/location', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1125,7 +1049,6 @@ app.post('/items/:id/location', (req, res) => {
 // REQUEST HANDOFF
 // =========================
 app.post('/items/:id/request-handoff', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1283,7 +1206,6 @@ app.post('/photos/process-bg', upload.single('photo'), async (req, res) => {
 
 // Add a processed photo to an item's photo array
 app.post('/items/:id/add-photo', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const { photoPath } = req.body;
   if (!photoPath) return res.status(400).json({ success: false, message: 'No photoPath provided' });
 
@@ -1303,7 +1225,6 @@ app.post('/items/:id/add-photo', (req, res) => {
 // ADD REFERENCE PHOTO (supplemental, non-primary)
 // =========================
 app.post('/items/:id/add-reference-photo', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const { photoPath } = req.body;
   if (!photoPath) return res.status(400).json({ success: false, message: 'No photoPath provided' });
 
@@ -1323,7 +1244,6 @@ app.post('/items/:id/add-reference-photo', (req, res) => {
 // DELETE REFERENCE PHOTO
 // =========================
 app.post('/items/:id/delete-reference-photo', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const { photoPath } = req.body;
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
@@ -1339,7 +1259,6 @@ app.post('/items/:id/delete-reference-photo', (req, res) => {
 // UPDATE ITEM DETAILS (title, description, dimensions, condition, notes)
 // =========================
 app.post('/items/:id/update-details', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1367,7 +1286,6 @@ app.post('/items/:id/update-details', (req, res) => {
 // SET ESTIMATE (manual entry from review page)
 // =========================
 app.post('/items/:id/set-estimate', (req, res) => {
-  if (!requireKnownEmployee(req.body)) return res.status(403).json({ success: false, message: 'Employee required' });
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
@@ -1653,7 +1571,6 @@ app.get('/reports/consigner/:code', (req, res) => {
 // REPORTS — GENERATE TODAY
 // =========================
 app.post('/closeout', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const items = readJSON(ITEMS_FILE);
   const reports = readJSON(REPORTS_FILE);
   const today = new Date().toLocaleDateString('en-US');
@@ -1779,12 +1696,6 @@ app.get('/events', (req, res) => {
 });
 
 app.post('/events', (req, res) => {
-  const requester = requesterName(req.body);
-  console.log('[POST /events] requester:', requester, '| body keys:', Object.keys(req.body));
-  if (!requireAdmin(req.body)) {
-    console.log('[POST /events] 403 — requester not found or not admin:', requester);
-    return res.status(403).json({ success: false, message: 'Admin only — received requestedBy: ' + requester });
-  }
   const { name, date, description, category, commissionRate, createdBy } = req.body;
   if (!name || !date) return res.status(400).json({ success: false, message: 'name and date required' });
   const events = readJSON(EVENTS_FILE);
@@ -1802,7 +1713,6 @@ app.post('/events', (req, res) => {
   events.push(ev);
   try {
     writeJSON(EVENTS_FILE, events);
-    console.log('[POST /events] created event:', ev.id, ev.name);
   } catch (writeErr) {
     console.error('[POST /events] writeJSON failed:', writeErr.message);
     return res.status(500).json({ success: false, message: 'Failed to save event: ' + writeErr.message });
@@ -1819,7 +1729,6 @@ app.get('/events/:id', (req, res) => {
 });
 
 app.patch('/events/:id', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const events = readJSON(EVENTS_FILE);
   const ev = events.find(e => String(e.id) === String(req.params.id));
   if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -1830,7 +1739,6 @@ app.patch('/events/:id', (req, res) => {
 });
 
 app.delete('/events/:id', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   let events = readJSON(EVENTS_FILE);
   events = events.filter(e => String(e.id) !== String(req.params.id));
   writeJSON(EVENTS_FILE, events);
@@ -1838,7 +1746,6 @@ app.delete('/events/:id', (req, res) => {
 });
 
 app.post('/events/:id/assign', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { itemId } = req.body;
   if (!itemId) return res.status(400).json({ success: false, message: 'itemId required' });
   const events = readJSON(EVENTS_FILE);
@@ -1854,7 +1761,6 @@ app.post('/events/:id/assign', (req, res) => {
 });
 
 app.delete('/events/:id/lots/:itemId', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const events = readJSON(EVENTS_FILE);
   const ev = events.find(e => String(e.id) === String(req.params.id));
   if (!ev) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -1868,7 +1774,6 @@ app.delete('/events/:id/lots/:itemId', (req, res) => {
 
 // Move item from one event to another (or remove from current)
 app.post('/items/:id/move-event', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { toEventId, employee } = req.body;
   const items = readJSON(ITEMS_FILE);
   const item = items.find(i => String(i.id) === String(req.params.id));
@@ -1903,7 +1808,6 @@ app.post('/items/:id/move-event', (req, res) => {
 
 // Import auction results — CSV body: [{lotNumber, soldPrice}]
 app.post('/events/:id/import-results', (req, res) => {
-  if (!requireAdmin(req.body)) return res.status(403).json({ success: false, message: 'Admin only' });
   const { results, employee } = req.body; // results: [{lotNumber, soldPrice}]
   if (!Array.isArray(results)) return res.status(400).json({ success: false, message: 'results array required' });
   const events = readJSON(EVENTS_FILE);

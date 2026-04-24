@@ -35,23 +35,13 @@
 .event-stat { font-size: 12px; color: #6b7280; font-weight: 600; }
 .event-stat strong { color: #111827; }
 
+/* Create form */
 .create-form { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(15,23,42,0.06); display: none; }
 .create-form.open { display: block; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
 .create-form h3 { margin: 0 0 14px; font-size: 16px; font-weight: 700; }
 .form-label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 12px; margin-bottom: 2px; display: block; }
-.notice-card {
-  background: #fff7ed;
-  border: 1px solid #fdba74;
-  color: #9a3412;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  line-height: 1.5;
-  display: none;
-}
 </style>
 </head>
 <body>
@@ -63,7 +53,10 @@
 </div>
 
 <div id="sidebar" class="sidebar">
-  <div class="sidebar-header"></div>
+  <div class="sidebar-header">
+    <div class="sidebar-title">Auction Legacy</div>
+    <div class="sidebar-sub">Studio Operations</div>
+  </div>
   <nav>
     <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
@@ -85,13 +78,12 @@
   <div class="page-header-block">
     <div class="page-header-icon">🏷️</div>
     <div>
-      <div class="page-header-title">Auction Events <button type="button" class="help-btn" onclick="showTip(this,'Create an event for each auction sale. Assign items as lots, then after the auction paste the results to automatically calculate what each consigner is owed.')">?</button></div>
+      <div class="page-header-title">Auction Events <button class="help-btn" onclick="showTip(this,'Create an event for each auction sale. Assign items as lots, then after the auction paste the results to automatically calculate what each consigner is owed.')">?</button></div>
       <div class="page-header-sub" id="eventsSub">Manage sales, assign lots, import results</div>
     </div>
   </div>
 
-  <div id="adminNotice" class="notice-card"></div>
-
+  <!-- Create new event -->
   <div id="createForm" class="create-form">
     <h3>New Auction Event</h3>
     <input id="newName" placeholder="e.g. April 19th Estate Auction" style="margin-top:4px;margin-bottom:0;">
@@ -113,12 +105,12 @@
 
     <div id="createMsg" style="display:none;margin-top:12px;padding:10px;border-radius:10px;font-size:13px;font-weight:600;"></div>
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button type="button" id="createSubmitBtn" onclick="createEvent()" style="flex:1;">Create Event</button>
-      <button type="button" onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
+      <button id="createSubmitBtn" onclick="createEvent()" style="flex:1;">Create Event</button>
+      <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
     </div>
   </div>
 
-  <button type="button" onclick="toggleCreate()" id="createBtn" style="width:100%;margin-bottom:16px;">+ Create New Auction Event</button>
+  <button onclick="toggleCreate()" id="createBtn" style="width:100%;margin-bottom:16px;">+ Create New Auction Event</button>
 
   <div id="eventsList"></div>
 </div>
@@ -134,112 +126,80 @@ function toggleMenu() {
   document.getElementById('overlay').classList.toggle('show');
 }
 
-function showCreateMessage(text, ok = false) {
-  const msg = document.getElementById('createMsg');
-  msg.style.cssText = `display:block;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:700;background:${ok ? '#ecfdf5' : '#fef2f2'};color:${ok ? '#047857' : '#dc2626'};border:1px solid ${ok ? '#bbf7d0' : '#fecaca'};margin-top:12px;`;
-  msg.innerText = text;
-  if (!ok) msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
 function toggleCreate() {
   const form = document.getElementById('createForm');
   const btn  = document.getElementById('createBtn');
-  if (!user.isAdmin) return;
   form.classList.toggle('open');
+  // Hide the create button while form is open to avoid two cancel buttons
   btn.style.display = form.classList.contains('open') ? 'none' : 'block';
   if (!form.classList.contains('open')) {
+    // Reset form on close
     document.getElementById('createMsg').style.display = 'none';
   }
 }
 
-function setupPermissions() {
-  const notice = document.getElementById('adminNotice');
-  if (!user.isAdmin) {
-    document.getElementById('createBtn').style.display = 'none';
-    document.getElementById('createForm').style.display = 'none';
-    notice.style.display = 'block';
-    notice.innerText = 'Only admin accounts can create auction events.';
-  }
-}
-
 async function createEvent() {
-  if (!user || !user.isAdmin) {
-    showCreateMessage('❌ Only admin accounts can create events');
-    return;
-  }
-
   const name = document.getElementById('newName').value.trim();
   const date = document.getElementById('newDate').value;
   const btn = document.getElementById('createSubmitBtn');
+  const msg = document.getElementById('createMsg');
 
   if (!name) {
-    showCreateMessage('⚠️ Event name is required');
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '⚠️ Event name is required';
     document.getElementById('newName').focus();
     return;
   }
   if (!date) {
-    showCreateMessage('⚠️ Date is required');
-    document.getElementById('newDate').focus();
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '⚠️ Date is required';
     return;
   }
 
   btn.disabled = true;
   btn.textContent = '⏳ Creating…';
-  btn.style.opacity = '0.7';
-  const msgEl = document.getElementById('createMsg');
-  msgEl.style.cssText = 'display:block;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;background:#eff6ff;color:#1d4ed8;';
-  msgEl.textContent = 'Sending to server…';
-
+  msg.style.cssText = 'display:block;padding:10px;background:#eff6ff;color:#1d4ed8;border-radius:10px;font-size:13px;font-weight:600;';
+  msg.innerText = 'Creating event…';
   try {
-    const payload = {
-      name,
-      date,
-      description: (document.getElementById('newDesc') || {}).value?.trim() || '',
-      category: 'general',
-      commissionRate: (document.getElementById('newCommission') || {}).value || 35,
-      employee: user.name,
-      requestedBy: user.name,
-      createdBy: user.name
-    };
-
     const res = await fetch('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        name, date,
+        description: document.getElementById('newDesc').value.trim(),
+        category: 'general',
+        commissionRate: document.getElementById('newCommission').value,
+        requestedBy: user.name,
+        createdBy: user.name
+      })
     });
-
     let data = null;
-    try {
-      data = await res.json();
-    } catch (_) {
-      data = { success: false, message: 'Server returned an invalid response (HTTP ' + res.status + ')' };
-    }
-
+    try { data = await res.json(); } catch (_) { data = { success: false, message: 'Invalid response (HTTP ' + res.status + ')' }; }
     if (!res.ok || !data.success) {
       throw new Error(data.message || ('Server error ' + res.status));
     }
-
-    showCreateMessage('✅ Event created!', true);
+    msg.style.cssText = 'display:block;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '✅ Event created!';
     document.getElementById('newName').value = '';
     document.getElementById('newDate').value = '';
-    if (document.getElementById('newDesc')) document.getElementById('newDesc').value = '';
+    document.getElementById('newDesc').value = '';
     setTimeout(() => { toggleCreate(); load(); }, 1000);
   } catch (err) {
-    console.error('Create event failed:', err);
-    showCreateMessage('❌ ' + (err.message || 'Failed to create event'));
+    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
+    msg.innerText = '❌ ' + (err.message || 'Network error — please try again');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Create Event';
-    btn.style.opacity = '';
   }
 }
 
 async function load() {
+  const el = document.getElementById('eventsList');
   try {
     const res = await fetch('/events');
+    if (!res.ok) throw new Error('Server error ' + res.status);
     const events = await res.json();
-
-    if (!Array.isArray(events)) throw new Error('Invalid events response');
+    if (!Array.isArray(events)) throw new Error('Invalid response from server');
 
     events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -247,7 +207,6 @@ async function load() {
     document.getElementById('eventsSub').innerText =
       events.length + ' total · ' + upcoming + ' upcoming';
 
-    const el = document.getElementById('eventsList');
     if (!events.length) {
       el.innerHTML = '<div class="card" style="text-align:center;color:#6b7280;">No events yet. Create your first auction event above.</div>';
       return;
@@ -278,11 +237,10 @@ async function load() {
     });
   } catch (err) {
     console.error('Load events failed:', err);
-    document.getElementById('eventsList').innerHTML = '<div class="card" style="text-align:center;color:#dc2626;">Failed to load auction events.</div>';
+    el.innerHTML = '<div class="card" style="text-align:center;color:#dc2626;">Failed to load auction events. Please refresh.</div>';
   }
 }
 
-setupPermissions();
 load();
 </script>
 <script src="/nav.js"></script>
