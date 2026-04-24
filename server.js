@@ -52,7 +52,13 @@ app.use(session({
     maxAge: 8 * 60 * 60 * 1000 // 8 hours
   }
 }));
-app.use(express.static('public'));
+app.use(express.static('public', {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  }
+}));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // =========================
@@ -1647,8 +1653,26 @@ app.post('/intake', (req, res) => {
 // =========================
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 ensureArrayFile(EVENTS_FILE);
+console.log(`📅 EVENTS_FILE: ${EVENTS_FILE}`);
+
+app.get('/events/debug', (req, res) => {
+  const exists = fs.existsSync(EVENTS_FILE);
+  let count = 0;
+  let readErr = null;
+  try { count = readJSON(EVENTS_FILE).length; } catch (e) { readErr = e.message; }
+  res.json({
+    DATA_DIR,
+    EVENTS_FILE,
+    fileExists: exists,
+    eventCount: count,
+    readError: readErr,
+    nodeEnv: process.env.NODE_ENV,
+    dataDirEnv: process.env.DATA_DIR || '(not set)'
+  });
+});
 
 app.get('/events', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.json(readJSON(EVENTS_FILE));
 });
 
