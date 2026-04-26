@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Preview | Auction Legacy</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    :root {
+      --al-ink: #0b1220;
+      --al-muted: #64748b;
+      --al-line: #e2e8f0;
+      --al-card: #ffffff;
+      --al-bg: #f4f6fa;
+      --al-blue: #1d4ed8;
+      --al-navy: #0b1b2b;
+      --al-green: #15803d;
+      --al-amber: #b45309;
+      --al-red: #b91c1c;
+    }
+    body { background: var(--al-bg); }
+    .container { max-width: 1180px; padding: 20px; }
+    .al-shell { display: grid; gap: 18px; }
+    .al-topbar {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .al-hero {
+      background: linear-gradient(135deg, #0b1b2b 0%, #102d4f 100%);
+      border-radius: 24px;
+      color: white;
+      padding: 22px;
+      min-height: 170px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 18px 38px rgba(11,27,43,.18);
+      overflow: hidden;
+      position: relative;
+    }
+    .al-hero::after {
+      content: '';
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -90px;
+      top: -110px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+    }
+    .al-kicker { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+    .al-hero-title { font-size: 30px; line-height: 1; font-weight: 900; letter-spacing: -.04em; margin: 7px 0 6px; }
+    .al-hero-sub { color: rgba(255,255,255,.72); font-size: 14px; max-width: 520px; }
+    .al-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    .al-primary, .al-secondary {
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-weight: 800;
+      border: 0;
+      cursor: pointer;
+      box-shadow: none;
+      transform: none;
+    }
+    .al-primary { background: white; color: #0b1b2b; }
+    .al-secondary { background: rgba(255,255,255,.10); color: white; border: 1px solid rgba(255,255,255,.16); }
+    .al-status-card {
+      background: white;
+      border: 1px solid var(--al-line);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 12px 28px rgba(15,23,42,.06);
+    }
+    .al-status-title { font-size: 13px; color: var(--al-muted); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+    .al-action-list { display: grid; gap: 10px; }
+    .al-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid #edf2f7;
+      border-radius: 16px;
+      padding: 13px 14px;
+      cursor: pointer;
+      background: #fbfdff;
+    }
+    .al-action-row:hover { border-color: #bfdbfe; background: white; }
+    .al-action-title { font-weight: 850; color: var(--al-ink); font-size: 14px; }
+    .al-action-sub { color: var(--al-muted); font-size: 12px; margin-top: 2px; }
+    .al-arrow { color: #94a3b8; font-size: 24px; line-height: 1; }
+    .al-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .al-stat {
+      background: white;
+      border: 1px solid var(--al-line);
+      border-radius: 20px;
+      padding: 17px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(15,23,42,.045);
+    }
+    .al-stat:hover { border-color: #bfdbfe; }
+    .al-stat-label { font-size: 11px; color: var(--al-muted); font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
+    .al-stat-value { margin-top: 9px; font-size: 36px; line-height: .95; font-weight: 900; color: var(--al-ink); letter-spacing: -.05em; }
+    .al-stat-note { margin-top: 8px; font-size: 12px; color: var(--al-muted); }
+    .al-section { display: grid; gap: 12px; }
+    .al-section-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-top: 4px; }
+    .al-section-title { font-size: 21px; font-weight: 900; letter-spacing: -.03em; color: var(--al-ink); }
+    .al-section-sub { color: var(--al-muted); font-size: 13px; margin-top: 2px; }
+    .al-tools { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .al-tool {
+      background: white;
+      border: 1px solid var(--al-line);
+      border-radius: 20px;
+      padding: 16px;
+      min-height: 118px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(15,23,42,.045);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .al-tool:hover { border-color: #bfdbfe; }
+    .al-tool-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .al-tool-code {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--al-blue);
+      background: #eff6ff;
+    }
+    .al-tool-title { font-size: 16px; font-weight: 900; color: var(--al-ink); margin-top: 12px; }
+    .al-tool-sub { color: var(--al-muted); font-size: 12.5px; line-height: 1.42; margin-top: 4px; }
+    .al-chip { align-self: flex-start; margin-top: 14px; padding: 5px 9px; border-radius: 999px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    .al-priority {
+      background: white;
+      border: 1px solid var(--al-line);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(15,23,42,.045);
+    }
+    .al-priority-head { padding: 16px 18px; border-bottom: 1px solid var(--al-line); display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .al-priority-title { font-weight: 900; color: var(--al-ink); }
+    .al-priority-list { display: grid; }
+    .al-priority-row { padding: 14px 18px; display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .al-priority-row:last-child { border-bottom: 0; }
+    .al-priority-row:hover { background: #f8fafc; }
+    .al-lot { font-weight: 900; color: var(--al-blue); font-size: 13px; }
+    .al-item-name { font-weight: 800; color: var(--al-ink); font-size: 13px; }
+    .al-item-meta { color: var(--al-muted); font-size: 12px; margin-top: 2px; }
+    .al-pill { padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; background: #eff6ff; color: var(--al-blue); }
+    .al-empty { padding: 22px 18px; color: var(--al-muted); text-align: center; font-size: 13px; }
+    @media (min-width: 760px) {
+      .al-topbar { grid-template-columns: minmax(0, 1.7fr) minmax(300px, .8fr); }
+      .al-stats { grid-template-columns: repeat(4, 1fr); }
+      .al-tools { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .container { padding: 14px; }
+      .al-hero { border-radius: 20px; padding: 18px; }
+      .al-hero-title { font-size: 25px; }
+      .al-stats { grid-template-columns: 1fr; }
+      .al-priority-row { grid-template-columns: 58px 1fr; }
+      .al-priority-row .al-pill { grid-column: 2; justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="nav-left" onclick="toggleMenu()">☰</div>
+    <div class="nav-center" onclick="window.location.href='/dashboard.html'" style="cursor:pointer;"><div class="nav-logo">AL</div><span class="nav-title">Auction Legacy</span></div>
+    <div class="nav-right" onclick="window.location.href='/profile.html'" style="cursor:pointer;"><div id="navAvatar" class="nav-avatar"></div></div>
+  </div>
+
+  <div id="sidebar" class="sidebar">
+    <div class="sidebar-header"></div>
+    <nav>
+      <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+      <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+      <a href="/review-visit.html"><span class="sidebar-icon">✅</span> Review Visit</a>
+      <a href="/scanner.html"><span class="sidebar-icon">📷</span> Scanner</a>
+      <a href="/items.html"><span class="sidebar-icon">📦</span> Item Library</a>
+      <a href="/photography-queue.html"><span class="sidebar-icon">🎯</span> Photo Queue</a>
+      <a href="/events.html"><span class="sidebar-icon">🏷️</span> Auction Events</a>
+      <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
+      <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
+      <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+    </nav>
+  </div>
+  <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+  <main class="container">
+    <div class="al-shell">
+      <section class="al-topbar">
+        <div class="al-hero">
+          <div>
+            <div class="al-kicker">Studio command center</div>
+            <div class="al-hero-title" id="heroTitle">Auction Legacy</div>
+            <div class="al-hero-sub" id="heroSub">Live intake, photography, pickup, and reporting for NM Auctions.</div>
+          </div>
+          <div class="al-hero-actions">
+            <button class="al-primary" onclick="window.location.href='/scanner.html'">Scan item</button>
+            <button class="al-secondary" onclick="window.location.href='/initial-visit.html'">Start visit</button>
+            <button class="al-secondary" onclick="window.location.href='/items.html'">Search inventory</button>
+          </div>
+        </div>
+
+        <aside class="al-status-card">
+          <div class="al-status-title">Fast actions</div>
+          <div class="al-action-list">
+            <div class="al-action-row" onclick="window.location.href='/photography-queue.html'">
+              <div><div class="al-action-title">Open photo queue</div><div class="al-action-sub">Items waiting for pictures</div></div><div class="al-arrow">›</div>
+            </div>
+            <div class="al-action-row" onclick="window.location.href='/reports.html'" id="dailyReportAction">
+              <div><div class="al-action-title">Daily closeout</div><div class="al-action-sub">Review today’s output</div></div><div class="al-arrow">›</div>
+            </div>
+            <div class="al-action-row" onclick="window.location.href='/review-visit.html'" id="reviewAction">
+              <div><div class="al-action-title">Review visits</div><div class="al-action-sub">Approve new intake</div></div><div class="al-arrow">›</div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="al-stats">
+        <div class="al-stat" onclick="window.location.href='/review-visit.html'" id="prospectsCard"><div class="al-stat-label">Prospects</div><div class="al-stat-value" id="statProspects">—</div><div class="al-stat-note">Home visit items</div></div>
+        <div class="al-stat" onclick="window.location.href='/items.html'"><div class="al-stat-label">In inventory</div><div class="al-stat-value" id="statInventory">—</div><div class="al-stat-note">Active workflow</div></div>
+        <div class="al-stat" onclick="window.location.href='/items.html?stage=Review+%26+Cleaning'"><div class="al-stat-label">Ready to shoot</div><div class="al-stat-value" id="statPhoto">—</div><div class="al-stat-note">Photo queue</div></div>
+        <div class="al-stat" onclick="window.location.href='/items.html?stage=Ready+for+Pick+Up'"><div class="al-stat-label">Pickup ready</div><div class="al-stat-value" id="statPickup">—</div><div class="al-stat-note">Customer pickup</div></div>
+      </section>
+
+      <section class="al-section">
+        <div class="al-section-head"><div><div class="al-section-title">Core tools</div><div class="al-section-sub">Clean, direct, tablet-friendly actions.</div></div></div>
+        <div class="al-tools">
+          <div class="al-tool" onclick="window.location.href='/initial-visit.html'"><div><div class="al-tool-top"><div class="al-tool-code">IV</div><div class="al-arrow">›</div></div><div class="al-tool-title">Initial Visit</div><div class="al-tool-sub">Create consigners, add items, capture photos, and print labels.</div></div><div class="al-chip">Intake</div></div>
+          <div class="al-tool" onclick="window.location.href='/scanner.html'"><div><div class="al-tool-top"><div class="al-tool-code">QR</div><div class="al-arrow">›</div></div><div class="al-tool-title">Scanner</div><div class="al-tool-sub">Scan labels, check items in, and move them through stages.</div></div><div class="al-chip">Floor</div></div>
+          <div class="al-tool" onclick="window.location.href='/items.html'"><div><div class="al-tool-top"><div class="al-tool-code">DB</div><div class="al-arrow">›</div></div><div class="al-tool-title">Item Library</div><div class="al-tool-sub">Search inventory, update stages, and inspect item records.</div></div><div class="al-chip">Inventory</div></div>
+          <div class="al-tool" onclick="window.location.href='/photography-queue.html'"><div><div class="al-tool-top"><div class="al-tool-code">PH</div><div class="al-arrow">›</div></div><div class="al-tool-title">Photo Queue</div><div class="al-tool-sub">Keep photography work organized and moving.</div></div><div class="al-chip">Studio</div></div>
+          <div class="al-tool" onclick="window.location.href='/events.html'"><div><div class="al-tool-top"><div class="al-tool-code">AU</div><div class="al-arrow">›</div></div><div class="al-tool-title">Auction Events</div><div class="al-tool-sub">Assign lots, review sales, and manage event flow.</div></div><div class="al-chip">Sales</div></div>
+          <div class="al-tool" onclick="window.location.href='/reports.html'" id="reportsTool"><div><div class="al-tool-top"><div class="al-tool-code">RP</div><div class="al-arrow">›</div></div><div class="al-tool-title">Reports</div><div class="al-tool-sub">Daily closeout, performance, and consigner activity.</div></div><div class="al-chip">Admin</div></div>
+        </div>
+      </section>
+
+      <section class="al-priority">
+        <div class="al-priority-head"><div><div class="al-priority-title">Priority queue</div><div class="al-action-sub">Items that need attention first.</div></div><button class="al-secondary" style="background:#f8fafc;color:#0b1b2b;border:1px solid #e2e8f0;" onclick="window.location.href='/items.html'">View all</button></div>
+        <div class="al-priority-list" id="priorityList"><div class="al-empty">Loading priority items…</div></div>
+      </section>
+    </div>
+  </main>
+
+<script>
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+function logout(){localStorage.removeItem('user');window.location.href='/';}
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if(!user) window.location.href='/';
+if(user){
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('heroTitle').textContent = `${greet}, ${user.name || 'team'}`;
+  document.getElementById('heroSub').textContent = user.isAdmin ? 'Admin view: monitor intake, floor movement, reports, and pickup readiness.' : 'Your work queue, scanner, and inventory tools are ready.';
+  if(!user.isAdmin){
+    ['dailyReportAction','reviewAction','reportsTool'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+    const p = document.getElementById('prospectsCard'); if(p) p.onclick = () => window.location.href='/items.html?stage=Home+Visit';
+  }
+}
+function esc(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function loadDashboard(){
+  try{
+    const res = await fetch('/items');
+    const items = await res.json();
+    const active = items.filter(i => !['Home Visit','Picked Up','Missing at Drop Off','Archived'].includes(i.stage));
+    const prospects = items.filter(i => i.stage === 'Home Visit');
+    const photo = items.filter(i => i.stage === 'Review & Cleaning' || i.stage === 'Photograph');
+    const pickup = items.filter(i => i.stage === 'Ready for Pick Up' || i.stage === 'Prep for Pick Up');
+    document.getElementById('statProspects').textContent = prospects.length;
+    document.getElementById('statInventory').textContent = active.length;
+    document.getElementById('statPhoto').textContent = photo.length;
+    document.getElementById('statPickup').textContent = pickup.length;
+    const priority = [...prospects, ...photo, ...pickup, ...active].slice(0, 8);
+    const list = document.getElementById('priorityList');
+    if(!priority.length){ list.innerHTML = '<div class="al-empty">No priority items yet.</div>'; return; }
+    list.innerHTML = priority.map(i => `
+      <div class="al-priority-row" onclick="window.location.href='/item.html?id=${encodeURIComponent(i.id)}'">
+        <div class="al-lot">${esc(i.lotNumber || i.code || '—')}</div>
+        <div><div class="al-item-name">${esc(i.name || 'Unnamed item')}</div><div class="al-item-meta">${esc(i.consigner || 'No consigner')} · ${esc(i.location || 'No location')}</div></div>
+        <div class="al-pill">${esc(i.stage || 'Stage')}</div>
+      </div>`).join('');
+  }catch(err){
+    document.getElementById('priorityList').innerHTML = '<div class="al-empty">Could not load items.</div>';
+  }
+}
+loadDashboard();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>
