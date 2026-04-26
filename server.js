@@ -14,17 +14,21 @@ app.set('trust proxy', 1);
 
 // =========================
 // DATA DIRECTORY
-// When DATA_DIR is set (Render), write all JSON files there so they
-// survive redeploys. Falls back to the repo root for local dev.
+// Resolution order:
+//   1. DATA_DIR env var (explicit override)
+//   2. Auto-detect Render: use /opt/render/project/src/data (matches the
+//      persistent disk mount in render.yaml; not git-tracked so survives deploys)
+//   3. Local dev: repo root (__dirname)
 // =========================
+const _onRender = !!process.env.RENDER || __dirname.startsWith('/opt/render/');
 const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
-  : path.join(__dirname);
+  : _onRender
+    ? '/opt/render/project/src/data'
+    : __dirname;
 
-if (process.env.DATA_DIR) {
-  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
-  console.log(`📦 Persistent data dir: ${DATA_DIR}`);
-}
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+console.log(`📦 DATA_DIR: ${DATA_DIR} | onRender=${_onRender} | envVar=${process.env.DATA_DIR || '(auto)'}`);
 
 // =========================
 // FILE PATHS
