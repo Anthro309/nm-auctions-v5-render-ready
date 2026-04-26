@@ -1300,7 +1300,6 @@ app.post('/analyze-image', async (req, res) => {
       return res.json({ success: true, title: 'Item', description: 'AI not configured.', category: 'misc', condition: 'unknown' });
     }
 
-    console.log('🤖 Analyzing image:', imageUrl);
 
     const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -1321,7 +1320,6 @@ app.post('/analyze-image', async (req, res) => {
     });
 
     const raw = response.choices[0].message.content || '';
-    console.log('🤖 AI raw response:', raw);
     const parsed = safeJsonParse(raw, null);
 
     if (!parsed) {
@@ -1657,69 +1655,10 @@ app.post('/intake', (req, res) => {
 // =========================
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 ensureArrayFile(EVENTS_FILE);
-console.log(`📅 EVENTS_FILE: ${EVENTS_FILE}`);
-
-app.get('/events/debug', (req, res) => {
-  const exists = fs.existsSync(EVENTS_FILE);
-  let eventCount = 0;
-  let readErr = null;
-  try { eventCount = readJSON(EVENTS_FILE).length; } catch (e) { readErr = e.message; }
-
-  let writeTest = 'ok';
-  try {
-    const probe = path.join(DATA_DIR, '.write-probe');
-    fs.writeFileSync(probe, Date.now().toString());
-    fs.unlinkSync(probe);
-  } catch (e) { writeTest = 'FAILED: ' + e.message; }
-
-  let usersCount = 0;
-  try { usersCount = readJSON(USERS_FILE).length; } catch (_) {}
-
-  res.json({
-    DATA_DIR,
-    EVENTS_FILE,
-    onRender: _onRender,
-    dataDirEnv: process.env.DATA_DIR || '(not set)',
-    nodeEnv: process.env.NODE_ENV,
-    fileExists: exists,
-    eventCount,
-    usersCount,
-    writeTest,
-    readError: readErr
-  });
-});
 
 app.get('/events', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json(readJSON(EVENTS_FILE));
-});
-
-// Direct server-side test: creates a real event without needing browser JS.
-// Visit /events/create-test in browser to verify the full write→read cycle.
-app.get('/events/create-test', (req, res) => {
-  const events = readJSON(EVENTS_FILE);
-  const ev = {
-    id: generateId(),
-    name: 'Server Test Event ' + new Date().toISOString(),
-    date: new Date().toISOString().slice(0, 10),
-    description: 'Created via /events/create-test',
-    category: 'general',
-    commissionRate: 35,
-    status: 'upcoming',
-    lots: [],
-    createdAt: new Date().toISOString(),
-    createdBy: 'server-test'
-  };
-  events.push(ev);
-  let writeErr = null;
-  try { writeJSON(EVENTS_FILE, events); } catch (e) { writeErr = e.message; }
-  const readBack = readJSON(EVENTS_FILE);
-  res.json({
-    writeError: writeErr,
-    createdEvent: ev,
-    totalEventsAfterWrite: readBack.length,
-    allEvents: readBack
-  });
 });
 
 app.post('/events', (req, res) => {

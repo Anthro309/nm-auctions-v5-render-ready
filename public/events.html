@@ -80,7 +80,6 @@
     <div>
       <div class="page-header-title">Auction Events <button class="help-btn" onclick="showTip(this,'Create an event for each auction sale. Assign items as lots, then after the auction paste the results to automatically calculate what each consigner is owed.')">?</button></div>
       <div class="page-header-sub" id="eventsSub">Manage sales, assign lots, import results</div>
-      <div style="font-size:10px;color:#9ca3af;">v26-apr-b</div>
     </div>
   </div>
 
@@ -140,7 +139,6 @@ function toggleCreate() {
 }
 
 async function createEvent() {
-  document.getElementById('eventsSub').textContent = 'createEvent called…';
   const btn = document.getElementById('createSubmitBtn');
   const msg = document.getElementById('createMsg');
   const showMsg = (bg, color, text) => {

@@ -4,3 +4,11 @@ public/uploads/
 .env
 *.log
 data/
+# Local dev JSON data files (production data lives on Render persistent disk)
+users.json
+items.json
+events.json
+reports.json
+notifications.json
+intake.json
+payouts.json
