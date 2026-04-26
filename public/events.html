@@ -105,7 +105,7 @@
 
     <div id="createMsg" style="display:none;margin-top:12px;padding:10px;border-radius:10px;font-size:13px;font-weight:600;"></div>
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button id="createSubmitBtn" onclick="createEvent()" style="flex:1;">Create Event</button>
+      <button id="createSubmitBtn" type="button" onclick="createEvent()" style="flex:1;">Create Event</button>
       <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
     </div>
   </div>
@@ -139,57 +139,53 @@ function toggleCreate() {
 }
 
 async function createEvent() {
-  const name = document.getElementById('newName').value.trim();
-  const date = document.getElementById('newDate').value;
   const btn = document.getElementById('createSubmitBtn');
   const msg = document.getElementById('createMsg');
-
-  if (!name) {
-    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
-    msg.innerText = '⚠️ Event name is required';
-    document.getElementById('newName').focus();
-    return;
-  }
-  if (!date) {
-    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
-    msg.innerText = '⚠️ Date is required';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Creating…';
-  msg.style.cssText = 'display:block;padding:10px;background:#eff6ff;color:#1d4ed8;border-radius:10px;font-size:13px;font-weight:600;';
-  msg.innerText = 'Creating event…';
+  const showMsg = (bg, color, text) => {
+    msg.style.cssText = `display:block;padding:10px;background:${bg};color:${color};border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;`;
+    msg.innerText = text;
+  };
   try {
+    const name = (document.getElementById('newName').value || '').trim();
+    const date = document.getElementById('newDate').value || '';
+
+    if (!name) { showMsg('#fef2f2','#dc2626','⚠️ Event name is required'); return; }
+    if (!date) { showMsg('#fef2f2','#dc2626','⚠️ Date is required'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Creating…'; }
+    showMsg('#eff6ff','#1d4ed8','Creating event…');
+
     const res = await fetch('/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name, date,
-        description: document.getElementById('newDesc').value.trim(),
+        description: (document.getElementById('newDesc').value || '').trim(),
         category: 'general',
-        commissionRate: document.getElementById('newCommission').value,
-        requestedBy: user.name,
-        createdBy: user.name
+        commissionRate: document.getElementById('newCommission').value || 35,
+        createdBy: user ? user.name : 'unknown'
       })
     });
-    let data = null;
-    try { data = await res.json(); } catch (_) { data = { success: false, message: 'Invalid response (HTTP ' + res.status + ')' }; }
-    if (!res.ok || !data.success) {
-      throw new Error(data.message || ('Server error ' + res.status));
-    }
-    msg.style.cssText = 'display:block;padding:10px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;';
-    msg.innerText = '✅ Event created!';
+    let data;
+    try { data = await res.json(); } catch (_) { data = { success: false, message: 'Bad response (HTTP ' + res.status + ')' }; }
+    if (!res.ok || !data.success) throw new Error(data.message || 'Server error ' + res.status);
+
+    showMsg('#ecfdf5','#047857','✅ Event created!');
     document.getElementById('newName').value = '';
     document.getElementById('newDate').value = '';
     document.getElementById('newDesc').value = '';
-    setTimeout(() => { toggleCreate(); load(); }, 1000);
+    setTimeout(() => { toggleCreate(); load(); }, 1500);
   } catch (err) {
-    msg.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;';
-    msg.innerText = '❌ ' + (err.message || 'Network error — please try again');
+    const msg2 = document.getElementById('createMsg');
+    if (msg2) {
+      msg2.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;';
+      msg2.innerText = '❌ ' + (err.message || 'Unknown error');
+    } else {
+      alert('Event creation failed: ' + (err.message || 'Unknown error'));
+    }
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Create Event';
+    const b = document.getElementById('createSubmitBtn');
+    if (b) { b.disabled = false; b.textContent = 'Create Event'; }
   }
 }
 

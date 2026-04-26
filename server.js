@@ -1694,6 +1694,34 @@ app.get('/events', (req, res) => {
   res.json(readJSON(EVENTS_FILE));
 });
 
+// Direct server-side test: creates a real event without needing browser JS.
+// Visit /events/create-test in browser to verify the full write→read cycle.
+app.get('/events/create-test', (req, res) => {
+  const events = readJSON(EVENTS_FILE);
+  const ev = {
+    id: generateId(),
+    name: 'Server Test Event ' + new Date().toISOString(),
+    date: new Date().toISOString().slice(0, 10),
+    description: 'Created via /events/create-test',
+    category: 'general',
+    commissionRate: 35,
+    status: 'upcoming',
+    lots: [],
+    createdAt: new Date().toISOString(),
+    createdBy: 'server-test'
+  };
+  events.push(ev);
+  let writeErr = null;
+  try { writeJSON(EVENTS_FILE, events); } catch (e) { writeErr = e.message; }
+  const readBack = readJSON(EVENTS_FILE);
+  res.json({
+    writeError: writeErr,
+    createdEvent: ev,
+    totalEventsAfterWrite: readBack.length,
+    allEvents: readBack
+  });
+});
+
 app.post('/events', (req, res) => {
   const { name, date, description, category, commissionRate, createdBy } = req.body;
   if (!name || !date) return res.status(400).json({ success: false, message: 'name and date required' });
