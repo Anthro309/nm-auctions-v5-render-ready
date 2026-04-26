@@ -1,3 +1,12 @@
+// ── PREMIUM UI SAFE OVERRIDE ──
+(function () {
+  if (document.querySelector('link[href="/premium-ui.css"]')) return;
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = '/premium-ui.css?v=3';
+  document.head.appendChild(link);
+}());
+
 // ── HELP TOOLTIP SYSTEM ──
 (function () {
   var tip = null;
