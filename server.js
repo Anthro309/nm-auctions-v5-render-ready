@@ -27,7 +27,7 @@ const DATA_DIR = process.env.DATA_DIR
     ? '/opt/render/project/src/data'
     : __dirname;
 
-try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) { console.error(`⚠️ Could not create DATA_DIR: ${e.message}`); }
 console.log(`📦 DATA_DIR: ${DATA_DIR} | onRender=${_onRender} | envVar=${process.env.DATA_DIR || '(auto)'}`);
 
 // =========================
@@ -1661,17 +1661,31 @@ console.log(`📅 EVENTS_FILE: ${EVENTS_FILE}`);
 
 app.get('/events/debug', (req, res) => {
   const exists = fs.existsSync(EVENTS_FILE);
-  let count = 0;
+  let eventCount = 0;
   let readErr = null;
-  try { count = readJSON(EVENTS_FILE).length; } catch (e) { readErr = e.message; }
+  try { eventCount = readJSON(EVENTS_FILE).length; } catch (e) { readErr = e.message; }
+
+  let writeTest = 'ok';
+  try {
+    const probe = path.join(DATA_DIR, '.write-probe');
+    fs.writeFileSync(probe, Date.now().toString());
+    fs.unlinkSync(probe);
+  } catch (e) { writeTest = 'FAILED: ' + e.message; }
+
+  let usersCount = 0;
+  try { usersCount = readJSON(USERS_FILE).length; } catch (_) {}
+
   res.json({
     DATA_DIR,
     EVENTS_FILE,
-    fileExists: exists,
-    eventCount: count,
-    readError: readErr,
+    onRender: _onRender,
+    dataDirEnv: process.env.DATA_DIR || '(not set)',
     nodeEnv: process.env.NODE_ENV,
-    dataDirEnv: process.env.DATA_DIR || '(not set)'
+    fileExists: exists,
+    eventCount,
+    usersCount,
+    writeTest,
+    readError: readErr
   });
 });
 
