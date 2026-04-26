@@ -106,8 +106,8 @@
 
     <div id="createMsg" style="display:none;margin-top:12px;padding:10px;border-radius:10px;font-size:13px;font-weight:600;"></div>
     <div style="display:flex;gap:10px;margin-top:14px;">
-      <button id="createSubmitBtn" type="button" onclick="createEvent()" style="flex:1;">Create Event</button>
-      <button onclick="toggleCreate()" style="flex:1;background:#6b7280;">Cancel</button>
+      <button id="createSubmitBtn" type="button" style="flex:1;touch-action:manipulation;">Create Event</button>
+      <button id="cancelBtn" type="button" style="flex:1;background:#6b7280;touch-action:manipulation;">Cancel</button>
     </div>
   </div>
 
@@ -140,7 +140,7 @@ function toggleCreate() {
 }
 
 async function createEvent() {
-  window.alert('DEBUG: createEvent called');
+  document.getElementById('eventsSub').textContent = 'createEvent called…';
   const btn = document.getElementById('createSubmitBtn');
   const msg = document.getElementById('createMsg');
   const showMsg = (bg, color, text) => {
@@ -238,6 +238,10 @@ async function load() {
     el.innerHTML = '<div class="card" style="text-align:center;color:#dc2626;">Failed to load auction events. Please refresh.</div>';
   }
 }
+
+// Wire buttons via addEventListener (more reliable on mobile than onclick attributes)
+document.getElementById('createSubmitBtn').addEventListener('click', createEvent);
+document.getElementById('cancelBtn').addEventListener('click', toggleCreate);
 
 load();
 </script>
