@@ -1069,10 +1069,11 @@ function writeWOTD(data) {
 }
 
 app.get('/word-of-day', async (req, res) => {
-  const today = new Date().toLocaleDateString('en-US');
+  // Use ISO date (YYYY-MM-DD) for consistent comparison regardless of server locale
+  const today = new Date().toISOString().slice(0, 10);
   const cache = readWOTD();
 
-  // Serve cached word if it's still today's
+  // Serve cached word only if it was generated today
   if (cache.date === today && cache.word) {
     return res.json({ success: true, ...cache.word });
   }
@@ -1082,7 +1083,7 @@ app.get('/word-of-day', async (req, res) => {
   }
 
   const usedWords = Array.isArray(cache.used) ? cache.used : [];
-  const avoidList = usedWords.slice(-60).join(', ');
+  const avoidList = usedWords.slice(-90).join(', ');
 
   try {
     const response = await client.chat.completions.create({
@@ -1118,9 +1119,9 @@ Return ONLY valid JSON with no markdown fences:
 
   } catch (err) {
     console.error('WOTD generation error:', err.message);
-    // Serve yesterday's word as fallback rather than nothing
+    // Return stale word for UX but do NOT cache it as today's — next request retries
     if (cache.word) return res.json({ success: true, ...cache.word, stale: true });
-    return res.json({ success: false, message: err.message });
+    return res.json({ success: false, message: 'Word generation failed' });
   }
 });
 
