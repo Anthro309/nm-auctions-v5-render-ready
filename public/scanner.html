@@ -482,16 +482,16 @@
       </div>
     </div>
 
-    <div id="statusBar" class="status-bar">📡 Ready — scan a QR code or enter a lot number</div>
+    <div id="statusBar" class="status-bar">📡 Ready — waiting for scanner or manual entry</div>
 
     <div class="info-hint">
       <span class="info-hint-icon">💡</span>
-      <span>QR codes now link directly. Scan with any camera app to open an item, or use the scanner here to log scans and move it through workflow.</span>
+      <span><strong>Hardware scanner:</strong> Plug in your Honeywell scanner and scan any item label — it types the lot code and hits Enter automatically. Works without clicking anything first. Press <strong>Esc</strong> to clear.</span>
     </div>
 
     <div class="scanner-form-card">
       <div class="search-stack">
-        <input id="scanInput" class="scan-input" placeholder="Scan lot code or search by name" autofocus>
+        <input id="scanInput" class="scan-input" placeholder="Scan barcode / lot number / or search by name" autofocus autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="scanner-row">
           <button type="button" class="btn-camera" onclick="startCamera()" style="flex:1;">
             📷 Use Camera to Scan QR Code
@@ -768,7 +768,11 @@ function showItem(item) {
   picker.value = '';
 
   document.getElementById('scanRecorded').style.display = 'none';
-  log('Loaded: ' + (item.name || item.lotNumber));
+  log('Loaded: ' + (item.name || item.lotNumber) + ' — ready for next scan');
+
+  // Clear input and refocus so hardware scanner is immediately ready for next item
+  scanInput.value = '';
+  scanInput.focus();
 }
 
 async function moveToStage() {
@@ -834,6 +838,27 @@ async function recordScan(itemId) {
     document.getElementById('lastHandledDisplay').innerText = 'Last handled by: ' + getEmployee();
   } catch {}
 }
+
+// Global keyboard handler — redirects hardware scanner keystrokes to scan input
+// even if user clicked elsewhere. Ignores keystrokes aimed at select/textarea.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { resetScanner(); return; }
+  const active = document.activeElement;
+  if (active === scanInput) return; // already focused, nothing to do
+  // Don't steal from the stage picker or other intentional inputs
+  if (active && (active.tagName === 'SELECT' || active.tagName === 'TEXTAREA')) return;
+  // For printable characters, redirect to scan input so scanner works hands-free
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    scanInput.focus();
+    // Browser will deliver the character into the now-focused input
+  }
+  // Also handle Enter when scanner fires before focus redirect completes
+  if (e.key === 'Enter' && scanInput.value.trim()) {
+    const val = scanInput.value.trim();
+    document.getElementById('searchResults').innerHTML = '';
+    loadFromScannedValue(val);
+  }
+});
 
 (function() {
   const p = new URLSearchParams(window.location.search);
