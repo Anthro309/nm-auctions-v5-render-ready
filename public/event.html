@@ -111,6 +111,9 @@
       <button onclick="setStatus('active')"   id="btnActive"   style="flex:1;font-size:13px;padding:10px;background:#16a34a;">🔴 Active</button>
       <button onclick="setStatus('completed')" id="btnCompleted" style="flex:1;font-size:13px;padding:10px;background:#6b7280;">✓ Completed</button>
     </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;">
+      <button id="deleteEventBtn" style="width:100%;background:#dc2626;font-size:13px;padding:10px;box-shadow:none;" type="button">🗑 Delete Event</button>
+    </div>
   </div>
 
   <!-- Assign lots -->
@@ -397,6 +400,28 @@ async function confirmImport() {
     btn.disabled = false; btn.innerText = '✅ Confirm & Import Results';
   }
 }
+
+async function deleteEvent() {
+  const lotCount = (ev.lotItems || []).length;
+  const lotWarning = lotCount > 0 ? `\n\n⚠️ This event has ${lotCount} assigned lot${lotCount !== 1 ? 's' : ''} — they will be unassigned but not deleted.` : '';
+  if (!confirm(`Delete "${ev.name}"?\n\nThis cannot be undone.${lotWarning}`)) return;
+
+  const btn = document.getElementById('deleteEventBtn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+
+  const res = await fetch(`/events/${evId}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) {
+    window.location.href = '/events.html';
+  } else {
+    alert('Delete failed: ' + (data.message || 'Unknown error'));
+    btn.disabled = false;
+    btn.textContent = '🗑 Delete Event';
+  }
+}
+
+document.getElementById('deleteEventBtn').addEventListener('click', deleteEvent);
 
 // Close add-lot dropdown on outside click
 document.addEventListener('click', e => {
