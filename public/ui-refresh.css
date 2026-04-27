@@ -1,18 +1,16 @@
-/* Shared UI refresh overrides for Auction Legacy */
+/* Auction Legacy — UI Refresh v3 */
 
 :root {
-  --al-bg-top: #f8fbff;
-  --al-bg-bottom: #ecf3fb;
-  --al-surface: rgba(255,255,255,0.94);
-  --al-surface-solid: #ffffff;
-  --al-border: rgba(148, 163, 184, 0.16);
-  --al-border-strong: rgba(37, 99, 235, 0.24);
-  --al-shadow-sm: 0 12px 28px rgba(15, 23, 42, 0.06);
-  --al-shadow-md: 0 20px 46px rgba(15, 23, 42, 0.11);
-  --al-shadow-lg: 0 30px 72px rgba(15, 23, 42, 0.16);
-  --al-text-soft: #64748b;
-  --al-accent: #2563eb;
-  --al-accent-soft: rgba(37,99,235,0.12);
+  --al-surface:       #FFFFFF;
+  --al-border:        rgba(0,0,0,0.07);
+  --al-border-strong: rgba(44,82,224,0.28);
+  --al-shadow-sm:     0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.05);
+  --al-shadow-md:     0 2px 6px rgba(0,0,0,0.06), 0 10px 28px rgba(0,0,0,0.08);
+  --al-shadow-lg:     0 6px 16px rgba(0,0,0,0.09), 0 24px 56px rgba(0,0,0,0.11);
+  --al-accent:        #2C52E0;
+  --al-gold:          #C9A227;
+  --al-gold-light:    #E8C84A;
+  --al-text-soft:     #64748b;
 }
 
 html {
@@ -22,29 +20,32 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(59,130,246,0.14), transparent 28%),
-    radial-gradient(circle at 85% 0%, rgba(14,165,233,0.10), transparent 20%),
-    linear-gradient(180deg, var(--al-bg-top) 0%, var(--al-bg-bottom) 100%);
+  background: var(--bg);
 }
 
 body.menu-open {
   overflow: hidden;
 }
 
+/* ── NAVBAR ── */
 .navbar {
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  background:
-    linear-gradient(90deg, rgba(7,18,31,0.97) 0%, rgba(12,30,52,0.97) 55%, rgba(18,43,73,0.97) 100%);
-  border-bottom: 1px solid rgba(96,165,250,0.26);
-  box-shadow: 0 8px 28px rgba(2,6,23,0.26);
+  background: #06111E;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.28);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.nav-logo {
+  background: var(--al-accent);
+  border-radius: 9px;
+  box-shadow: 0 3px 10px rgba(44,82,224,0.45);
 }
 
 .nav-left,
 .nav-right,
 .nav-bell {
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .nav-center {
@@ -57,50 +58,52 @@ body.menu-open {
   text-overflow: ellipsis;
 }
 
-.nav-logo {
-  box-shadow: 0 10px 24px rgba(37,99,235,0.38);
-}
-
+/* ── SIDEBAR ── */
 .sidebar {
-  border-right: 1px solid rgba(255,255,255,0.06);
+  background: #06111E;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 4px 0 28px rgba(0,0,0,0.4);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(180deg, #07121f 0%, #0b1b2b 42%, #102844 100%);
 }
 
 .sidebar-header {
   padding-top: calc(28px + env(safe-area-inset-top, 0px));
+  border-bottom-color: rgba(255,255,255,0.06);
 }
 
 .sidebar a {
-  margin: 3px 10px;
-  border-radius: 14px;
+  margin: 2px 8px;
+  border-radius: 12px;
   border-left-width: 0;
-}
-
-.sidebar a:hover,
-.sidebar a.active {
-  border-left-color: transparent;
+  transition: background 0.14s, color 0.14s;
 }
 
 .sidebar a:hover {
-  background: rgba(59,130,246,0.12);
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.95);
+  border-left-color: transparent;
 }
 
 .sidebar a.active {
-  background: linear-gradient(90deg, rgba(37,99,235,0.22), rgba(37,99,235,0.08));
-  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.25);
+  background: rgba(44,82,224,0.2);
+  color: white;
+  box-shadow: inset 0 0 0 1px rgba(44,82,224,0.32);
+  border-left-color: transparent;
 }
 
+/* ── OVERLAY ── */
 .overlay {
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
+/* ── CONTAINER ── */
 .container {
   max-width: 1120px;
   padding-bottom: 56px;
 }
 
+/* ── CARDS ── */
 .card,
 .button-card,
 .filter-panel,
@@ -112,7 +115,7 @@ body.menu-open {
 .item,
 .photo-card,
 .stat-tile {
-  background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.90) 100%);
+  background: var(--al-surface);
   border: 1px solid var(--al-border);
   box-shadow: var(--al-shadow-sm);
 }
@@ -128,7 +131,7 @@ body.menu-open {
 .stat-tile,
 .photo-card,
 .item {
-  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover,
@@ -153,13 +156,28 @@ body.menu-open {
   color: #475569;
 }
 
+.button-card,
+.card {
+  border-radius: 20px;
+}
+
+/* ── BUTTONS ── */
 button {
   position: relative;
-  box-shadow: 0 10px 22px rgba(37,99,235,0.18);
+  background: linear-gradient(135deg, #3B5EEC 0%, #2044CC 100%);
+  box-shadow: 0 3px 10px rgba(44,82,224,0.28);
+  border-radius: 11px;
 }
 
 button:hover {
-  box-shadow: 0 14px 28px rgba(37,99,235,0.24);
+  background: linear-gradient(135deg, #4568EE 0%, #2A4FD8 100%);
+  box-shadow: 0 6px 18px rgba(44,82,224,0.38);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(44,82,224,0.2);
 }
 
 button:disabled,
@@ -167,24 +185,33 @@ button:disabled,
 .btn-move:disabled,
 .btn-accept.done,
 .btn-reject.done {
-  opacity: 0.55 !important;
+  opacity: 0.5 !important;
   cursor: not-allowed !important;
   transform: none !important;
   box-shadow: none !important;
 }
 
+/* ── INPUTS ── */
 input,
 select,
 textarea {
-  background: rgba(248,250,252,0.96);
-  border-color: rgba(148,163,184,0.22);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.82);
+  background: #FAFAF8;
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: none;
 }
 
 input:hover,
 select:hover,
 textarea:hover {
-  border-color: rgba(96,165,250,0.34);
+  border-color: rgba(44,82,224,0.3);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background: #FFFFFF;
+  border-color: var(--al-accent);
+  box-shadow: 0 0 0 3px rgba(44,82,224,0.12);
 }
 
 input:focus-visible,
@@ -192,10 +219,11 @@ select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgba(37,99,235,0.18);
+  outline: 3px solid rgba(44,82,224,0.2);
   outline-offset: 2px;
 }
 
+/* ── STATUS / INFO BARS ── */
 .status-bar,
 .info-hint,
 .onboarding-banner,
@@ -209,11 +237,12 @@ a:focus-visible {
 .bulk-bar,
 .batch-bar,
 .status-bar {
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
+/* ── DETAIL ROW ── */
 .detail-row {
-  border-bottom-color: #eef2f7;
+  border-bottom-color: rgba(0,0,0,0.05);
 }
 
 .detail-value {
@@ -221,6 +250,7 @@ a:focus-visible {
   word-break: break-word;
 }
 
+/* ── FLEX FIXES ── */
 .search-bar-row,
 .filter-row,
 .button-group,
@@ -232,25 +262,30 @@ a:focus-visible {
   min-width: 0;
 }
 
+/* ── PAGE HEADER ── */
 .page-header-block {
   margin-bottom: 24px;
 }
 
 .page-header-icon {
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 14px 28px rgba(11,27,43,0.18);
+  background: #06111E;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.22);
 }
 
+/* ── TOOLTIP ── */
 .help-tooltip {
   max-width: min(300px, calc(100vw - 24px));
 }
 
+/* ── EMPTY STATE ── */
 .empty-state {
-  border: 1px dashed rgba(148,163,184,0.28);
+  border: 1px dashed rgba(0,0,0,0.12);
   border-radius: 20px;
-  background: rgba(255,255,255,0.74);
+  background: rgba(255,255,255,0.65);
 }
 
+/* ── STAT TILES — gold accent bar ── */
 .stat-tile {
   position: relative;
   overflow: hidden;
@@ -261,15 +296,23 @@ a:focus-visible {
   position: absolute;
   inset: auto auto 0 0;
   width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, rgba(37,99,235,0.82), rgba(14,165,233,0.68));
+  height: 3px;
+  background: linear-gradient(90deg, var(--al-gold) 0%, var(--al-gold-light) 100%);
+  border-radius: 0 0 2px 2px;
 }
 
-.button-card,
-.card {
-  border-radius: 20px;
+/* ── PAYOUT CARD ── */
+.payout-card {
+  border-color: var(--al-border);
+  box-shadow: var(--al-shadow-sm);
 }
 
+.payout-card:hover {
+  border-color: var(--al-border-strong);
+  box-shadow: var(--al-shadow-md);
+}
+
+/* ── RESPONSIVE ── */
 @media (max-width: 560px) {
   .navbar {
     padding-left: 12px;
@@ -289,7 +332,7 @@ a:focus-visible {
   .button-card,
   .filter-panel,
   .stat-tile {
-    border-radius: 18px;
+    border-radius: 16px;
   }
 
   .search-bar-row > button {
