@@ -471,12 +471,12 @@ async function submitAction(code, itemId, action) {
         card.appendChild(notice);
       }
     } else {
-      alert('Something went wrong. Please try again.');
+      toast('Something went wrong. Please try again.', 'error');
       if (donateBtn) donateBtn.disabled = false;
       if (pickupBtn) pickupBtn.disabled = false;
     }
   } catch {
-    alert('Connection error. Please try again.');
+    toast('Connection error. Please try again.', 'error');
     if (donateBtn) donateBtn.disabled = false;
     if (pickupBtn) pickupBtn.disabled = false;
   }

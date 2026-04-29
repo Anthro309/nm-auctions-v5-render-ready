@@ -208,7 +208,7 @@ function showPreview(file) {
 async function runEstimate() {
   const desc = document.getElementById('descInput').value.trim();
   if (!selectedFile && !desc) {
-    alert('Please upload a photo or describe the item.');
+    toast('Please upload a photo or describe the item.', 'warn');
     return;
   }
 
@@ -224,11 +224,11 @@ async function runEstimate() {
 
     const res = await fetch('/intake-estimate', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!data.success) { alert(data.message || 'Estimation failed'); return; }
+    if (!data.success) { toast(data.message || 'Estimation failed', 'error'); return; }
     renderResult(data.estimate, desc);
     addToHistory(data.estimate, desc);
   } catch {
-    alert('Failed to estimate. Check your connection.');
+    toast('Failed to estimate. Check your connection.', 'error');
   } finally {
     btn.style.display = 'block';
     status.style.display = 'none';

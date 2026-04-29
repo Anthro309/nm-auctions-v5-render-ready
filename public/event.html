@@ -239,7 +239,7 @@ async function removeLot(itemId) {
   });
   const data = await res.json();
   if (!data.success) {
-    alert(data.message || 'Failed to remove lot from event');
+    toast(data.message || 'Failed to remove lot from event', 'error');
     return;
   }
   await load();
@@ -247,7 +247,7 @@ async function removeLot(itemId) {
 
 async function moveLot(itemId) {
   const sel = document.getElementById('move-' + itemId);
-  if (!sel || !sel.value) { alert('Select an event to move this item to'); return; }
+  if (!sel || !sel.value) { toast('Select an event to move this item to', 'warn'); return; }
   const toEventId = sel.value;
   const toEvent = allEvents.find(e => String(e.id) === String(toEventId));
   const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
@@ -296,7 +296,7 @@ async function assignLot(itemId) {
   });
   const data = await res.json();
   if (!data.success) {
-    alert(data.message || 'Failed to assign lot');
+    toast(data.message || 'Failed to assign lot', 'error');
     return;
   }
   await load();
@@ -337,7 +337,7 @@ async function setStatus(status) {
   });
   const data = await res.json();
   if (!data.success) {
-    alert(data.message || 'Failed to update event status');
+    toast(data.message || 'Failed to update event status', 'error');
     return;
   }
   await load();
@@ -345,7 +345,7 @@ async function setStatus(status) {
 
 function previewImport() {
   const csv = document.getElementById('csvInput').value.trim();
-  if (!csv) { alert('Paste CSV data first'); return; }
+  if (!csv) { toast('Paste CSV data first', 'warn'); return; }
   parsedResults = [];
   const lines = csv.split('\n').filter(l => l.trim());
   const commRate = (ev.commissionRate || 35) / 100;
@@ -396,7 +396,7 @@ async function confirmImport() {
     document.getElementById('importPreview').style.display = 'none';
     await load();
   } else {
-    alert('Import failed: ' + data.message);
+    toast('Import failed: ' + data.message, 'error');
     btn.disabled = false; btn.innerText = '✅ Confirm & Import Results';
   }
 }
@@ -415,7 +415,7 @@ async function deleteEvent() {
   if (data.success) {
     window.location.href = '/events.html';
   } else {
-    alert('Delete failed: ' + (data.message || 'Unknown error'));
+    toast('Delete failed: ' + (data.message || 'Unknown error'), 'error');
     btn.disabled = false;
     btn.textContent = '🗑 Delete Event';
   }

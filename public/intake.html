@@ -250,7 +250,7 @@ function printReport(){
 // EXPORT PDF
 // =========================
 function exportPDF(){
-  if(!currentReport) return alert('Open a report first');
+  if(!currentReport) { toast('Open a report first', 'warn'); return; }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();

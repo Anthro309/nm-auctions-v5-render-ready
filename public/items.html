@@ -787,7 +787,7 @@ function updateBatchCount() {
 
 async function batchAdvance() {
   const stage = document.getElementById('batchStage').value;
-  if (!stage) { alert('Select a stage to move items to'); return; }
+  if (!stage) { toast('Select a stage to move items to', 'warn'); return; }
   const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
   if (!ids.length) return;
 
@@ -810,7 +810,7 @@ async function batchAdvance() {
       setTimeout(() => { btn.innerText = 'Advance'; updateBatchCount(); }, 2000);
     }
   } catch (err) {
-    alert('Batch advance failed');
+    toast('Batch advance failed', 'error');
     btn.innerText = 'Advance';
     updateBatchCount();
   }
@@ -818,7 +818,7 @@ async function batchAdvance() {
 
 async function batchAssign() {
   const raw = document.getElementById('batchAssignSelect').value;
-  if (!raw) { alert('Select an employee to assign to'); return; }
+  if (!raw) { toast('Select an employee to assign to', 'warn'); return; }
   const assignedTo = raw === '__unassign__' ? null : raw;
   const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
   if (!ids.length) return;
@@ -843,7 +843,7 @@ async function batchAssign() {
       setTimeout(() => { btn.innerText = 'Assign'; updateBatchCount(); }, 2000);
     }
   } catch (err) {
-    alert('Batch assign failed');
+    toast('Batch assign failed', 'error');
     btn.innerText = 'Assign';
     updateBatchCount();
   }

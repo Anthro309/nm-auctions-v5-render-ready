@@ -610,11 +610,11 @@ async function saveToItem(cardId) {
       renderCard(c.id);
     } else {
       if (btn) { btn.disabled = false; btn.innerText = '💾 Save Photo to Item'; }
-      alert('Save failed: ' + (data.message || 'Unknown error'));
+      toast('Save failed: ' + (data.message || 'Unknown error'), 'error');
     }
   } catch (err) {
     if (btn) { btn.disabled = false; btn.innerText = '💾 Save Photo to Item'; }
-    alert('Save failed. Check connection.');
+    toast('Save failed. Check connection.', 'error');
   }
 }
 

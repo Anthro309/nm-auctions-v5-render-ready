@@ -180,6 +180,73 @@
   }
   .image-box { height: 320px; border-radius: 18px; }
 }
+
+/* ── STAGE PIPELINE ── */
+.stage-pipeline {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 8px 2px 4px;
+  gap: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.stage-pipeline::-webkit-scrollbar { display: none; }
+.pipeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  padding-top: 2px;
+}
+.pipeline-connector {
+  flex: 1;
+  min-width: 20px;
+  max-width: 40px;
+  height: 2px;
+  background: #e5e7eb;
+  margin-top: 8px;
+  flex-shrink: 1;
+  transition: background 0.25s;
+}
+.pipeline-connector.done { background: #2C52E0; }
+.pipeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: white;
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+.pipeline-step.done .pipeline-dot {
+  background: #2C52E0;
+  border-color: #2C52E0;
+}
+.pipeline-step.current .pipeline-dot {
+  width: 18px;
+  height: 18px;
+  background: #2C52E0;
+  border-color: #2C52E0;
+  box-shadow: 0 0 0 5px rgba(44,82,224,0.16);
+}
+.pipeline-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  white-space: nowrap;
+  text-align: center;
+  max-width: 60px;
+  line-height: 1.3;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+.pipeline-step.done .pipeline-label { color: #6b7280; }
+.pipeline-step.current .pipeline-label { color: #2C52E0; font-weight: 900; font-size: 9px; }
 </style>
 </head>
 <body>
@@ -258,6 +325,12 @@
   </div>
 
   </div><!-- end item-top-row -->
+
+  <!-- STAGE PIPELINE -->
+  <div class="card" id="pipelineCard" style="padding:16px 20px 14px;">
+    <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.09em;color:#9ca3af;margin-bottom:10px;">Workflow Progress</div>
+    <div class="stage-pipeline" id="stagePipeline"></div>
+  </div>
 
   <!-- QR CODE -->
   <div class="card">
@@ -584,6 +657,54 @@ function render() {
   renderRefPhotos();
   // History
   renderHistory();
+  // Stage pipeline
+  renderStagePipeline();
+}
+
+function renderStagePipeline() {
+  const pipeline = document.getElementById('stagePipeline');
+  const card = document.getElementById('pipelineCard');
+  if (!pipeline || !item) return;
+
+  const STAGES = ['Home Visit', 'Received at Studio', 'Review & Cleaning', 'Photograph', 'Prep for Pick Up', 'Ready for Pick Up', 'Picked Up'];
+  const currentStage = item.stage || '';
+  const currentIdx = STAGES.indexOf(currentStage);
+
+  if (currentStage === 'Missing at Drop Off') {
+    pipeline.innerHTML = '<span style="font-size:13px;font-weight:700;color:#dc2626;">⚠️ Missing at Drop Off</span>';
+    card.style.display = 'block';
+    return;
+  }
+  if (currentStage === 'Archived') {
+    pipeline.innerHTML = '<span style="font-size:13px;font-weight:700;color:#6b7280;">📦 Archived</span>';
+    card.style.display = 'block';
+    return;
+  }
+
+  card.style.display = 'block';
+  let html = '';
+  STAGES.forEach(function(stage, idx) {
+    var isDone = currentIdx !== -1 && idx < currentIdx;
+    var isCurrent = idx === currentIdx;
+    var cls = isDone ? 'done' : (isCurrent ? 'current' : '');
+    html += '<div class="pipeline-step ' + cls + '">' +
+      '<div class="pipeline-dot"></div>' +
+      '<div class="pipeline-label">' + stage + '</div>' +
+      '</div>';
+    if (idx < STAGES.length - 1) {
+      html += '<div class="pipeline-connector ' + (isDone ? 'done' : '') + '"></div>';
+    }
+  });
+  pipeline.innerHTML = html;
+
+  if (currentIdx > 2) {
+    var steps = pipeline.querySelectorAll('.pipeline-step');
+    if (steps[currentIdx]) {
+      setTimeout(function() {
+        steps[currentIdx].scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+      }, 120);
+    }
+  }
 }
 
 // =========================
@@ -636,7 +757,7 @@ async function deleteRefPhoto(photoPath) {
     });
     const data = await res.json();
     if (data.success) { item = data.item; renderRefPhotos(); }
-  } catch (err) { alert('Failed to remove photo'); }
+  } catch (err) { toast('Failed to remove photo', 'error'); }
 }
 
 // =========================
@@ -687,7 +808,7 @@ async function saveAssignment() {
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
     }
   } catch (err) {
-    alert('Failed to save assignment');
+    toast('Failed to save assignment', 'error');
   }
 }
 
@@ -717,7 +838,7 @@ async function saveItemDetails() {
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
     }
   } catch (err) {
-    alert('Failed to save details');
+    toast('Failed to save details', 'error');
   }
 }
 
@@ -741,7 +862,7 @@ async function saveLocation() {
       setTimeout(() => { msg.style.display = 'none'; }, 2500);
     }
   } catch (err) {
-    alert('Failed to save location');
+    toast('Failed to save location', 'error');
   }
 }
 
@@ -846,7 +967,7 @@ async function advanceStage() {
       renderHistory();
     }
   } catch (err) {
-    alert('Failed to advance stage');
+    toast('Failed to advance stage', 'error');
   } finally {
     btn.disabled = false;
   }
@@ -876,7 +997,7 @@ async function toggleRepairFlag() {
       renderHistory();
     }
   } catch (err) {
-    alert('Failed to update repair flag');
+    toast('Failed to update repair flag', 'error');
   } finally {
     btn.disabled = false;
   }
@@ -904,7 +1025,7 @@ async function flagMissing() {
       renderHistory();
     }
   } catch (err) {
-    alert('Failed to flag item');
+    toast('Failed to flag item', 'error');
   }
 }
 
@@ -950,10 +1071,10 @@ async function deleteItem() {
     if (data.success) {
       window.location.href = '/items.html';
     } else {
-      alert(data.message || 'Delete failed');
+      toast(data.message || 'Delete failed', 'error');
     }
   } catch (err) {
-    alert('Delete failed');
+    toast('Delete failed', 'error');
   }
 }
 // AUCTION EVENT ASSIGNMENT
@@ -984,7 +1105,7 @@ async function loadEvents() {
 
 async function assignToEvent() {
   const eventId = document.getElementById('eventSelect').value;
-  if (!eventId) { alert('Select an event first'); return; }
+  if (!eventId) { toast('Select an event first', 'warn'); return; }
   const btn = document.querySelector('[onclick="assignToEvent()"]');
   btn.disabled = true;
   try {
@@ -999,7 +1120,7 @@ async function assignToEvent() {
       msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2500);
       await loadEvents();
     }
-  } catch { alert('Failed to assign event'); }
+  } catch { toast('Failed to assign event', 'error'); }
   finally { btn.disabled = false; }
 }
 
