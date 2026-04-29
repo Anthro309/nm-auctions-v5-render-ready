@@ -71,10 +71,7 @@
 </div>
 
 <div id="sidebar" class="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-title">Auction Legacy</div>
-    <div class="sidebar-sub">Studio Operations</div>
-  </div>
+  <div class="sidebar-header"></div>
   <nav>
     <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
     <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
@@ -86,7 +83,6 @@
     <a href="/photo-upload.html"><span class="sidebar-icon">📸</span> Photo Studio</a>
     <a href="/intake-estimator.html"><span class="sidebar-icon">💰</span> Intake Estimator</a>
     <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
-    <a href="/analytics.html"><span class="sidebar-icon">📈</span> Analytics</a>
   </nav>
 </div>
 
@@ -94,10 +90,15 @@
 
 <div class="container">
 
-  <div class="page-title">Analytics</div>
-  <div class="page-sub">Overview of studio performance</div>
+  <div class="page-header-block">
+    <div class="page-header-icon">📈</div>
+    <div>
+      <div class="page-header-title">Analytics</div>
+      <div class="page-header-sub">Overview of studio performance</div>
+    </div>
+  </div>
 
-  <button class="btn-refresh" onclick="loadData()">↻ Refresh</button>
+  <button onclick="loadData()" style="margin-bottom:22px;">↻ Refresh Data</button>
 
   <div class="analytics-section">
     <div class="stat-grid" id="statGrid">

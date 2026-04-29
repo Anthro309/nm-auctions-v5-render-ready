@@ -1,3 +1,14 @@
+// ── INJECT UI-REFRESH STYLESHEET ──
+// Loaded here so every page that uses nav.js automatically gets the UI theme.
+(function () {
+  if (!document.querySelector('link[href="/ui-refresh.css"]')) {
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/ui-refresh.css';
+    document.head.appendChild(link);
+  }
+}());
+
 // ── HELP TOOLTIP SYSTEM ──
 (function () {
   var tip = null;
@@ -120,6 +131,12 @@ function highlightActiveSidebarLink() {
         a.href = '/admin.html';
         a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
         nav.appendChild(a);
+      }
+      if (!nav.querySelector('a[href="/analytics.html"]')) {
+        var an = document.createElement('a');
+        an.href = '/analytics.html';
+        an.innerHTML = '<span class="sidebar-icon">📈</span> Analytics';
+        nav.appendChild(an);
       }
       if (!nav.querySelector('a[href="/client-portal.html"]')) {
         var cp = document.createElement('a');

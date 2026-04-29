@@ -179,12 +179,6 @@ document.getElementById('profileRole').innerText = user.isAdmin ? 'Administrator
 if (user.isAdmin) {
   document.getElementById('adminPill').style.display = 'block';
   document.getElementById('adminSection').style.display = 'block';
-  // Add Admin link to sidebar
-  const nav = document.querySelector('.sidebar nav');
-  const a = document.createElement('a');
-  a.href = '/admin.html';
-  a.innerHTML = '<span class="sidebar-icon">⚙️</span> Admin';
-  nav.appendChild(a);
 }
 
 function setAvatar(el, u) {
@@ -277,5 +271,6 @@ function showMsg(el, text, success) {
   if (success) setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 </script>
+<script src="/nav.js"></script>
 </body>
 </html>
