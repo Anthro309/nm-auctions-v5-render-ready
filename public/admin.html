@@ -300,7 +300,7 @@ async function removeEmployee(name) {
   });
   const data = await res.json();
   if (data.success) load();
-  else alert(data.message || 'Failed to remove');
+  else toast(data.message || 'Failed to remove', 'error');
 }
 
 // ── PIN MODAL ──
@@ -379,7 +379,7 @@ async function changeRole(name, role) {
   });
   const data = await res.json();
   if (data.success) load();
-  else alert(data.message || 'Failed to update role');
+  else toast(data.message || 'Failed to update role', 'error');
 }
 
 // ── HELPER ──

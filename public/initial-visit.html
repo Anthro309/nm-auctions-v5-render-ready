@@ -453,7 +453,7 @@ function adjustPieces(delta) {
 }
 
 async function aiSuggestFields() {
-  if (!selectedFiles.length) { alert('Select or take a photo first.'); return; }
+  if (!selectedFiles.length) { toast('Select or take a photo first.', 'warn'); return; }
   const btn = document.getElementById('aiSuggestBtn');
   btn.textContent = '✨ Thinking…';
   btn.disabled = true;
@@ -523,7 +523,7 @@ function truncate(str, max) {
 async function startVisit() {
   const first = document.getElementById('firstInput').value.trim();
   const last = document.getElementById('lastInput').value.trim();
-  if (!first || !last) { alert('Enter first and last name'); return; }
+  if (!first || !last) { toast('Enter first and last name', 'warn'); return; }
   // Get a unique consigner code from the server (prevents collisions)
   let code;
   try {
@@ -550,7 +550,7 @@ async function startVisit() {
 let recognition = null;
 function startVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) { alert('Voice input not supported on this browser'); return; }
+  if (!SpeechRecognition) { toast('Voice input not supported on this browser', 'warn'); return; }
   if (recognition) { recognition.stop(); return; }
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
@@ -660,7 +660,7 @@ async function getLotCodes(count) {
 }
 
 async function addItem() {
-  if (!session) { alert('Start a visit first!'); return; }
+  if (!session) { toast('Start a visit first!', 'warn'); return; }
 
   // Route to batch mode if multiple photos selected
   if (batchMode && selectedFiles.length > 1) {
@@ -672,7 +672,7 @@ async function addItem() {
   const description = document.getElementById('itemDescription').value.trim();
   const category = document.getElementById('itemCategory').value.trim();
   const condition = document.getElementById('itemCondition').value.trim();
-  if (!name) { alert('Every item needs a name — what are we working with?'); return; }
+  if (!name) { toast('Every item needs a name — what are we working with?', 'warn'); return; }
 
   const isSessionDuplicate = items.some(i => (i.setName || i.name || '').trim().toLowerCase() === name.toLowerCase());
   if (isSessionDuplicate && !confirm(`"${name}" is already in this visit. Still adding it?`)) return;
@@ -746,7 +746,7 @@ async function addItem() {
     setStatus(msg);
   } catch (err) {
     setStatus('Yikes: ' + err.message);
-    alert('Add item failed: ' + err.message);
+    toast('Add item failed: ' + err.message, 'error');
   } finally {
     hideLoader();
   }
@@ -813,7 +813,7 @@ async function addBatchItems() {
     setStatus(`🔥 ${newItems.length} items identified and logged — ${items.length} total in this visit`);
   } catch (err) {
     setStatus('Batch save failed: ' + err.message);
-    alert('Batch save failed: ' + err.message);
+    toast('Batch save failed: ' + err.message, 'error');
   } finally {
     hideLoader();
   }
@@ -860,7 +860,7 @@ async function deleteItem(lotCode) {
       }
     }
   } catch (err) {
-    alert('Could not remove item from the active visit: ' + err.message);
+    toast('Could not remove item from the active visit: ' + err.message, 'error');
     return;
   }
 
@@ -870,7 +870,7 @@ async function deleteItem(lotCode) {
 }
 
 async function endVisit() {
-  if (!items.length) { alert('No items added yet'); return; }
+  if (!items.length) { toast('No items added yet', 'warn'); return; }
   if (confirm('Print labels for ' + items.length + ' item(s)?')) {
     await buildPrint();
     setTimeout(() => { window.print(); }, 800);
@@ -904,7 +904,7 @@ async function buildPrint() {
 }
 
 function printIntakeSummary() {
-  if (!session || !items.length) { alert('Add at least one item first.'); return; }
+  if (!session || !items.length) { toast('Add at least one item first.', 'warn'); return; }
   const win = window.open('', '_blank', 'width=900,height=1100');
   const rows = items.map((i, idx) => `
     <tr>

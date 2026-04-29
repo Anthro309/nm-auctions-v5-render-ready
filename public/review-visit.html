@@ -676,7 +676,7 @@ async function assignFromReview(itemId) {
         if (it) it.assignedTo = assignedTo || null;
       }
     }
-  } catch (err) { alert('Failed to assign item. Please try again.'); }
+  } catch (err) { toast('Failed to assign item. Please try again.', 'error'); }
 }
 
 function updateBatchBar() {

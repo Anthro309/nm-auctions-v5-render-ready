@@ -9,6 +9,98 @@
   }
 }());
 
+// ── TOAST NOTIFICATION SYSTEM ──
+(function () {
+  var toastStyles = `
+    #al-toast-container {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+    }
+    .al-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: white;
+      max-width: calc(100vw - 32px);
+      min-width: 200px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.14);
+      pointer-events: auto;
+      cursor: default;
+      animation: alToastIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      will-change: transform, opacity;
+    }
+    .al-toast.removing {
+      animation: alToastOut 0.22s ease forwards;
+    }
+    .al-toast.success { background: linear-gradient(135deg, #065f46, #047857); }
+    .al-toast.error   { background: linear-gradient(135deg, #991b1b, #b91c1c); }
+    .al-toast.info    { background: linear-gradient(135deg, #1e3a5f, #1e40af); }
+    .al-toast.warn    { background: linear-gradient(135deg, #78350f, #92400e); }
+    .al-toast-icon { font-size: 17px; flex-shrink: 0; }
+    .al-toast-msg  { flex: 1; }
+    @keyframes alToastIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+    @keyframes alToastOut {
+      from { opacity: 1; transform: translateY(0)    scale(1); }
+      to   { opacity: 0; transform: translateY(8px)  scale(0.96); }
+    }
+  `;
+
+  if (!document.getElementById('al-toast-styles')) {
+    var s = document.createElement('style');
+    s.id = 'al-toast-styles';
+    s.textContent = toastStyles;
+    document.head.appendChild(s);
+  }
+
+  function getContainer() {
+    var c = document.getElementById('al-toast-container');
+    if (!c) { c = document.createElement('div'); c.id = 'al-toast-container'; document.body.appendChild(c); }
+    return c;
+  }
+
+  var ICONS = { success: '✓', error: '✕', warn: '⚠', info: 'ℹ' };
+
+  window.toast = function (message, type, duration) {
+    type = type || 'info';
+    duration = duration !== undefined ? duration : (type === 'error' ? 5000 : 3200);
+
+    var container = getContainer();
+    var el = document.createElement('div');
+    el.className = 'al-toast ' + type;
+    el.innerHTML = '<span class="al-toast-icon">' + (ICONS[type] || ICONS.info) + '</span><span class="al-toast-msg">' + String(message).replace(/</g, '&lt;') + '</span>';
+
+    container.appendChild(el);
+
+    function dismiss() {
+      el.classList.add('removing');
+      el.addEventListener('animationend', function () { if (el.parentNode) el.parentNode.removeChild(el); }, { once: true });
+    }
+
+    var timer = setTimeout(dismiss, duration);
+    el.addEventListener('click', function () { clearTimeout(timer); dismiss(); });
+    return dismiss;
+  };
+}());
+
 // ── HELP TOOLTIP SYSTEM ──
 (function () {
   var tip = null;

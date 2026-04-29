@@ -138,7 +138,7 @@ async function generateNarrative() {
       body: JSON.stringify({ month: month || null })
     });
     const data = await res.json();
-    if (!data.success) { alert(data.message || 'Failed to generate narrative'); return; }
+    if (!data.success) { toast(data.message || 'Failed to generate narrative', 'error'); return; }
 
     const s = data.snapshot;
     const paragraphs = data.narrative.split('\n').filter(p => p.trim()).map(p => `<p style="margin:0 0 14px;line-height:1.7;color:#374151;">${p}</p>`).join('');
@@ -168,7 +168,7 @@ async function generateNarrative() {
       </div>
     `;
     result.style.display = 'block';
-  } catch { alert('Failed to generate narrative'); }
+  } catch { toast('Failed to generate narrative', 'error'); }
   finally { btn.disabled = false; btn.innerText = '✨ Generate'; }
 }
 
@@ -219,10 +219,10 @@ async function generateReport() {
       renderReport(data.report);
       loadHistory();
     } else {
-      alert(data.message || 'Failed to generate report');
+      toast(data.message || 'Failed to generate report', 'error');
     }
   } catch (err) {
-    alert('Failed to generate report');
+    toast('Failed to generate report', 'error');
   }
 }
 

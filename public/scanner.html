@@ -778,8 +778,8 @@ function showItem(item) {
 async function moveToStage() {
   if (!currentItem) return;
   const stage = document.getElementById('stagePicker').value;
-  if (!stage) { alert('Select a stage to move this item to'); return; }
-  if (stage === currentItem.stage) { alert('Item is already in that stage'); return; }
+  if (!stage) { toast('Select a stage to move this item to', 'warn'); return; }
+  if (stage === currentItem.stage) { toast('Item is already in that stage', 'warn'); return; }
 
   const btn = document.getElementById('moveBtn');
   btn.disabled = true;
@@ -812,7 +812,7 @@ async function moveToStage() {
     setTimeout(() => { btn.innerText = 'Move Item'; btn.disabled = false; }, 2000);
   } catch (err) {
     log('Move failed: ' + (err.message || 'Unknown error'));
-    alert('Move failed: ' + (err.message || 'Unknown error'));
+    toast('Move failed: ' + (err.message || 'Unknown error'), 'error');
     btn.innerText = 'Move Item';
     btn.disabled = false;
   }

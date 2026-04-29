@@ -178,7 +178,7 @@ async function createEvent() {
       msg2.style.cssText = 'display:block;padding:10px;background:#fef2f2;color:#dc2626;border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;';
       msg2.innerText = '❌ ' + (err.message || 'Unknown error');
     } else {
-      alert('Event creation failed: ' + (err.message || 'Unknown error'));
+      toast('Event creation failed: ' + (err.message || 'Unknown error'), 'error');
     }
   } finally {
     const b = document.getElementById('createSubmitBtn');
