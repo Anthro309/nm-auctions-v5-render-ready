@@ -21,12 +21,12 @@ html {
 body {
   min-height: 100vh;
   background: var(--bg);
-  animation: pageFadeIn 0.32s ease both;
+  animation: pageFadeIn 0.25s ease-out both;
 }
 
 @keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 body.menu-open {
