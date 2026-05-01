@@ -242,6 +242,12 @@ function highlightActiveSidebarLink() {
         cp.innerHTML = '<span class="sidebar-icon">🔗</span> Client Portal';
         nav.appendChild(cp);
       }
+      if (!nav.querySelector('a[href="/delivery.html"]')) {
+        var dp = document.createElement('a');
+        dp.href = '/delivery.html';
+        dp.innerHTML = '<span class="sidebar-icon">🚚</span> Delivery Portal';
+        nav.appendChild(dp);
+      }
     }
   }
 

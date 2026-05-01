@@ -49,6 +49,7 @@
     <select id="stageFilter" onchange="render()">
       <option value="">All Stages</option>
       <option>Home Visit</option>
+      <option>Awaiting Delivery to Studio</option>
       <option>Received at Studio</option>
       <option>Review &amp; Cleaning</option>
       <option>Photograph</option>
@@ -120,6 +121,7 @@ function render() {
 
     const stageCls = stageClass(i.stage);
     const stageLabel = i.stage === 'Missing at Drop Off' ? 'Missing'
+      : i.stage === 'Awaiting Delivery to Studio' ? 'Awaiting Delivery'
       : i.stage === 'Received at Studio' ? 'Received'
       : i.stage || '—';
 

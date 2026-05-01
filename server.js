@@ -160,6 +160,7 @@ function addLog(item, entry) {
 function validStage(stage) {
   return [
     'Home Visit',
+    'Awaiting Delivery to Studio',
     'Received at Studio',
     'Missing at Drop Off',
     'Review & Cleaning',
@@ -203,13 +204,13 @@ ensureUsersExist();
     let fixed = 0;
     items.forEach(i => {
       if (i.stage === 'Home Visit' && i.reviewStatus === 'accepted') {
-        i.stage = 'Received at Studio';
+        i.stage = 'Awaiting Delivery to Studio';
         fixed++;
       }
     });
     if (fixed > 0) {
       writeJSON(ITEMS_FILE, items);
-      console.log(`✅ Migration: moved ${fixed} accepted item(s) from Home Visit → Received at Studio`);
+      console.log(`✅ Migration: moved ${fixed} accepted item(s) from Home Visit → Awaiting Delivery to Studio`);
     }
   } catch (e) { console.error('Migration error:', e.message); }
 })();
@@ -756,7 +757,7 @@ app.get('/payouts/summary/:code', (req, res) => {
 // =========================
 app.get('/analytics/overview', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const stageCounts = { 'Home Visit': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0, 'Archived': 0 };
+  const stageCounts = { 'Home Visit': 0, 'Awaiting Delivery to Studio': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0, 'Archived': 0 };
   const categoryCounts = {};
   items.forEach(i => {
     if (stageCounts.hasOwnProperty(i.stage)) stageCounts[i.stage]++;
@@ -904,10 +905,10 @@ app.post('/items/:id/review-accept', (req, res) => {
   item.reviewStatus = 'accepted';
   item.reviewedAt   = new Date().toISOString();
   item.reviewedBy   = employee;
-  // Advance stage from Home Visit → Received at Studio so item enters inventory
-  if (item.stage === 'Home Visit') item.stage = 'Received at Studio';
+  // Advance stage from Home Visit → Awaiting Delivery to Studio
+  if (item.stage === 'Home Visit') item.stage = 'Awaiting Delivery to Studio';
 
-  addLog(item, { employee, action: 'accepted in review — moved to Received at Studio' });
+  addLog(item, { employee, action: 'accepted in review — awaiting delivery to studio' });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
 });
@@ -2104,7 +2105,7 @@ app.post('/items/search-nl', async (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ success: false });
 
-  const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off','Archived'];
+  const stages = ['Home Visit','Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off','Archived'];
   const categories = ['furniture','decor','tools','art','electronics','glassware','kitchenware','books','jewelry','outdoor','collectibles','clothing','toys','misc'];
 
   try {
@@ -2795,6 +2796,55 @@ app.post('/import-listings', csvUpload.single('csv'), (req, res) => {
     console.error('CSV import error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
+});
+
+// =========================
+// DELIVERY PORTAL
+// =========================
+app.get('/delivery/:code', (req, res) => {
+  const code = (req.params.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ success: false, message: 'Code required' });
+  const items = readJSON(ITEMS_FILE);
+  const pending = items.filter(i =>
+    (i.consignerCode || '').trim().toUpperCase() === code &&
+    i.stage === 'Awaiting Delivery to Studio'
+  );
+  const sample = pending[0];
+  const consigner = sample ? (sample.consignerName || sample.consigner || code) : null;
+  if (!consigner && pending.length === 0) {
+    const anyMatch = items.some(i => (i.consignerCode || '').trim().toUpperCase() === code);
+    if (!anyMatch) return res.status(404).json({ success: false, message: 'Consigner code not found' });
+  }
+  res.json({
+    success: true,
+    code,
+    consigner: consigner || code,
+    items: pending.map(i => ({
+      id:       i.id,
+      name:     i.name,
+      category: i.category || '',
+      condition:i.condition || '',
+      photo:    (i.photos || [])[0] || null,
+      lotNumber:i.lotNumber || null,
+      createdAt:i.createdAt || null
+    }))
+  });
+});
+
+app.post('/items/:id/deliver', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  if (item.stage !== 'Awaiting Delivery to Studio') {
+    return res.status(400).json({ success: false, message: 'Item is not awaiting delivery' });
+  }
+  const driver = (req.body.driver || 'delivery').trim();
+  item.stage = 'Received at Studio';
+  item.deliveredAt = new Date().toISOString();
+  item.deliveredBy = driver;
+  addLog(item, { employee: driver, action: 'delivered to studio — moved to Received at Studio' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
 });
 
 // =========================

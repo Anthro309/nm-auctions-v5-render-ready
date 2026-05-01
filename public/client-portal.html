@@ -268,6 +268,7 @@ function showError(msg) {
 // Stage definitions
 const STAGE_ORDER = [
   'Home Visit',
+  'Awaiting Delivery to Studio',
   'Received at Studio',
   'Review & Cleaning',
   'Photograph',
@@ -278,7 +279,7 @@ const STAGE_ORDER = [
 ];
 
 function stageProgress(stage) {
-  const active = ['Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'];
+  const active = ['Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'];
   const idx = active.indexOf(stage);
   if (idx < 0) return null;
   return { pct: Math.round(((idx + 1) / active.length) * 100), label: stage };
@@ -289,7 +290,7 @@ function renderResults(data) {
 
   // Categorize
   const prospects  = items.filter(i => i.stage === 'Home Visit');
-  const active     = items.filter(i => ['Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'].includes(i.stage));
+  const active     = items.filter(i => ['Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up'].includes(i.stage));
   const readyPU    = items.filter(i => i.stage === 'Ready for Pick Up');
   const sold       = items.filter(i => i.stage === 'Picked Up');
   const rejected   = items.filter(i => i.stage === 'Archived' && i.reviewStatus === 'rejected');
