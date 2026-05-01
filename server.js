@@ -2603,6 +2603,141 @@ Write a performance narrative for the team. Be direct, specific, and use the act
 });
 
 // =========================
+// CSV IMPORT — BULK LISTINGS
+// =========================
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else { cur += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else { cur += c; }
+    }
+  }
+  if (cur || row.length) { row.push(cur); if (row.join('').trim()) rows.push(row); }
+  return rows;
+}
+
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+app.post('/import-listings', csvUpload.single('csv'), (req, res) => {
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin access required' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+  const validateOnly = req.body.validateOnly === 'true';
+  const targetStage  = req.body.targetStage  || 'Photograph';
+  const employee     = (req.session.user && req.session.user.name) || 'system';
+
+  try {
+    const text    = req.file.buffer.toString('utf-8');
+    const rows    = parseCSV(text);
+    if (rows.length < 2) return res.json({ success: false, message: 'CSV has no data rows' });
+
+    const headers  = rows[0].map(h => h.trim());
+    const dataRows = rows.slice(1).filter(r => r.join('').trim());
+
+    const get = (row, name) => {
+      const i = headers.indexOf(name);
+      return i >= 0 ? (row[i] || '').trim() : '';
+    };
+
+    const imgCols = headers.reduce((acc, h, i) => {
+      if (/^Image_\d+$/.test(h)) acc.push(i);
+      return acc;
+    }, []);
+
+    const items    = readJSON(ITEMS_FILE);
+    const existing = new Set(items.map(i => String(i.lotNumber || '')).filter(Boolean));
+
+    const newItems   = [];
+    const createdLog = [];
+    const errors     = [];
+
+    for (let r = 0; r < dataRows.length; r++) {
+      const row    = dataRows[r];
+      const rowNum = r + 2;
+      const title  = get(row, 'Title');
+
+      if (!title) {
+        errors.push({ row: rowNum, message: 'Missing Title — skipped' });
+        continue;
+      }
+
+      const lotNumber = get(row, 'LotNumber');
+      if (lotNumber && existing.has(lotNumber)) {
+        errors.push({ row: rowNum, lot: lotNumber, message: `Lot ${lotNumber} already exists — skipped` });
+        continue;
+      }
+
+      const photos = imgCols
+        .map(ci => (row[ci] || '').trim())
+        .filter(u => u && (u.startsWith('http://') || u.startsWith('https://')));
+
+      const item = {
+        id:               generateId(),
+        name:             title,
+        description:      get(row, 'Description'),
+        category:         get(row, 'Category'),
+        condition:        '',
+        consigner:        get(row, 'Consignor'),
+        code:             get(row, 'ConsignorNumber'),
+        number:           1,
+        part:             1,
+        photos,
+        stage:            targetStage,
+        location:         null,
+        lotNumber:        lotNumber || null,
+        tags:             [],
+        estimatedValueLow:  parseFloat(get(row, 'Price'))        || 0,
+        estimatedValueHigh: parseFloat(get(row, 'ReservePrice')) || 0,
+        photographedAt:   photos.length ? new Date().toISOString() : null,
+        createdAt:        new Date().toISOString(),
+        importedAt:       new Date().toISOString(),
+        importedFrom:     'csv',
+        logs:             []
+      };
+
+      addLog(item, { employee, action: `imported via CSV (row ${rowNum})`, toStage: targetStage });
+
+      if (lotNumber) existing.add(lotNumber);
+      newItems.push(item);
+      createdLog.push({ row: rowNum, title, lotNumber: lotNumber || null, photos: photos.length });
+    }
+
+    if (!validateOnly && newItems.length) {
+      writeJSON(ITEMS_FILE, [...items, ...newItems]);
+    }
+
+    res.json({
+      success: true,
+      results: {
+        total:       dataRows.length,
+        created:     newItems.length,
+        skipped:     dataRows.length - newItems.length,
+        errors,
+        items:       createdLog.slice(0, 100),
+        validateOnly,
+        targetStage
+      }
+    });
+
+  } catch (err) {
+    console.error('CSV import error:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// =========================
 // ERROR HANDLER
 // =========================
 app.use((err, req, res, next) => {

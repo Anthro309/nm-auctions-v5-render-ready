@@ -230,6 +230,12 @@ function highlightActiveSidebarLink() {
         an.innerHTML = '<span class="sidebar-icon">📈</span> Analytics';
         nav.appendChild(an);
       }
+      if (!nav.querySelector('a[href="/csv-import.html"]')) {
+        var ci = document.createElement('a');
+        ci.href = '/csv-import.html';
+        ci.innerHTML = '<span class="sidebar-icon">📥</span> CSV Import';
+        nav.appendChild(ci);
+      }
       if (!nav.querySelector('a[href="/client-portal.html"]')) {
         var cp = document.createElement('a');
         cp.href = '/client-portal.html';
