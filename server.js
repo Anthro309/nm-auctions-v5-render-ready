@@ -2806,19 +2806,16 @@ app.get('/delivery/:code', (req, res) => {
   if (!code) return res.status(400).json({ success: false, message: 'Code required' });
   const items = readJSON(ITEMS_FILE);
   const pending = items.filter(i =>
-    (i.consignerCode || '').trim().toUpperCase() === code &&
+    (i.code || '').trim().toUpperCase() === code &&
     i.stage === 'Awaiting Delivery to Studio'
   );
-  const sample = pending[0];
-  const consigner = sample ? (sample.consignerName || sample.consigner || code) : null;
-  if (!consigner && pending.length === 0) {
-    const anyMatch = items.some(i => (i.consignerCode || '').trim().toUpperCase() === code);
-    if (!anyMatch) return res.status(404).json({ success: false, message: 'Consigner code not found' });
-  }
+  const anyItem = items.find(i => (i.code || '').trim().toUpperCase() === code);
+  if (!anyItem) return res.status(404).json({ success: false, message: 'Consigner code not found' });
+  const consigner = anyItem.consigner || code;
   res.json({
     success: true,
     code,
-    consigner: consigner || code,
+    consigner,
     items: pending.map(i => ({
       id:       i.id,
       name:     i.name,
