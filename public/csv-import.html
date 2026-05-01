@@ -111,10 +111,11 @@
 .import-log-photos { color: #9ca3af; font-size: 12px; flex-shrink: 0; }
 
 .mapping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
-.mapping-row { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 8px; }
-.mapping-csv { font-family: monospace; font-size: 12px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-.mapping-arrow { color: #9ca3af; font-size: 11px; }
-.mapping-field { color: #374151; font-weight: 600; }
+@media (max-width: 520px) { .mapping-grid { grid-template-columns: 1fr; } }
+.mapping-row { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 8px; min-width: 0; overflow: hidden; }
+.mapping-csv { font-family: monospace; font-size: 11px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; flex-shrink: 0; }
+.mapping-arrow { color: #9ca3af; font-size: 11px; flex-shrink: 0; }
+.mapping-field { color: #374151; font-weight: 600; min-width: 0; }
 </style>
 </head>
 <body>
@@ -233,6 +234,28 @@
       <button onclick="window.location.href='/items.html'" style="background:linear-gradient(135deg,#065f46,#047857);">📦 View Items</button>
       <button onclick="resetForm()" style="background:none;color:#6b7280;box-shadow:none;border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;">↩ Import Another File</button>
     </div>
+  </div>
+
+  <!-- ── EXPORT CARD ── -->
+  <div class="card" style="padding:28px;margin-top:20px;">
+    <h2 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 6px;">Export Platform CSV</h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">Export items in the standard auction platform format (LotNumber, Title, Description, Category, ConsignorNumber, Image_1…N).</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:160px;">
+        <div class="opt-label" style="margin-bottom:6px;">Filter by Stage</div>
+        <select id="exportStageFilter" style="width:100%;margin:0;">
+          <option value="">All Stages</option>
+          <option value="Photograph">Photograph</option>
+          <option value="Ready for Pick Up">Ready for Pick Up</option>
+          <option value="Prep for Pick Up">Prep for Pick Up</option>
+          <option value="Received at Studio">Received at Studio</option>
+          <option value="Review &amp; Cleaning">Review &amp; Cleaning</option>
+          <option value="Picked Up">Picked Up</option>
+        </select>
+      </div>
+      <button id="exportBtn" onclick="exportPlatformCSV(this)" style="white-space:nowrap;flex-shrink:0;">📤 Export Platform CSV</button>
+    </div>
+    <div id="exportStatus" style="font-size:13px;color:#6b7280;margin-top:10px;display:none;"></div>
   </div>
 
   <!-- ── COLUMN MAPPING REFERENCE ── -->
@@ -468,6 +491,96 @@ function showResults(r) {
     ).join('') + (r.created > 100 ? `<div style="font-size:12px;color:#9ca3af;padding:8px 0;">… and ${r.created - 100} more</div>` : '');
   } else {
     impSec.style.display = 'none';
+  }
+}
+
+// ── PLATFORM CSV EXPORT ──
+async function exportPlatformCSV(btn) {
+  setLoading(btn, true);
+  const statusEl = document.getElementById('exportStatus');
+  statusEl.style.display = '';
+  statusEl.textContent = 'Fetching items…';
+
+  try {
+    const res = await fetch('/items');
+    const data = await res.json();
+    let items = data.items || data || [];
+
+    const stageFilter = document.getElementById('exportStageFilter').value;
+    if (stageFilter) items = items.filter(i => i.stage === stageFilter);
+
+    if (!items.length) {
+      toast('No items match the selected filter', 'warn');
+      statusEl.textContent = 'No items found.';
+      return;
+    }
+
+    const origin = window.location.origin;
+    const maxPhotos = Math.min(Math.max(...items.map(i => (i.photos || []).length), 1), 20);
+    const imgHeaders = Array.from({ length: maxPhotos }, (_, i) => `Image_${i + 1}`);
+
+    const staticHeaders = [
+      'EventID','LotNumber','Seller','ConsignorNumber','Category','ListingType','Currency',
+      'Title','Subtitle','Description','Price','ReservePrice','FixedPrice','Quantity',
+      'AcceptOffers','BuyersPremiumApplies',
+      ...imgHeaders,
+      'YouTubeID','PdfAttachments','Bold','Badge','Highlight',
+      'ShippingOptions','Duration','StartDTTM','EndDTTM',
+      'AutoRelist','GoodTilCanceled','Consignor','Written By','Ref Number'
+    ];
+
+    const rows = items.map(item => {
+      const photos = (item.photos || []).map(p =>
+        p.startsWith('http') ? p : `${origin}${p}`
+      );
+      const imgCells = Array.from({ length: maxPhotos }, (_, i) => photos[i] || '');
+      return [
+        item.eventId || '',
+        item.lotNumber || '',
+        '',
+        item.consignerCode || item.code || '',
+        item.category || '',
+        '',
+        'USD',
+        item.name || '',
+        '',
+        item.description || '',
+        item.estimatedValueLow || '',
+        item.estimatedValueHigh || '',
+        '',
+        '1',
+        '',
+        '',
+        ...imgCells,
+        '','','','','',
+        '','','','',
+        '','',
+        item.consigner || item.consignerName || '',
+        '',
+        item.id || ''
+      ];
+    });
+
+    const csvText = [staticHeaders, ...rows]
+      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvText], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `platform-export-${stageFilter || 'all'}-${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = `✓ Exported ${items.length} item${items.length !== 1 ? 's' : ''}`;
+    toast(`Exported ${items.length} items`, 'success');
+  } catch (err) {
+    toast('Export error: ' + err.message, 'error');
+    statusEl.textContent = 'Export failed.';
+  } finally {
+    setLoading(btn, false);
   }
 }
 
