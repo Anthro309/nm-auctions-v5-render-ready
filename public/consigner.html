@@ -147,7 +147,7 @@ function render() {
 async function load() {
   const res = await fetch('/items');
   const items = await res.json();
-  allItems = items.filter(i => i.code === code);
+  allItems = items.filter(i => i.code === code && i.stage !== 'Archived');
 
   document.getElementById('consignerName').innerText =
     allItems[0]?.consigner || code || 'Consigner';
