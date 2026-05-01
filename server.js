@@ -290,6 +290,10 @@ app.get('/api/me', (req, res) => {
   res.status(401).json({ success: false, message: 'Not authenticated' });
 });
 
+app.get('/api/bg-status', (req, res) => {
+  res.json({ active: !!process.env.REMOVE_BG_API_KEY });
+});
+
 // =========================
 // EMPLOYEES — LIST
 // =========================
@@ -1342,6 +1346,62 @@ app.post('/analyze-image', async (req, res) => {
   } catch (err) {
     console.error('AI ERROR:', err.message);
     res.json({ success: true, title: 'Item', description: 'AI analysis failed — please fill in manually.', category: 'misc', condition: 'unknown' });
+  }
+});
+
+// =========================
+// BATCH IMAGE ANALYSIS — identify multiple items in a single AI call
+// =========================
+app.post('/analyze-batch', async (req, res) => {
+  const { imageUrls } = req.body;
+  if (!Array.isArray(imageUrls) || !imageUrls.length) {
+    return res.status(400).json({ success: false, message: 'imageUrls array required' });
+  }
+
+  const urls = imageUrls.slice(0, 20);
+
+  if (!client) {
+    return res.json({ success: true, results: urls.map((_, i) => ({ title: `Item ${i + 1}`, category: 'misc', tags: [] })) });
+  }
+
+  try {
+    const content = [
+      {
+        type: 'text',
+        text: `You will see ${urls.length} item photo${urls.length > 1 ? 's' : ''} from an estate-sale intake workflow. For EACH image (in order), identify the item and return a JSON array with exactly ${urls.length} element${urls.length > 1 ? 's' : ''}, one per image. Each element: {"title":"","category":"","tags":[]}. Title: short auction-friendly name (max 60 chars). Category: one of furniture/decor/tools/art/electronics/glassware/kitchenware/books/jewelry/outdoor/collectibles/clothing/toys/misc. tags: 3-5 keyword strings. Return the JSON array only — no markdown, no explanation.`
+      },
+      ...urls.map(url => ({
+        type: 'image_url',
+        image_url: { url, detail: 'low' }
+      }))
+    ];
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: Math.max(150 * urls.length, 300),
+      messages: [{ role: 'user', content }]
+    });
+
+    const raw = response.choices[0].message.content || '';
+    let parsed = safeJsonParse(raw, null);
+
+    // Fallback: if not an array or wrong length, return defaults
+    if (!Array.isArray(parsed) || parsed.length !== urls.length) {
+      parsed = urls.map((_, i) => ({ title: parsed?.[i]?.title || `Item ${i + 1}`, category: parsed?.[i]?.category || 'misc', tags: [] }));
+    }
+
+    res.json({
+      success: true,
+      results: parsed.map((item, i) => ({
+        title:    cleanAIText(item.title,    `Item ${i + 1}`),
+        category: cleanAIText(item.category, 'misc'),
+        tags:     Array.isArray(item.tags) ? item.tags.slice(0, 5) : []
+      }))
+    });
+
+  } catch (err) {
+    console.error('Batch analyze error:', err.message);
+    res.json({ success: true, results: urls.map((_, i) => ({ title: `Item ${i + 1}`, category: 'misc', tags: [] })) });
   }
 });
 

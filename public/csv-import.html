@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV Import | Auction Legacy</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.drop-zone {
+  border: 2px dashed rgba(44,82,224,0.3);
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: #fafaf8;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: #2C52E0;
+  background: rgba(44,82,224,0.04);
+}
+.drop-zone-icon { font-size: 36px; margin-bottom: 10px; }
+.drop-zone-label { font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+.drop-zone-sub { font-size: 13px; color: #9ca3af; }
+
+.file-chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+.file-chosen-icon { font-size: 22px; }
+.file-chosen-name { font-size: 14px; font-weight: 700; color: #111827; }
+.file-chosen-size { font-size: 12px; color: #6b7280; margin-top: 1px; }
+.file-clear { margin-left: auto; font-size: 20px; cursor: pointer; color: #9ca3af; background: none; border: none; padding: 0; }
+.file-clear:hover { color: #dc2626; }
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+}
+@media (max-width: 560px) { .options-grid { grid-template-columns: 1fr; } }
+
+.opt-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.validate-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: white;
+}
+.validate-toggle:hover { background: #f8fafc; }
+.validate-toggle input { width: 18px; height: 18px; cursor: pointer; }
+.validate-toggle-label { font-size: 14px; font-weight: 600; color: #374151; }
+.validate-toggle-sub { font-size: 12px; color: #9ca3af; }
+
+.preview-table-wrap { overflow-x: auto; margin-top: 16px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.preview-table th { background: #f8fafc; padding: 9px 12px; text-align: left; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; white-space: nowrap; }
+.preview-table td { padding: 9px 12px; border-top: 1px solid rgba(0,0,0,0.06); color: #374151; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.preview-table tr:hover td { background: #f8fafc; }
+
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 560px) { .result-summary { grid-template-columns: repeat(2, 1fr); } }
+
+.result-tile {
+  background: white;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+}
+.result-tile-num { font-size: 28px; font-weight: 800; color: #111827; }
+.result-tile-label { font-size: 12px; font-weight: 600; color: #9ca3af; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+.result-tile.success .result-tile-num { color: #047857; }
+.result-tile.warn .result-tile-num { color: #d97706; }
+.result-tile.danger .result-tile-num { color: #dc2626; }
+
+.error-list { max-height: 220px; overflow-y: auto; margin-top: 12px; }
+.error-item { padding: 8px 12px; border-radius: 8px; background: #fef2f2; margin-bottom: 6px; font-size: 13px; color: #991b1b; font-weight: 500; }
+.error-item strong { color: #7f1d1d; }
+
+.import-log { max-height: 300px; overflow-y: auto; }
+.import-log-row { display: flex; gap: 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px; }
+.import-log-lot { background: #eff6ff; color: #1d4ed8; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.import-log-title { flex: 1; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-log-photos { color: #9ca3af; font-size: 12px; flex-shrink: 0; }
+
+.mapping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+.mapping-row { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #f8fafc; border-radius: 8px; }
+.mapping-csv { font-family: monospace; font-size: 12px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+.mapping-arrow { color: #9ca3af; font-size: 11px; }
+.mapping-field { color: #374151; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <button class="nav-left" onclick="document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');">☰</button>
+  <div class="nav-center"><span class="nav-title">CSV Import</span></div>
+  <div class="nav-right" id="navAvatar" onclick="window.location.href='/profile.html'" style="cursor:pointer;"></div>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header"></div>
+  <nav>
+    <a href="/dashboard.html"><span class="sidebar-icon">🏠</span> Dashboard</a>
+    <a href="/initial-visit.html"><span class="sidebar-icon">📋</span> Initial Visit</a>
+    <a href="/review-visit.html"><span class="sidebar-icon">✅</span> Review Visit</a>
+    <a href="/items.html"><span class="sidebar-icon">📦</span> Items</a>
+    <a href="/intake.html"><span class="sidebar-icon">📝</span> Intake</a>
+    <a href="/events.html"><span class="sidebar-icon">📅</span> Events</a>
+    <a href="/photo-upload.html"><span class="sidebar-icon">📷</span> Photography</a>
+    <a href="/scanner.html"><span class="sidebar-icon">🔍</span> Scanner</a>
+    <a href="/reports.html"><span class="sidebar-icon">📊</span> Reports</a>
+    <a href="/performance.html"><span class="sidebar-icon">🏆</span> Performance</a>
+  </nav>
+</div>
+<div class="overlay" id="overlay" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('show');"></div>
+
+<div class="container">
+
+  <div class="page-header-block">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="page-header-icon" style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">📥</div>
+      <div>
+        <h1 style="font-size:22px;font-weight:800;color:#111827;margin:0;">CSV Import</h1>
+        <p style="font-size:14px;color:#6b7280;margin:4px 0 0;">Bulk import listings from a spreadsheet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── UPLOAD CARD ── -->
+  <div class="card" id="uploadCard" style="padding:28px;">
+    <h2 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 20px;">Upload CSV File</h2>
+
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-label">Drop your CSV file here, or click to browse</div>
+      <div class="drop-zone-sub">Supports the standard auction listing template · Max 20 MB</div>
+      <input type="file" id="csvFile" accept=".csv,text/csv" style="display:none;">
+    </div>
+
+    <div id="fileChosen" style="display:none;" class="file-chosen">
+      <span class="file-chosen-icon">📄</span>
+      <div>
+        <div class="file-chosen-name" id="fileChosenName"></div>
+        <div class="file-chosen-size" id="fileChosenSize"></div>
+      </div>
+      <button class="file-clear" onclick="clearFile()" title="Remove file">×</button>
+    </div>
+
+    <!-- Options -->
+    <div class="options-grid" id="optionsGrid" style="display:none;">
+      <div>
+        <div class="opt-label">Target Stage</div>
+        <select id="targetStage" style="width:100%;">
+          <option value="Photograph">Photograph</option>
+          <option value="Prep for Pick Up">Prep for Pick Up</option>
+          <option value="Ready for Pick Up">Ready for Pick Up</option>
+          <option value="Received at Studio">Received at Studio</option>
+          <option value="Review &amp; Cleaning">Review &amp; Cleaning</option>
+          <option value="Home Visit">Home Visit</option>
+        </select>
+      </div>
+      <div>
+        <div class="opt-label">Import Mode</div>
+        <label class="validate-toggle">
+          <input type="checkbox" id="validateOnly">
+          <div>
+            <div class="validate-toggle-label">Validate only</div>
+            <div class="validate-toggle-sub">Check for errors without saving</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="previewSection" style="display:none; margin-top:20px;">
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">Preview <span id="previewCount" style="color:#9ca3af;font-weight:500;"></span></div>
+      <div class="preview-table-wrap">
+        <table class="preview-table" id="previewTable"></table>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-top:24px;" id="actionRow" style="display:none!important;">
+      <button id="importBtn" onclick="startImport(this)" style="min-width:160px;display:none;">📥 Import Listings</button>
+      <button onclick="downloadTemplate()" style="background:none;color:#6b7280;box-shadow:none;border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Download Template</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS CARD ── -->
+  <div class="card" id="resultsCard" style="display:none;padding:28px;margin-top:20px;">
+    <h2 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 20px;" id="resultsTitle"></h2>
+
+    <div class="result-summary" id="resultSummary"></div>
+
+    <div id="errorSection" style="display:none;">
+      <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px;">Errors / Skipped</div>
+      <div class="error-list" id="errorList"></div>
+    </div>
+
+    <div id="importedSection" style="display:none; margin-top:16px;">
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">Imported Items</div>
+      <div class="import-log" id="importLog"></div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="window.location.href='/items.html'" style="background:linear-gradient(135deg,#065f46,#047857);">📦 View Items</button>
+      <button onclick="resetForm()" style="background:none;color:#6b7280;box-shadow:none;border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;">↩ Import Another File</button>
+    </div>
+  </div>
+
+  <!-- ── COLUMN MAPPING REFERENCE ── -->
+  <div class="card" style="padding:28px;margin-top:20px;">
+    <h2 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 6px;">Column Mapping</h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">These CSV column names are recognized and mapped to item fields in the system.</p>
+    <div class="mapping-grid">
+      <div class="mapping-row"><span class="mapping-csv">Title</span><span class="mapping-arrow">→</span><span class="mapping-field">Item Name</span></div>
+      <div class="mapping-row"><span class="mapping-csv">Description</span><span class="mapping-arrow">→</span><span class="mapping-field">Description</span></div>
+      <div class="mapping-row"><span class="mapping-csv">Category</span><span class="mapping-arrow">→</span><span class="mapping-field">Category</span></div>
+      <div class="mapping-row"><span class="mapping-csv">LotNumber</span><span class="mapping-arrow">→</span><span class="mapping-field">Lot Number</span></div>
+      <div class="mapping-row"><span class="mapping-csv">Consignor</span><span class="mapping-arrow">→</span><span class="mapping-field">Consigner Name</span></div>
+      <div class="mapping-row"><span class="mapping-csv">ConsignorNumber</span><span class="mapping-arrow">→</span><span class="mapping-field">Consigner Code</span></div>
+      <div class="mapping-row"><span class="mapping-csv">Price</span><span class="mapping-arrow">→</span><span class="mapping-field">Est. Value (Low)</span></div>
+      <div class="mapping-row"><span class="mapping-csv">ReservePrice</span><span class="mapping-arrow">→</span><span class="mapping-field">Est. Value (High)</span></div>
+      <div class="mapping-row"><span class="mapping-csv">Image_1 … Image_N</span><span class="mapping-arrow">→</span><span class="mapping-field">Photos (URLs)</span></div>
+      <div class="mapping-row"><span class="mapping-csv">EventID, Subtitle…</span><span class="mapping-arrow">→</span><span class="mapping-field">Ignored</span></div>
+    </div>
+    <p style="font-size:12px;color:#9ca3af;margin:14px 0 0;">Image columns must contain <strong>https://</strong> or <strong>http://</strong> URLs. Blank image cells are skipped. All other columns are imported as-is; unrecognized columns are ignored.</p>
+  </div>
+
+</div><!-- /container -->
+
+<script src="/nav.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user || !user.isAdmin) { toast('Admin access required', 'error'); setTimeout(() => window.location.href = '/dashboard.html', 1500); }
+
+const PREVIEW_COLS = ['LotNumber', 'Title', 'Category', 'Consignor', 'Price'];
+let parsedRows = [];
+let csvHeaders = [];
+
+// ── DROP ZONE ──
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+document.getElementById('csvFile').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    toast('Please select a CSV file', 'warn'); return;
+  }
+  document.getElementById('fileChosenName').textContent = file.name;
+  document.getElementById('fileChosenSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('fileChosen').style.display = 'flex';
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('optionsGrid').style.display = '';
+  document.getElementById('importBtn').style.display = '';
+  document.getElementById('actionRow').style.display = 'flex';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const rows = parseCSVClient(text);
+    csvHeaders = rows[0] ? rows[0].map(h => h.trim()) : [];
+    parsedRows = rows.slice(1).filter(r => r.join('').trim());
+    renderPreview();
+  };
+  reader.readAsText(file);
+
+  // store file ref
+  document.getElementById('csvFile')._file = file;
+}
+
+function clearFile() {
+  document.getElementById('fileChosen').style.display = 'none';
+  document.getElementById('dropZone').style.display = '';
+  document.getElementById('optionsGrid').style.display = 'none';
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('importBtn').style.display = 'none';
+  document.getElementById('csvFile').value = '';
+  parsedRows = []; csvHeaders = [];
+}
+
+function resetForm() {
+  clearFile();
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('uploadCard').style.display = '';
+}
+
+// ── CLIENT-SIDE CSV PARSER (for preview) ──
+function parseCSVClient(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i+1] === '"') { cur += '"'; i++; } else inQ = false;
+      } else { cur += c; }
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\r') {}
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else cur += c;
+    }
+  }
+  if (cur || row.length) { row.push(cur); if (row.join('').trim()) rows.push(row); }
+  return rows;
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderPreview() {
+  const section = document.getElementById('previewSection');
+  const table   = document.getElementById('previewTable');
+  const count   = document.getElementById('previewCount');
+
+  const previewData = parsedRows.slice(0, 5);
+  const cols = PREVIEW_COLS.filter(c => csvHeaders.includes(c));
+
+  // Count image columns
+  const imgCount = csvHeaders.filter(h => /^Image_\d+$/.test(h)).length;
+
+  count.textContent = `${parsedRows.length} row${parsedRows.length !== 1 ? 's' : ''} · ${imgCount} image column${imgCount !== 1 ? 's' : ''} detected`;
+
+  let html = '<thead><tr>' + cols.map(c => `<th>${esc(c)}</th>`).join('') + '<th>Images</th></tr></thead><tbody>';
+
+  previewData.forEach(row => {
+    html += '<tr>';
+    cols.forEach(c => {
+      const idx = csvHeaders.indexOf(c);
+      html += `<td title="${esc(row[idx] || '')}">${esc((row[idx] || '').slice(0, 60))}</td>`;
+    });
+    // Count non-empty image URLs in this row
+    const imgCols = csvHeaders.map((h, i) => i).filter(i => /^Image_\d+$/.test(csvHeaders[i]));
+    const imgFilled = imgCols.filter(i => (row[i] || '').trim().startsWith('http')).length;
+    html += `<td style="color:${imgFilled > 0 ? '#047857' : '#9ca3af'}">${imgFilled > 0 ? '✓ ' + imgFilled : '—'}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  table.innerHTML = html;
+  section.style.display = '';
+}
+
+// ── IMPORT ──
+async function startImport(btn) {
+  const file = document.getElementById('csvFile')._file;
+  if (!file) { toast('No file selected', 'warn'); return; }
+
+  const validateOnly = document.getElementById('validateOnly').checked;
+  const targetStage  = document.getElementById('targetStage').value;
+
+  setLoading(btn, true);
+
+  try {
+    const fd = new FormData();
+    fd.append('csv', file);
+    fd.append('validateOnly', validateOnly ? 'true' : 'false');
+    fd.append('targetStage', targetStage);
+
+    const res  = await fetch('/import-listings', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!data.success) {
+      toast(data.message || 'Import failed', 'error');
+      setLoading(btn, false);
+      return;
+    }
+
+    showResults(data.results);
+    document.getElementById('uploadCard').style.display = 'none';
+    document.getElementById('resultsCard').style.display = '';
+
+  } catch (err) {
+    toast('Import error: ' + err.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function showResults(r) {
+  const isValidate = r.validateOnly;
+  document.getElementById('resultsTitle').textContent =
+    isValidate ? 'Validation Report' : '✅ Import Complete';
+
+  // Summary tiles
+  const summary = document.getElementById('resultSummary');
+  summary.innerHTML = `
+    <div class="result-tile">
+      <div class="result-tile-num">${r.total}</div>
+      <div class="result-tile-label">Total Rows</div>
+    </div>
+    <div class="result-tile ${r.created > 0 ? 'success' : ''}">
+      <div class="result-tile-num">${r.created}</div>
+      <div class="result-tile-label">${isValidate ? 'Would Import' : 'Imported'}</div>
+    </div>
+    <div class="result-tile ${r.skipped > 0 ? 'warn' : ''}">
+      <div class="result-tile-num">${r.skipped}</div>
+      <div class="result-tile-label">Skipped</div>
+    </div>`;
+
+  if (!isValidate && r.created > 0) {
+    summary.innerHTML += `
+      <div class="result-tile success">
+        <div class="result-tile-num" style="font-size:16px;">${esc(r.targetStage)}</div>
+        <div class="result-tile-label">Target Stage</div>
+      </div>`;
+  }
+
+  // Errors
+  const errSec = document.getElementById('errorSection');
+  if (r.errors && r.errors.length) {
+    errSec.style.display = '';
+    document.getElementById('errorList').innerHTML = r.errors.map(e =>
+      `<div class="error-item"><strong>Row ${e.row}${e.lot ? ' · Lot ' + esc(e.lot) : ''}</strong> — ${esc(e.message)}</div>`
+    ).join('');
+  } else {
+    errSec.style.display = 'none';
+  }
+
+  // Imported list
+  const impSec = document.getElementById('importedSection');
+  if (r.items && r.items.length && r.created > 0) {
+    impSec.style.display = '';
+    document.getElementById('importLog').innerHTML = r.items.map(item =>
+      `<div class="import-log-row">
+        ${item.lotNumber ? `<span class="import-log-lot">${esc(item.lotNumber)}</span>` : ''}
+        <span class="import-log-title">${esc(item.title)}</span>
+        <span class="import-log-photos">${item.photos > 0 ? '🖼 ' + item.photos : ''}</span>
+      </div>`
+    ).join('') + (r.created > 100 ? `<div style="font-size:12px;color:#9ca3af;padding:8px 0;">… and ${r.created - 100} more</div>` : '');
+  } else {
+    impSec.style.display = 'none';
+  }
+}
+
+// ── TEMPLATE DOWNLOAD ──
+function downloadTemplate() {
+  const headers = [
+    'EventID','LotNumber','Seller','ConsignorNumber','Category','ListingType','Currency',
+    'Title','Subtitle','Description','Price','ReservePrice','FixedPrice','Quantity',
+    'AcceptOffers','BuyersPremiumApplies',
+    'Image_1','Image_2','Image_3','Image_4','Image_5',
+    'YouTubeID','PdfAttachments','Bold','Badge','Highlight',
+    'ShippingOptions','Duration','StartDTTM','EndDTTM',
+    'AutoRelist','GoodTilCanceled','Consignor','Written By','Ref Number'
+  ];
+  const example = [
+    '','LOT001','','SMIJOH','Furniture','','USD',
+    'Victorian Oak Writing Desk','','Hand-carved Victorian oak writing desk, circa 1890. Three drawers with original brass hardware.','150','250','','1',
+    '','',
+    'https://example.com/image1.jpg','','','','',
+    '','','','','',
+    '','','','',
+    '','','John Smith','','REF-001'
+  ];
+  const csv = [headers, example].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'auction-import-template.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

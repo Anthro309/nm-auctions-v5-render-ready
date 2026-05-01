@@ -231,7 +231,7 @@ function renderLots() {
 async function removeLot(itemId) {
   const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
   const name = item ? (item.name || 'this item') : 'this item';
-  if (!confirm(`Remove "${name}" from this event?\n\nThis won't delete the item — it just unassigns it from the event.`)) return;
+  if (!await confirm2(`Remove "${name}" from this event?\n\nThis won't delete the item — it just unassigns it from the event.`)) return;
   const res = await fetch(`/events/${evId}/lots/${itemId}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
@@ -252,7 +252,7 @@ async function moveLot(itemId) {
   const toEvent = allEvents.find(e => String(e.id) === String(toEventId));
   const item = (ev.lotItems || []).find(i => String(i.id) === String(itemId));
   const name = item ? (item.name || 'this item') : 'this item';
-  if (!confirm(`Move "${name}" to "${toEvent ? toEvent.name : 'selected event'}"?`)) return;
+  if (!await confirm2(`Move "${name}" to "${toEvent ? toEvent.name : 'selected event'}"?`, { safe: true })) return;
   await fetch(`/items/${itemId}/move-event`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -377,7 +377,7 @@ function previewImport() {
 
 async function confirmImport() {
   if (!parsedResults.length) return;
-  if (!confirm(`Import ${parsedResults.length} results? This will mark matched lots as Picked Up and record payouts.`)) return;
+  if (!await confirm2(`Import ${parsedResults.length} results? This will mark matched lots as Picked Up and record payouts.`, { safe: true, confirmText: 'Import' })) return;
 
   const btn = document.getElementById('confirmImportBtn');
   btn.disabled = true; btn.innerText = 'Importing…';
@@ -404,7 +404,7 @@ async function confirmImport() {
 async function deleteEvent() {
   const lotCount = (ev.lotItems || []).length;
   const lotWarning = lotCount > 0 ? `\n\n⚠️ This event has ${lotCount} assigned lot${lotCount !== 1 ? 's' : ''} — they will be unassigned but not deleted.` : '';
-  if (!confirm(`Delete "${ev.name}"?\n\nThis cannot be undone.${lotWarning}`)) return;
+  if (!await confirm2(`Delete "${ev.name}"?\n\nThis cannot be undone.${lotWarning}`)) return;
 
   const btn = document.getElementById('deleteEventBtn');
   btn.disabled = true;

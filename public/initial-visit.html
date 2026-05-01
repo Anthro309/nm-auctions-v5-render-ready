@@ -379,6 +379,7 @@ function hideLoader() { document.getElementById('loader').style.display = 'none'
 
 // ── PHOTO SELECTION ──
 let batchMode = false;
+let cachedBatchAI = null; // { [path]: {title, category, tags} } — populated by aiBatchIdentify
 
 function handlePhotoSelect(input) {
   const files = [...input.files];
@@ -487,21 +488,26 @@ async function aiBatchIdentify() {
   const btn = document.getElementById('aiSuggestBtn');
   btn.textContent = `✨ Identifying ${selectedFiles.length} items…`;
   btn.disabled = true;
-  setStatus(`Uploading ${selectedFiles.length} photos and asking AI to name each one…`);
+  setStatus(`Uploading ${selectedFiles.length} photos…`);
+  cachedBatchAI = null;
   try {
-    // Upload all in parallel
     const paths = await uploadAllPhotos();
-    // AI identify each in parallel
-    const results = await Promise.all(paths.map(path =>
-      fetch('/analyze-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: window.location.origin + path })
-      }).then(r => safeJson(r)).catch(() => null)
-    ));
-    const names = results.map((d, i) => (d && d.title) ? d.title : `Item ${i + 1}`);
+    setStatus(`✨ AI identifying ${paths.length} items in one pass…`);
+    const res = await fetch('/analyze-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrls: paths.map(p => window.location.origin + p) })
+    });
+    const data = await safeJson(res);
+    const results = (data.success && Array.isArray(data.results)) ? data.results : paths.map((_, i) => ({ title: `Item ${i + 1}`, category: 'misc' }));
+
+    // Cache so addBatchItems() reuses without a second AI round-trip
+    cachedBatchAI = {};
+    paths.forEach((p, i) => { cachedBatchAI[p] = results[i]; });
+
+    const names = results.map((d, i) => d.title || `Item ${i + 1}`);
     setStatus(`✨ AI identified: ${names.join(', ')}. Hit "+ Add to Visit" to save them all.`);
-    document.getElementById('batchNotice').textContent = `📦 Ready to save ${paths.length} items: ${names.slice(0,3).join(', ')}${names.length > 3 ? '…' : ''}`;
+    document.getElementById('batchNotice').textContent = `📦 Ready to save ${paths.length} items: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}`;
   } catch (err) {
     setStatus('Identification failed: ' + err.message);
   } finally {
@@ -672,10 +678,10 @@ async function addItem() {
   const description = document.getElementById('itemDescription').value.trim();
   const category = document.getElementById('itemCategory').value.trim();
   const condition = document.getElementById('itemCondition').value.trim();
-  if (!name) { toast('Every item needs a name — what are we working with?', 'warn'); return; }
+  if (!name) { markInvalid(document.getElementById('itemName'), 'Item name is required'); toast('Every item needs a name — what are we working with?', 'warn'); return; }
 
   const isSessionDuplicate = items.some(i => (i.setName || i.name || '').trim().toLowerCase() === name.toLowerCase());
-  if (isSessionDuplicate && !confirm(`"${name}" is already in this visit. Still adding it?`)) return;
+  if (isSessionDuplicate && !await confirm2(`"${name}" is already in this visit. Still adding it?`, { safe: true, confirmText: 'Add anyway' })) return;
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const createdBy = user.name || 'unknown';
@@ -764,20 +770,24 @@ async function addBatchItems() {
     const paths = await uploadAllPhotos();
     if (!paths.length) throw new Error('No photos uploaded successfully');
 
-    // Get lot codes + AI identify in parallel (now that we know the exact path count)
-    setStatus(`✨ AI identifying ${paths.length} items…`);
+    // Use cached AI results if aiBatchIdentify already ran, otherwise batch-identify now
+    let aiResultsPromise;
+    if (cachedBatchAI && paths.every(p => cachedBatchAI[p])) {
+      aiResultsPromise = Promise.resolve(paths.map(p => cachedBatchAI[p]));
+    } else {
+      setStatus(`✨ AI identifying ${paths.length} items…`);
+      aiResultsPromise = fetch('/analyze-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrls: paths.map(p => window.location.origin + p) })
+      }).then(r => safeJson(r))
+        .then(d => (d.success && Array.isArray(d.results)) ? d.results : paths.map((_, i) => ({ title: `Item ${i + 1}`, category: '' })))
+        .catch(() => paths.map((_, i) => ({ title: `Item ${i + 1}`, category: '' })));
+    }
+
     const [lotCodes, aiResults] = await Promise.all([
       getLotCodes(paths.length),
-      Promise.all(paths.map(path =>
-        fetch('/analyze-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl: window.location.origin + path })
-        })
-          .then(r => safeJson(r))
-          .then(d => ({ title: d.title || 'Untitled Item', category: d.category || '' }))
-          .catch(() => ({ title: 'Untitled Item', category: '' }))
-      ))
+      aiResultsPromise
     ]);
 
     const newItems = paths.map((path, idx) => ({
@@ -842,7 +852,7 @@ async function deleteItem(lotCode) {
   const idx = items.findIndex(i => i.lotCode === lotCode);
   if (idx === -1) return;
   const name = items[idx].name;
-  if (!confirm('Remove "' + name + '" from this visit?')) return;
+  if (!await confirm2('Remove "' + name + '" from this visit?')) return;
 
   try {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -871,7 +881,7 @@ async function deleteItem(lotCode) {
 
 async function endVisit() {
   if (!items.length) { toast('No items added yet', 'warn'); return; }
-  if (confirm('Print labels for ' + items.length + ' item(s)?')) {
+  if (await confirm2('Print labels for ' + items.length + ' item(s)?', { safe: true, confirmText: 'Print' })) {
     await buildPrint();
     setTimeout(() => { window.print(); }, 800);
   }

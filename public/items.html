@@ -433,9 +433,12 @@
   </div>
 
   <div class="card export-card">
-    <h2>Auction Listing Export <button class="help-btn" onclick="showTip(this,'Downloads a spreadsheet of all items that are photographed and ready to list. Import this CSV into your auction platform. Includes name, category, condition, description, tags, and estimated value.')">?</button></h2>
-    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads a CSV of all items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage — ready to list on the auction platform.</p>
-    <button onclick="exportAuctionCSV()" style="width:100%;">📤 Export Auction Listings CSV</button>
+    <h2>Auction Listing Export <button class="help-btn" onclick="showTip(this,'Downloads a CSV in the auction platform template format — ready to import directly. Includes lot number, title, description, category, starting price, reserve price, consignor, and all photo URLs.')">?</button></h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Downloads items in <strong>Photograph</strong> or <strong>Prep for Pick Up</strong> stage, formatted for direct import into your auction platform.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="exportPlatformCSV(this)" style="flex:1;min-width:180px;">📤 Export Platform CSV</button>
+      <button onclick="exportAuctionCSV()" style="flex:1;min-width:180px;background:none;color:#6b7280;box-shadow:none;border:1px solid rgba(0,0,0,0.12);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;">📋 Simple CSV</button>
+    </div>
     <div id="exportMsg" style="display:none;margin-top:10px;padding:10px 14px;background:#ecfdf5;color:#047857;border-radius:10px;font-size:13px;font-weight:600;"></div>
   </div>
 </div>
@@ -462,7 +465,16 @@ function setMode(mode) {
 }
 
 async function load() {
-  document.getElementById('list').innerHTML = '<div style="padding:20px 0;color:#9ca3af;font-size:13px;text-align:center;">Loading items…</div>';
+  const skeletonItem = () => `
+    <div class="skeleton-card" style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;">
+      <div class="skeleton-block" style="width:70px;height:70px;border-radius:10px;flex-shrink:0;"></div>
+      <div style="flex:1;padding-top:2px;">
+        <div class="skeleton-line full" style="height:16px;margin-bottom:9px;"></div>
+        <div class="skeleton-line medium" style="margin-bottom:7px;"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>`;
+  document.getElementById('list').innerHTML = Array.from({length: 5}, skeletonItem).join('');
   const [itemsRes, empRes] = await Promise.all([fetch('/items'), fetch('/employees')]);
   allItems = await itemsRes.json();
   const emps = await empRes.json();
@@ -793,7 +805,7 @@ async function batchAdvance() {
   const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
   if (!ids.length) return;
 
-  if (!confirm(`Move ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${stage}"?`)) return;
+  if (!await confirm2(`Move ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${stage}"?`, { safe: true, confirmText: 'Move' })) return;
 
   const btn = document.getElementById('batchAdvBtn');
   btn.disabled = true;
@@ -826,7 +838,7 @@ async function batchAssign() {
   if (!ids.length) return;
 
   const label = assignedTo ? `Assign ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${assignedTo}"?` : `Remove assignment from ${ids.length} item${ids.length !== 1 ? 's' : ''}?`;
-  if (!confirm(label)) return;
+  if (!await confirm2(label, { safe: true, confirmText: assignedTo ? 'Assign' : 'Remove' })) return;
 
   const btn = document.getElementById('batchAssignBtn');
   btn.disabled = true;
@@ -881,6 +893,82 @@ function exportAuctionCSV() {
   URL.revokeObjectURL(url);
   msgEl.style.background = '#ecfdf5'; msgEl.style.color = '#047857';
   msgEl.innerText = `✅ Exported ${ready.length} item${ready.length !== 1 ? 's' : ''}`;
+  msgEl.style.display = 'block';
+  setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+}
+
+function exportPlatformCSV(btn) {
+  const ready = allItems.filter(i =>
+    i.stage === 'Photograph' || i.stage === 'Prep for Pick Up'
+  );
+  const msgEl = document.getElementById('exportMsg');
+  if (!ready.length) {
+    msgEl.style.background = '#fef2f2'; msgEl.style.color = '#b91c1c';
+    msgEl.innerText = 'No items in Photograph or Prep for Pick Up stage.';
+    msgEl.style.display = 'block';
+    setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+    return;
+  }
+
+  const maxPhotos = Math.min(Math.max(...ready.map(i => (i.photos || []).length), 1), 20);
+  const imgHeaders = Array.from({ length: maxPhotos }, (_, i) => `Image_${i + 1}`);
+
+  const staticHeaders = [
+    'EventID','LotNumber','Seller','ConsignorNumber','Category','ListingType','Currency',
+    'Title','Subtitle','Description','Price','ReservePrice','FixedPrice','Quantity',
+    'AcceptOffers','BuyersPremiumApplies'
+  ];
+  const trailingHeaders = ['YouTubeID','PdfAttachments','Bold','Badge','Highlight',
+    'ShippingOptions','Duration','StartDTTM','EndDTTM','AutoRelist','GoodTilCanceled',
+    'Consignor','Written By','Ref Number'];
+  const headers = [...staticHeaders, ...imgHeaders, ...trailingHeaders];
+
+  const origin = window.location.origin;
+  const q = v => `"${String(v || '').replace(/"/g, '""')}"`;
+
+  const rows = ready.map(item => {
+    const photos = (item.photos || []).slice(0, maxPhotos).map(p =>
+      p.startsWith('http') ? p : origin + p
+    );
+    const imgCells = imgHeaders.map((_, i) => photos[i] || '');
+
+    return [
+      '',                                          // EventID
+      item.lotNumber  || '',                       // LotNumber
+      '',                                          // Seller
+      item.code       || '',                       // ConsignorNumber
+      item.category   || '',                       // Category
+      '',                                          // ListingType
+      'USD',                                       // Currency
+      item.name       || '',                       // Title
+      '',                                          // Subtitle
+      (item.auctionDescription || item.description || '').replace(/\n/g, ' '), // Description
+      item.estimatedValueLow  || '',               // Price (starting bid)
+      item.estimatedValueHigh || '',               // ReservePrice
+      '',                                          // FixedPrice
+      '1',                                         // Quantity
+      '',                                          // AcceptOffers
+      '',                                          // BuyersPremiumApplies
+      ...imgCells,
+      '','','','','',                              // YouTube, Pdf, Bold, Badge, Highlight
+      '','','','',                                 // Shipping, Duration, StartDTTM, EndDTTM
+      '','',                                       // AutoRelist, GoodTilCanceled
+      item.consigner  || '',                       // Consignor
+      '',                                          // Written By
+      item.lotNumber  || ''                        // Ref Number
+    ];
+  });
+
+  const csv = [headers, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `platform-export-${new Date().toLocaleDateString('en-US').replace(/\//g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  msgEl.style.background = '#ecfdf5'; msgEl.style.color = '#047857';
+  msgEl.innerText = `✅ Exported ${ready.length} item${ready.length !== 1 ? 's' : ''} in platform format`;
   msgEl.style.display = 'block';
   setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
 }
