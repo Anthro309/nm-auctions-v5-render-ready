@@ -251,6 +251,15 @@ function highlightActiveSidebarLink() {
     }
   }
 
+  // Archived link — all users
+  var sidebarNavAll = document.querySelector('#sidebar nav');
+  if (sidebarNavAll && !sidebarNavAll.querySelector('a[href="/archived.html"]')) {
+    var ar = document.createElement('a');
+    ar.href = '/archived.html';
+    ar.innerHTML = '<span class="sidebar-icon">🗄️</span> Archived Items';
+    sidebarNavAll.appendChild(ar);
+  }
+
   // Hide links non-admins shouldn't see
   if (!u.isAdmin) {
     var sidebarNav = document.querySelector('#sidebar nav');

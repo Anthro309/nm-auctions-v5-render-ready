@@ -377,7 +377,6 @@
           <option>Ready for Pick Up</option>
           <option>Picked Up</option>
           <option>Missing at Drop Off</option>
-          <option>Archived</option>
         </select>
         <select id="categoryFilter" onchange="render();updateFilterBadge()">
           <option value="">All Categories</option>
@@ -417,7 +416,6 @@
           <option>Prep for Pick Up</option>
           <option>Ready for Pick Up</option>
           <option>Picked Up</option>
-          <option>Archived</option>
         </select>
         <button class="batch-btn" id="batchAdvBtn" onclick="batchAdvance()">Advance</button>
       </div>
@@ -597,7 +595,7 @@ function onSearchInput() {
 }
 
 function getInventoryItems(source) {
-  return (source || []).filter(i => i.stage !== 'Home Visit');
+  return (source || []).filter(i => i.stage !== 'Home Visit' && i.stage !== 'Archived');
 }
 
 function getFiltered() {
