@@ -672,10 +672,10 @@ async function addItem() {
   const description = document.getElementById('itemDescription').value.trim();
   const category = document.getElementById('itemCategory').value.trim();
   const condition = document.getElementById('itemCondition').value.trim();
-  if (!name) { toast('Every item needs a name — what are we working with?', 'warn'); return; }
+  if (!name) { markInvalid(document.getElementById('itemName'), 'Item name is required'); toast('Every item needs a name — what are we working with?', 'warn'); return; }
 
   const isSessionDuplicate = items.some(i => (i.setName || i.name || '').trim().toLowerCase() === name.toLowerCase());
-  if (isSessionDuplicate && !confirm(`"${name}" is already in this visit. Still adding it?`)) return;
+  if (isSessionDuplicate && !await confirm2(`"${name}" is already in this visit. Still adding it?`, { safe: true, confirmText: 'Add anyway' })) return;
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const createdBy = user.name || 'unknown';
@@ -842,7 +842,7 @@ async function deleteItem(lotCode) {
   const idx = items.findIndex(i => i.lotCode === lotCode);
   if (idx === -1) return;
   const name = items[idx].name;
-  if (!confirm('Remove "' + name + '" from this visit?')) return;
+  if (!await confirm2('Remove "' + name + '" from this visit?')) return;
 
   try {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -871,7 +871,7 @@ async function deleteItem(lotCode) {
 
 async function endVisit() {
   if (!items.length) { toast('No items added yet', 'warn'); return; }
-  if (confirm('Print labels for ' + items.length + ' item(s)?')) {
+  if (await confirm2('Print labels for ' + items.length + ' item(s)?', { safe: true, confirmText: 'Print' })) {
     await buildPrint();
     setTimeout(() => { window.print(); }, 800);
   }

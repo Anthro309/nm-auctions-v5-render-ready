@@ -146,10 +146,10 @@ async function createEvent() {
     const name = (document.getElementById('newName').value || '').trim();
     const date = document.getElementById('newDate').value || '';
 
-    if (!name) { showMsg('#fef2f2','#dc2626','⚠️ Event name is required'); return; }
-    if (!date) { showMsg('#fef2f2','#dc2626','⚠️ Date is required'); return; }
+    if (!name) { markInvalid(document.getElementById('newName'), 'Event name is required'); return; }
+    if (!date) { markInvalid(document.getElementById('newDate'), 'Date is required'); return; }
 
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Creating…'; }
+    if (btn) { setLoading(btn, true); }
     showMsg('#eff6ff','#1d4ed8','Creating event…');
 
     const res = await fetch('/events', {
@@ -182,12 +182,23 @@ async function createEvent() {
     }
   } finally {
     const b = document.getElementById('createSubmitBtn');
-    if (b) { b.disabled = false; b.textContent = 'Create Event'; }
+    if (b) setLoading(b, false);
   }
 }
 
 async function load() {
   const el = document.getElementById('eventsList');
+  const skeletonEvent = () => `
+    <div class="skeleton-card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div style="flex:1;"><div class="skeleton-line medium" style="height:18px;margin-bottom:8px;"></div>
+        <div class="skeleton-line short"></div></div>
+        <div class="skeleton-block" style="width:70px;height:24px;border-radius:20px;"></div>
+      </div>
+      <div class="skeleton-line full" style="margin-bottom:6px;"></div>
+      <div class="skeleton-line medium"></div>
+    </div>`;
+  el.innerHTML = Array.from({length: 4}, skeletonEvent).join('');
   try {
     const res = await fetch('/events');
     if (!res.ok) throw new Error('Server error ' + res.status);

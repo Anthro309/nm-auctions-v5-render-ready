@@ -460,7 +460,16 @@ function setMode(mode) {
 }
 
 async function load() {
-  document.getElementById('list').innerHTML = '<div style="padding:20px 0;color:#9ca3af;font-size:13px;text-align:center;">Loading items…</div>';
+  const skeletonItem = () => `
+    <div class="skeleton-card" style="display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;">
+      <div class="skeleton-block" style="width:70px;height:70px;border-radius:10px;flex-shrink:0;"></div>
+      <div style="flex:1;padding-top:2px;">
+        <div class="skeleton-line full" style="height:16px;margin-bottom:9px;"></div>
+        <div class="skeleton-line medium" style="margin-bottom:7px;"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>`;
+  document.getElementById('list').innerHTML = Array.from({length: 5}, skeletonItem).join('');
   const [itemsRes, empRes] = await Promise.all([fetch('/items'), fetch('/employees')]);
   allItems = await itemsRes.json();
   const emps = await empRes.json();
@@ -791,7 +800,7 @@ async function batchAdvance() {
   const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
   if (!ids.length) return;
 
-  if (!confirm(`Move ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${stage}"?`)) return;
+  if (!await confirm2(`Move ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${stage}"?`, { safe: true, confirmText: 'Move' })) return;
 
   const btn = document.getElementById('batchAdvBtn');
   btn.disabled = true;
@@ -824,7 +833,7 @@ async function batchAssign() {
   if (!ids.length) return;
 
   const label = assignedTo ? `Assign ${ids.length} item${ids.length !== 1 ? 's' : ''} to "${assignedTo}"?` : `Remove assignment from ${ids.length} item${ids.length !== 1 ? 's' : ''}?`;
-  if (!confirm(label)) return;
+  if (!await confirm2(label, { safe: true, confirmText: assignedTo ? 'Assign' : 'Remove' })) return;
 
   const btn = document.getElementById('batchAssignBtn');
   btn.disabled = true;

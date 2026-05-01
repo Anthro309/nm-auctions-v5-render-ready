@@ -353,3 +353,287 @@ function injectNotificationBell(u) {
   loadBellNotifications();
   setInterval(loadBellNotifications, 60000);
 }
+
+// ── SCROLL-TO-TOP BUTTON ──
+(function () {
+  var css = [
+    '#al-scroll-top{position:fixed;bottom:28px;right:20px;width:42px;height:42px;border-radius:50%;',
+    'background:#06111E;color:white;border:none;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer;',
+    'display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;',
+    'z-index:9990;opacity:0;transform:translateY(10px);',
+    'transition:opacity 0.2s,transform 0.2s,background 0.15s;pointer-events:none;}',
+    '#al-scroll-top.visible{opacity:1;transform:translateY(0);pointer-events:auto;}',
+    '#al-scroll-top:hover{background:#0d2240;}',
+    '@media(max-width:767px){#al-scroll-top{bottom:80px;right:14px;}}'
+  ].join('');
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+    var btn = document.createElement('button');
+    btn.id = 'al-scroll-top'; btn.setAttribute('aria-label', 'Scroll to top'); btn.textContent = '↑';
+    document.body.appendChild(btn);
+    window.addEventListener('scroll', function () { btn.classList.toggle('visible', window.scrollY > 300); }, { passive: true });
+    btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  });
+}());
+
+// ── EXIT PAGE FADE ──
+(function () {
+  var s = document.createElement('style');
+  s.textContent = '@keyframes alExitFade{to{opacity:0;}}body.al-exiting{animation:alExitFade 0.15s ease-out forwards;pointer-events:none;}';
+  document.head.appendChild(s);
+
+  document.addEventListener('click', function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var link = e.target.closest('a[href]');
+    if (!link || link.target === '_blank') return;
+    var href = link.getAttribute('href') || '';
+    if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel')) return;
+    try {
+      var url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+    } catch (_) { return; }
+    e.preventDefault();
+    document.body.classList.add('al-exiting');
+    var dest = link.href;
+    setTimeout(function () { window.location.href = dest; }, 150);
+  }, true);
+}());
+
+// ── STAT COUNTER ANIMATION ──
+(function () {
+  function animateCount(el, text, duration) {
+    var clean = text.replace(/,/g, '');
+    var m = clean.match(/^([^0-9-]*)(-?[\d.]+)([^0-9.]*)$/);
+    if (!m) return;
+    var prefix = m[1], num = parseFloat(m[2]), suffix = m[3];
+    if (isNaN(num) || num === 0) return;
+    var start = performance.now();
+    (function step(now) {
+      var t = Math.min((now - start) / duration, 1);
+      var ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = prefix + Math.round(num * ease).toLocaleString() + suffix;
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = prefix + num.toLocaleString() + suffix;
+    }(start));
+  }
+
+  var seen = new WeakSet();
+  function scanStats() {
+    document.querySelectorAll('.stat-number').forEach(function (el) {
+      if (seen.has(el)) return;
+      var t = el.textContent.trim();
+      if (t && t !== '—' && /\d/.test(t) && !el.classList.contains('skeleton')) {
+        seen.add(el);
+        var captured = t;
+        el.textContent = '0';
+        setTimeout(function () { animateCount(el, captured, 900); }, 60);
+      }
+    });
+  }
+
+  var mo = new MutationObserver(scanStats);
+  document.addEventListener('DOMContentLoaded', function () {
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    scanStats();
+  });
+}());
+
+// ── CUSTOM CONFIRM MODAL ──
+(function () {
+  var s = document.createElement('style');
+  s.textContent = [
+    '.al-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);',
+    'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);',
+    'z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;',
+    'animation:alCfIn 0.18s ease both;}',
+    '.al-confirm-box{background:white;border-radius:20px;padding:28px 28px 24px;',
+    'max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);',
+    'animation:alCfSlide 0.22s cubic-bezier(0.34,1.4,0.64,1) both;}',
+    '.al-confirm-title{font-size:16px;font-weight:700;color:#111827;margin-bottom:10px;',
+    'font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}',
+    '.al-confirm-msg{font-size:14px;color:#374151;line-height:1.55;white-space:pre-line;',
+    'font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}',
+    '.al-confirm-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;}',
+    '.al-confirm-cancel{padding:10px 20px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);',
+    'background:#f9fafb;color:#374151;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}',
+    '.al-confirm-cancel:hover{background:#f3f4f6;}',
+    '.al-confirm-ok{padding:10px 22px;border-radius:10px;',
+    'background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;',
+    'font-size:14px;font-weight:600;cursor:pointer;border:none;',
+    'box-shadow:0 3px 10px rgba(220,38,38,0.3);font-family:inherit;}',
+    '.al-confirm-ok.safe{background:linear-gradient(135deg,#3B5EEC,#2044CC);box-shadow:0 3px 10px rgba(44,82,224,0.3);}',
+    '.al-confirm-ok:hover{opacity:0.9;transform:translateY(-1px);}',
+    '@keyframes alCfIn{from{opacity:0;}to{opacity:1;}}',
+    '@keyframes alCfSlide{from{opacity:0;transform:scale(0.95) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}'
+  ].join('');
+  document.head.appendChild(s);
+
+  window.confirm2 = function (message, opts) {
+    opts = opts || {};
+    var safe = opts.safe || false;
+    var title = opts.title || (safe ? 'Confirm' : 'Are you sure?');
+    var confirmText = opts.confirmText || (safe ? 'Confirm' : 'Yes, continue');
+    var cancelText = opts.cancelText || 'Cancel';
+
+    return new Promise(function (resolve) {
+      var overlay = document.createElement('div');
+      overlay.className = 'al-confirm-overlay';
+      overlay.innerHTML =
+        '<div class="al-confirm-box">' +
+          '<div class="al-confirm-title">' + encStr(title) + '</div>' +
+          '<div class="al-confirm-msg">' + encStr(message) + '</div>' +
+          '<div class="al-confirm-actions">' +
+            '<button class="al-confirm-cancel">' + encStr(cancelText) + '</button>' +
+            '<button class="al-confirm-ok' + (safe ? ' safe' : '') + '">' + encStr(confirmText) + '</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      function cleanup(result) {
+        overlay.style.animation = 'alCfIn 0.15s ease reverse both';
+        setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 150);
+        resolve(result);
+      }
+
+      overlay.querySelector('.al-confirm-cancel').addEventListener('click', function () { cleanup(false); });
+      overlay.querySelector('.al-confirm-ok').addEventListener('click', function () { cleanup(true); });
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) cleanup(false); });
+
+      var keyHandler = function (e) {
+        if (e.key === 'Escape') { cleanup(false); document.removeEventListener('keydown', keyHandler); }
+        if (e.key === 'Enter') { cleanup(true); document.removeEventListener('keydown', keyHandler); }
+      };
+      document.addEventListener('keydown', keyHandler);
+      setTimeout(function () { var ok = overlay.querySelector('.al-confirm-ok'); if (ok) ok.focus(); }, 50);
+    });
+  };
+}());
+
+// ── BUTTON LOADING HELPER ──
+(function () {
+  var s = document.createElement('style');
+  s.textContent = [
+    '.al-btn-loading{position:relative;color:transparent!important;pointer-events:none!important;}',
+    '.al-btn-loading::after{content:"";position:absolute;width:16px;height:16px;',
+    'top:50%;left:50%;margin:-8px 0 0 -8px;',
+    'border:2.5px solid rgba(255,255,255,0.35);border-top-color:white;',
+    'border-radius:50%;animation:alBtnSpin 0.7s linear infinite;}',
+    '@keyframes alBtnSpin{to{transform:rotate(360deg);}}'
+  ].join('');
+  document.head.appendChild(s);
+
+  window.setLoading = function (btn, loading) {
+    if (!btn) return;
+    if (loading) { btn.classList.add('al-btn-loading'); btn.disabled = true; }
+    else { btn.classList.remove('al-btn-loading'); btn.disabled = false; }
+  };
+
+  window.withLoading = function (btn, asyncFn) {
+    setLoading(btn, true);
+    var p = asyncFn();
+    if (p && typeof p.finally === 'function') p.finally(function () { setLoading(btn, false); });
+    else setLoading(btn, false);
+    return p;
+  };
+}());
+
+// ── MOBILE BOTTOM TAB BAR ──
+(function () {
+  var TABS = [
+    { href: '/dashboard.html', icon: '🏠', label: 'Home' },
+    { href: '/items.html',     icon: '📦', label: 'Items' },
+    { href: '/events.html',    icon: '📅', label: 'Events' },
+    { href: '/scanner.html',   icon: '📷', label: 'Scan' }
+  ];
+
+  var css = [
+    '#al-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;',
+    'background:#06111E;border-top:1px solid rgba(255,255,255,0.07);',
+    'box-shadow:0 -4px 20px rgba(0,0,0,0.25);z-index:9980;',
+    'padding-bottom:env(safe-area-inset-bottom,0px);}',
+    '#al-bottom-nav-inner{display:flex;height:60px;}',
+    '.al-tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;',
+    'gap:2px;color:rgba(255,255,255,0.4);text-decoration:none;font-size:10px;font-weight:600;',
+    'transition:color 0.12s;padding-top:4px;',
+    'font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}',
+    '.al-tab-item.active{color:#7da3f8;}',
+    '.al-tab-item:hover{color:rgba(255,255,255,0.75);}',
+    '.al-tab-icon{font-size:20px;line-height:1;}',
+    '@media(max-width:767px){',
+    '#al-bottom-nav{display:block;}',
+    'body{padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))!important;}',
+    '#al-toast-container{bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;}',
+    '}',
+    '@media(min-width:768px){#al-bottom-nav{display:none!important;}}'
+  ].join('');
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var u = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!u) return;
+
+    var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+
+    var nav = document.createElement('nav'); nav.id = 'al-bottom-nav';
+    var inner = document.createElement('div'); inner.id = 'al-bottom-nav-inner';
+    var cur = window.location.pathname;
+
+    TABS.forEach(function (tab) {
+      var isActive = cur === tab.href || (cur.startsWith(tab.href.replace('.html', '')) && tab.href !== '/dashboard.html');
+      var a = document.createElement('a');
+      a.href = tab.href;
+      a.className = 'al-tab-item' + (isActive ? ' active' : '');
+      a.innerHTML = '<span class="al-tab-icon">' + tab.icon + '</span><span>' + tab.label + '</span>';
+      inner.appendChild(a);
+    });
+
+    nav.appendChild(inner);
+    document.body.appendChild(nav);
+  });
+}());
+
+// ── FIELD VALIDATION HELPER ──
+(function () {
+  var s = document.createElement('style');
+  s.textContent = [
+    '.field-invalid{border-color:#dc2626!important;box-shadow:0 0 0 3px rgba(220,38,38,0.12)!important;',
+    'animation:alFieldShake 0.35s ease;}',
+    '.field-error-msg{font-size:12px;color:#dc2626;margin-top:4px;font-weight:500;display:block;}',
+    '@keyframes alFieldShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}',
+    '40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}'
+  ].join('');
+  document.head.appendChild(s);
+
+  window.markInvalid = function (el, msg) {
+    el.classList.add('field-invalid');
+    if (!el.parentNode.querySelector('.field-error-msg')) {
+      var err = document.createElement('span');
+      err.className = 'field-error-msg';
+      err.textContent = msg || 'This field is required';
+      el.parentNode.insertBefore(err, el.nextSibling);
+    }
+    el.addEventListener('input', function clear() {
+      el.classList.remove('field-invalid');
+      var e = el.parentNode ? el.parentNode.querySelector('.field-error-msg') : null;
+      if (e) e.remove();
+      el.removeEventListener('input', clear);
+    });
+  };
+
+  window.validateFields = function (fields) {
+    var valid = true;
+    var firstInvalid = null;
+    fields.forEach(function (f) {
+      var el = typeof f === 'string' ? document.getElementById(f) : f;
+      if (!el) return;
+      if (!el.value || !el.value.trim()) {
+        markInvalid(el, el.dataset.errorMsg || 'Required');
+        if (!firstInvalid) firstInvalid = el;
+        valid = false;
+      }
+    });
+    if (firstInvalid) firstInvalid.focus();
+    return valid;
+  };
+}());

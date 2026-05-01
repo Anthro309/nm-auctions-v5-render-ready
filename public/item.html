@@ -362,7 +362,7 @@
   <div class="card">
     <h3 style="margin-bottom:4px;">Location</h3>
     <input id="locationInput" placeholder="e.g. Rack A1, Shelf 3">
-    <button class="btn-blue" onclick="saveLocation()">Save Location</button>
+    <button class="btn-blue" onclick="saveLocation(this)">Save Location</button>
     <div id="locationMsg" class="success-msg">✅ Location saved</div>
   </div>
 
@@ -373,7 +373,7 @@
     <select id="assignSelect" style="margin-top:0;">
       <option value="">— Unassigned —</option>
     </select>
-    <button class="btn-blue" onclick="saveAssignment()" style="margin-top:10px;">Assign</button>
+    <button class="btn-blue" onclick="saveAssignment(this)" style="margin-top:10px;">Assign</button>
     <div id="assignMsg" class="success-msg">✅ Assignment saved</div>
   </div>
 
@@ -444,7 +444,7 @@
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;display:block;margin-bottom:4px;">Notes</label>
     <textarea id="notesInput" rows="3" placeholder="Additional notes (provenance, markings, repairs, etc.)" style="width:100%;padding:14px;border-radius:12px;border:1px solid #e5e7eb;box-sizing:border-box;font-size:14px;resize:vertical;margin-bottom:10px;font-family:inherit;"></textarea>
 
-    <button class="btn-blue" onclick="saveItemDetails()">Save Details</button>
+    <button class="btn-blue" onclick="saveItemDetails(this)">Save Details</button>
     <div id="detailsMsg" class="success-msg">✅ Details saved</div>
   </div>
 
@@ -748,7 +748,7 @@ async function uploadRefPhotos(input) {
 }
 
 async function deleteRefPhoto(photoPath) {
-  if (!confirm('Remove this reference photo?')) return;
+  if (!await confirm2('Remove this reference photo?')) return;
   try {
     const res = await fetch(`/items/${item.id}/delete-reference-photo`, {
       method: 'POST',
@@ -791,8 +791,9 @@ function renderAssignment() {
   if (sel) sel.value = item.assignedTo || '';
 }
 
-async function saveAssignment() {
+async function saveAssignment(btn) {
   const assignedTo = document.getElementById('assignSelect').value;
+  setLoading(btn, true);
   try {
     const res = await fetch(`/items/${item.id}/assign`, {
       method: 'POST',
@@ -809,13 +810,15 @@ async function saveAssignment() {
     }
   } catch (err) {
     toast('Failed to save assignment', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
 // =========================
 // SAVE ITEM DETAILS
 // =========================
-async function saveItemDetails() {
+async function saveItemDetails(btn) {
   const name        = document.getElementById('editTitle').value.trim();
   const description = document.getElementById('editDescription').value.trim();
   const dimensions  = document.getElementById('dimInput').value.trim();
@@ -823,6 +826,8 @@ async function saveItemDetails() {
   const category    = document.getElementById('categorySelect').value;
   const notes       = document.getElementById('notesInput').value.trim();
 
+  if (!validateFields(['editTitle'])) return;
+  setLoading(btn, true);
   try {
     const res = await fetch(`/items/${item.id}/update-details`, {
       method: 'POST',
@@ -839,14 +844,17 @@ async function saveItemDetails() {
     }
   } catch (err) {
     toast('Failed to save details', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
 // =========================
 // SAVE LOCATION
 // =========================
-async function saveLocation() {
+async function saveLocation(btn) {
   const location = document.getElementById('locationInput').value.trim();
+  setLoading(btn, true);
   try {
     const res = await fetch(`/items/${item.id}/location`, {
       method: 'POST',
@@ -863,6 +871,8 @@ async function saveLocation() {
     }
   } catch (err) {
     toast('Failed to save location', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
@@ -945,11 +955,11 @@ async function advanceStage() {
   const nextStage = stageOrder[idx + 1];
 
   if (item.needsRepair) {
-    if (!confirm('⚠️ This item is flagged for repair.\n\n' + (item.repairNote || '') + '\n\nAdvance the stage anyway?')) return;
+    if (!await confirm2('This item is flagged for repair.\n\n' + (item.repairNote || '') + '\n\nAdvance the stage anyway?', { title: 'Repair Flag' })) return;
   }
 
   const btn = document.getElementById('advanceStageBtn') || document.querySelector('[onclick="advanceStage()"]');
-  btn.disabled = true;
+  setLoading(btn, true);
 
   try {
     const res = await fetch(`/items/${item.id}/stage`, {
@@ -969,7 +979,7 @@ async function advanceStage() {
   } catch (err) {
     toast('Failed to advance stage', 'error');
   } finally {
-    btn.disabled = false;
+    setLoading(btn, false);
   }
 }
 
@@ -1008,7 +1018,7 @@ async function toggleRepairFlag() {
 // =========================
 async function flagMissing() {
   if (!item) return;
-  if (!confirm('Mark this item as Missing at Drop Off?')) return;
+  if (!await confirm2('Mark this item as Missing at Drop Off?', { title: 'Flag as Missing', confirmText: 'Mark Missing' })) return;
   try {
     const res = await fetch(`/items/${item.id}/stage`, {
       method: 'POST',
@@ -1060,7 +1070,7 @@ function renderHistory() {
 // =========================
 async function deleteItem() {
   if (!user || !user.isAdmin) return;
-  if (!confirm('Permanently delete "' + (item.name || 'this item') + '"? This cannot be undone.')) return;
+  if (!await confirm2('Permanently delete "' + (item.name || 'this item') + '"? This cannot be undone.', { title: 'Delete Item', confirmText: 'Delete' })) return;
   try {
     const res = await fetch('/items/' + item.id, {
       method: 'DELETE',
