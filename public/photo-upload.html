@@ -302,9 +302,7 @@
     </div>
   </div>
 
-  <div id="bgNotice" style="display:none;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#92400e;">
-    <strong>Background removal not configured.</strong> Photos will be saved as-is. To enable AI background removal, add a <code>REMOVE_BG_API_KEY</code> in your Render environment settings.
-  </div>
+  <div id="bgNotice" style="display:none;border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-weight:600;"></div>
 
   <!-- Drop zone -->
   <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
@@ -357,14 +355,19 @@ let bgRemovalAvailable = false;
 // Lookup map: cardId -> array of search result items (for safe onclick)
 let searchResultCache = {};
 
-// Check if BG removal is available on this server
+// Check remove.bg status from server
 (async function checkBgStatus() {
+  const el = document.getElementById('bgNotice');
   try {
-    const fd = new FormData();
-    // We can't pre-check without a file — infer from first upload response
-    // For now show the notice; it will hide automatically after first successful BG removal
-    document.getElementById('bgNotice').style.display = 'block';
-  } catch {}
+    const data = await fetch('/api/bg-status').then(r => r.json());
+    if (data.active) {
+      el.style.cssText = 'display:block;background:#ecfdf5;border:1.5px solid #6ee7b7;border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#065f46;';
+      el.innerHTML = '✅ <strong>Background removal active</strong> — photos will be automatically cleaned with remove.bg before saving.';
+    } else {
+      el.style.cssText = 'display:block;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#92400e;';
+      el.innerHTML = '⚠️ <strong>Background removal not configured.</strong> Photos will be saved as-is. Add a <code>REMOVE_BG_API_KEY</code> in Render environment settings to enable.';
+    }
+  } catch { el.style.display = 'none'; }
 })();
 
 function handleFiles(files) {
@@ -518,10 +521,7 @@ async function processCard(id) {
     c.originalPath = data.path;
     c.processedPath = data.path;
     c.status = 'done';
-    if (data.processed) {
-      bgRemovalAvailable = true;
-      document.getElementById('bgNotice').style.display = 'none';
-    }
+    if (data.processed) bgRemovalAvailable = true;
     renderCard(id);
   } catch (err) {
     c.status = 'error';
