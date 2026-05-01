@@ -600,7 +600,7 @@ function render() {
   }
 
   // Stage advance
-  const stageOrder = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
+  const stageOrder = ['Home Visit','Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
   const idx = stageOrder.indexOf(item.stage);
   if (idx !== -1 && idx < stageOrder.length - 1) {
     const nextStage = stageOrder[idx + 1];
@@ -666,7 +666,7 @@ function renderStagePipeline() {
   const card = document.getElementById('pipelineCard');
   if (!pipeline || !item) return;
 
-  const STAGES = ['Home Visit', 'Received at Studio', 'Review & Cleaning', 'Photograph', 'Prep for Pick Up', 'Ready for Pick Up', 'Picked Up'];
+  const STAGES = ['Home Visit', 'Awaiting Delivery to Studio', 'Received at Studio', 'Review & Cleaning', 'Photograph', 'Prep for Pick Up', 'Ready for Pick Up', 'Picked Up'];
   const currentStage = item.stage || '';
   const currentIdx = STAGES.indexOf(currentStage);
 
@@ -939,7 +939,7 @@ async function printLabel() {
 // ADVANCE STAGE
 // =========================
 async function advanceStage() {
-  const stageOrder = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
+  const stageOrder = ['Home Visit','Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up'];
   const idx = stageOrder.indexOf(item.stage);
   if (idx === -1 || idx >= stageOrder.length - 1) return;
   const nextStage = stageOrder[idx + 1];

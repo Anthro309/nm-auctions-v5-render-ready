@@ -369,6 +369,7 @@
       <div class="filter-grid">
         <select id="stageFilter" onchange="render();updateFilterBadge()">
           <option value="">All Stages</option>
+          <option>Awaiting Delivery to Studio</option>
           <option>Received at Studio</option>
           <option>Review &amp; Cleaning</option>
           <option>Photograph</option>
@@ -409,6 +410,7 @@
       <div class="batch-action-row">
         <select id="batchStage">
           <option value="">Move to stage…</option>
+          <option>Awaiting Delivery to Studio</option>
           <option>Received at Studio</option>
           <option>Review &amp; Cleaning</option>
           <option>Photograph</option>
@@ -652,7 +654,7 @@ function renderConsigner(filtered) {
       if (sort === 'recent') {
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       }
-      const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off'];
+      const stages = ['Home Visit','Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off'];
       return stages.indexOf(a.stage) - stages.indexOf(b.stage);
     });
 

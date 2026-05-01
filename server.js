@@ -160,6 +160,7 @@ function addLog(item, entry) {
 function validStage(stage) {
   return [
     'Home Visit',
+    'Awaiting Delivery to Studio',
     'Received at Studio',
     'Missing at Drop Off',
     'Review & Cleaning',
@@ -203,13 +204,13 @@ ensureUsersExist();
     let fixed = 0;
     items.forEach(i => {
       if (i.stage === 'Home Visit' && i.reviewStatus === 'accepted') {
-        i.stage = 'Received at Studio';
+        i.stage = 'Awaiting Delivery to Studio';
         fixed++;
       }
     });
     if (fixed > 0) {
       writeJSON(ITEMS_FILE, items);
-      console.log(`✅ Migration: moved ${fixed} accepted item(s) from Home Visit → Received at Studio`);
+      console.log(`✅ Migration: moved ${fixed} accepted item(s) from Home Visit → Awaiting Delivery to Studio`);
     }
   } catch (e) { console.error('Migration error:', e.message); }
 })();
@@ -752,7 +753,7 @@ app.get('/payouts/summary/:code', (req, res) => {
 // =========================
 app.get('/analytics/overview', (req, res) => {
   const items = readJSON(ITEMS_FILE);
-  const stageCounts = { 'Home Visit': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0, 'Archived': 0 };
+  const stageCounts = { 'Home Visit': 0, 'Awaiting Delivery to Studio': 0, 'Received at Studio': 0, 'Review & Cleaning': 0, 'Photograph': 0, 'Prep for Pick Up': 0, 'Ready for Pick Up': 0, 'Picked Up': 0, 'Missing at Drop Off': 0, 'Archived': 0 };
   const categoryCounts = {};
   items.forEach(i => {
     if (stageCounts.hasOwnProperty(i.stage)) stageCounts[i.stage]++;
@@ -900,10 +901,10 @@ app.post('/items/:id/review-accept', (req, res) => {
   item.reviewStatus = 'accepted';
   item.reviewedAt   = new Date().toISOString();
   item.reviewedBy   = employee;
-  // Advance stage from Home Visit → Received at Studio so item enters inventory
-  if (item.stage === 'Home Visit') item.stage = 'Received at Studio';
+  // Advance stage from Home Visit → Awaiting Delivery to Studio
+  if (item.stage === 'Home Visit') item.stage = 'Awaiting Delivery to Studio';
 
-  addLog(item, { employee, action: 'accepted in review — moved to Received at Studio' });
+  addLog(item, { employee, action: 'accepted in review — awaiting delivery to studio' });
   writeJSON(ITEMS_FILE, items);
   res.json({ success: true, item });
 });
@@ -2044,7 +2045,7 @@ app.post('/items/search-nl', async (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ success: false });
 
-  const stages = ['Home Visit','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off','Archived'];
+  const stages = ['Home Visit','Awaiting Delivery to Studio','Received at Studio','Review & Cleaning','Photograph','Prep for Pick Up','Ready for Pick Up','Picked Up','Missing at Drop Off','Archived'];
   const categories = ['furniture','decor','tools','art','electronics','glassware','kitchenware','books','jewelry','outdoor','collectibles','clothing','toys','misc'];
 
   try {
@@ -2600,6 +2601,190 @@ Write a performance narrative for the team. Be direct, specific, and use the act
     console.error('Narrative error:', err.message);
     res.json({ success: false, message: err.message });
   }
+});
+
+// =========================
+// CSV IMPORT — BULK LISTINGS
+// =========================
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else { cur += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else { cur += c; }
+    }
+  }
+  if (cur || row.length) { row.push(cur); if (row.join('').trim()) rows.push(row); }
+  return rows;
+}
+
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+app.post('/import-listings', csvUpload.single('csv'), (req, res) => {
+  if (!requireAdmin(req)) return res.status(403).json({ success: false, message: 'Admin access required' });
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+  const validateOnly = req.body.validateOnly === 'true';
+  const targetStage  = req.body.targetStage  || 'Photograph';
+  const employee     = (req.session.user && req.session.user.name) || 'system';
+
+  try {
+    const text    = req.file.buffer.toString('utf-8');
+    const rows    = parseCSV(text);
+    if (rows.length < 2) return res.json({ success: false, message: 'CSV has no data rows' });
+
+    const headers  = rows[0].map(h => h.trim());
+    const dataRows = rows.slice(1).filter(r => r.join('').trim());
+
+    const get = (row, name) => {
+      const i = headers.indexOf(name);
+      return i >= 0 ? (row[i] || '').trim() : '';
+    };
+
+    const imgCols = headers.reduce((acc, h, i) => {
+      if (/^Image_\d+$/.test(h)) acc.push(i);
+      return acc;
+    }, []);
+
+    const items    = readJSON(ITEMS_FILE);
+    const existing = new Set(items.map(i => String(i.lotNumber || '')).filter(Boolean));
+
+    const newItems   = [];
+    const createdLog = [];
+    const errors     = [];
+
+    for (let r = 0; r < dataRows.length; r++) {
+      const row    = dataRows[r];
+      const rowNum = r + 2;
+      const title  = get(row, 'Title');
+
+      if (!title) {
+        errors.push({ row: rowNum, message: 'Missing Title — skipped' });
+        continue;
+      }
+
+      const lotNumber = get(row, 'LotNumber');
+      if (lotNumber && existing.has(lotNumber)) {
+        errors.push({ row: rowNum, lot: lotNumber, message: `Lot ${lotNumber} already exists — skipped` });
+        continue;
+      }
+
+      const photos = imgCols
+        .map(ci => (row[ci] || '').trim())
+        .filter(u => u && (u.startsWith('http://') || u.startsWith('https://')));
+
+      const item = {
+        id:               generateId(),
+        name:             title,
+        description:      get(row, 'Description'),
+        category:         get(row, 'Category'),
+        condition:        '',
+        consigner:        get(row, 'Consignor'),
+        code:             get(row, 'ConsignorNumber'),
+        number:           1,
+        part:             1,
+        photos,
+        stage:            targetStage,
+        location:         null,
+        lotNumber:        lotNumber || null,
+        tags:             [],
+        estimatedValueLow:  parseFloat(get(row, 'Price'))        || 0,
+        estimatedValueHigh: parseFloat(get(row, 'ReservePrice')) || 0,
+        photographedAt:   photos.length ? new Date().toISOString() : null,
+        createdAt:        new Date().toISOString(),
+        importedAt:       new Date().toISOString(),
+        importedFrom:     'csv',
+        logs:             []
+      };
+
+      addLog(item, { employee, action: `imported via CSV (row ${rowNum})`, toStage: targetStage });
+
+      if (lotNumber) existing.add(lotNumber);
+      newItems.push(item);
+      createdLog.push({ row: rowNum, title, lotNumber: lotNumber || null, photos: photos.length });
+    }
+
+    if (!validateOnly && newItems.length) {
+      writeJSON(ITEMS_FILE, [...items, ...newItems]);
+    }
+
+    res.json({
+      success: true,
+      results: {
+        total:       dataRows.length,
+        created:     newItems.length,
+        skipped:     dataRows.length - newItems.length,
+        errors,
+        items:       createdLog.slice(0, 100),
+        validateOnly,
+        targetStage
+      }
+    });
+
+  } catch (err) {
+    console.error('CSV import error:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// =========================
+// DELIVERY PORTAL
+// =========================
+app.get('/delivery/:code', (req, res) => {
+  const code = (req.params.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ success: false, message: 'Code required' });
+  const items = readJSON(ITEMS_FILE);
+  const pending = items.filter(i =>
+    (i.consignerCode || '').trim().toUpperCase() === code &&
+    i.stage === 'Awaiting Delivery to Studio'
+  );
+  const sample = pending[0];
+  const consigner = sample ? (sample.consignerName || sample.consigner || code) : null;
+  if (!consigner && pending.length === 0) {
+    const anyMatch = items.some(i => (i.consignerCode || '').trim().toUpperCase() === code);
+    if (!anyMatch) return res.status(404).json({ success: false, message: 'Consigner code not found' });
+  }
+  res.json({
+    success: true,
+    code,
+    consigner: consigner || code,
+    items: pending.map(i => ({
+      id:       i.id,
+      name:     i.name,
+      category: i.category || '',
+      condition:i.condition || '',
+      photo:    (i.photos || [])[0] || null,
+      lotNumber:i.lotNumber || null,
+      createdAt:i.createdAt || null
+    }))
+  });
+});
+
+app.post('/items/:id/deliver', (req, res) => {
+  const items = readJSON(ITEMS_FILE);
+  const item = items.find(i => String(i.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+  if (item.stage !== 'Awaiting Delivery to Studio') {
+    return res.status(400).json({ success: false, message: 'Item is not awaiting delivery' });
+  }
+  const driver = (req.body.driver || 'delivery').trim();
+  item.stage = 'Received at Studio';
+  item.deliveredAt = new Date().toISOString();
+  item.deliveredBy = driver;
+  addLog(item, { employee: driver, action: 'delivered to studio — moved to Received at Studio' });
+  writeJSON(ITEMS_FILE, items);
+  res.json({ success: true, item });
 });
 
 // =========================
