@@ -427,6 +427,9 @@
         </select>
         <button class="batch-btn purple" id="batchAssignBtn" onclick="batchAssign()">Assign</button>
       </div>
+      <div class="batch-action-row">
+        <button class="batch-btn" id="batchDeleteBtn" onclick="batchDelete()" style="background:linear-gradient(135deg,#dc2626,#b91c1c);width:100%;">🗑 Delete Selected</button>
+      </div>
     </div>
 
     <div id="list"></div>
@@ -861,6 +864,36 @@ async function batchAssign() {
     btn.innerText = 'Assign';
     updateBatchCount();
   }
+}
+
+async function batchDelete() {
+  const ids = [...document.querySelectorAll('.item-chk:checked')].map(c => c.dataset.id);
+  if (!ids.length) return;
+
+  if (!await confirm2(
+    `Permanently delete ${ids.length} item${ids.length !== 1 ? 's' : ''}? This cannot be undone.`,
+    { safe: false, confirmText: 'Delete', title: 'Delete Items' }
+  )) return;
+
+  const btn = document.getElementById('batchDeleteBtn');
+  btn.disabled = true;
+  btn.innerText = 'Deleting…';
+
+  let deleted = 0, failed = 0;
+  for (const id of ids) {
+    try {
+      const res = await fetch(`/items/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee: user?.name || 'unknown' }) });
+      const data = await res.json();
+      if (data.success) deleted++;
+      else failed++;
+    } catch { failed++; }
+  }
+
+  await load();
+  if (failed) toast(`Deleted ${deleted}, ${failed} failed`, 'warn');
+  else toast(`Deleted ${deleted} item${deleted !== 1 ? 's' : ''}`, 'success');
+  btn.disabled = false;
+  btn.innerText = '🗑 Delete Selected';
 }
 
 function exportAuctionCSV() {
