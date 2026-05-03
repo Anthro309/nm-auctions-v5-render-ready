@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jim Bob's BBQ | Smokehouse in Las Cruces, NM</title>
+  <meta name="description" content="House-smoked brisket, ribs, and pulled pork in Las Cruces, New Mexico. Dine in, order online, and book catering for any event." />
+  <style>
+    :root {
+      --bg: #12100d;
+      --bg-soft: #1b1713;
+      --accent: #cc5a1f;
+      --accent-2: #f4b25f;
+      --text: #f8f4ef;
+      --muted: #d9cdbd;
+      --card: #231d17;
+      --ok: #8ccf86;
+      --radius: 18px;
+      --max: 1100px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #33251a 0%, var(--bg) 38%) fixed;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(100% - 2rem, var(--max)); margin-inline: auto; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(18, 16, 13, .88); backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 0;
+    }
+    .brand { font-weight: 900; letter-spacing: .02em; }
+    .brand span { color: var(--accent-2); }
+    .links { display: flex; gap: 1rem; font-weight: 600; color: var(--muted); }
+    .btn {
+      display: inline-block; border-radius: 999px; padding: .75rem 1rem;
+      font-weight: 700; border: 1px solid transparent;
+    }
+    .btn-primary { background: linear-gradient(125deg, var(--accent), #de7b25); color: #fff; }
+    .btn-ghost { border-color: rgba(255,255,255,.2); color: #fff; }
+
+    .hero { padding: 4.5rem 0 3rem; }
+    .hero-grid {
+      display: grid; gap: 1.2rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      align-items: stretch;
+    }
+    .hero-copy h1 { font-size: clamp(2rem, 4vw, 3.6rem); margin: 0 0 .7rem; line-height: 1.05; }
+    .hero-copy p { color: var(--muted); max-width: 52ch; }
+    .hero-cta { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1rem; }
+    .hero-card {
+      background: linear-gradient(170deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+    }
+    .hero-card h3 { margin: 0 0 .35rem; }
+    .list { padding-left: 1.1rem; color: var(--muted); }
+
+    section { padding: 2.2rem 0; }
+    h2 { font-size: clamp(1.4rem, 2.1vw, 2rem); margin-bottom: .8rem; }
+    .menu-grid, .feature-grid {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1rem;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .card h3 { margin-top: 0; margin-bottom: .25rem; }
+    .price { color: var(--accent-2); font-weight: 700; }
+    .muted { color: var(--muted); }
+
+    .split {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .hours li { margin-bottom: .35rem; }
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      background: rgba(140,207,134,.16);
+      color: var(--ok);
+      border: 1px solid rgba(140,207,134,.35);
+      padding: .3rem .55rem;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    footer {
+      margin-top: 1.2rem;
+      border-top: 1px solid rgba(255,255,255,.1);
+      color: #c0b29f;
+      padding: 1.2rem 0 2rem;
+      font-size: .92rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a href="#" class="brand">Jim Bob's <span>BBQ</span></a>
+      <nav class="links" aria-label="Primary">
+        <a href="#menu">Menu</a>
+        <a href="#catering">Catering</a>
+        <a href="#visit">Visit</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="pill">Now serving Las Cruces</p>
+          <h1>Slow-Smoked BBQ.<br />Big New Mexico Flavor.</h1>
+          <p>From fall-apart brisket to family-style catering, we keep the smoke rolling all day. Built for weekday lunch, game-day feasts, and special events.</p>
+          <div class="hero-cta">
+            <a href="#menu" class="btn btn-primary">Order Online</a>
+            <a href="#catering" class="btn btn-ghost">Book Catering</a>
+          </div>
+        </div>
+        <aside class="hero-card">
+          <h3>Popular Picks</h3>
+          <ul class="list">
+            <li>Texas-style sliced brisket plate</li>
+            <li>Smoked ribs with prickly pear habanero sauce</li>
+            <li>Pulled pork sandwich + jalapeño beans</li>
+            <li>Breakfast plates served early</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section id="menu" class="container">
+      <h2>Featured Menu</h2>
+      <div class="menu-grid">
+        <article class="card"><h3>Brisket Plate</h3><p class="muted">Hand-trimmed brisket, two sides, Texas toast.</p><p class="price">$16.99</p></article>
+        <article class="card"><h3>Rib Basket</h3><p class="muted">Smoked pork ribs, seasoned fries, house pickles.</p><p class="price">$17.99</p></article>
+        <article class="card"><h3>Pulled Pork Sandwich</h3><p class="muted">Toasted bun, slaw, BBQ drizzle, one side.</p><p class="price">$12.49</p></article>
+        <article class="card"><h3>Family Smoke Pack</h3><p class="muted">Two meats + four sides. Feeds 4 to 6.</p><p class="price">$49.99</p></article>
+      </div>
+    </section>
+
+    <section id="catering" class="container split">
+      <article class="card">
+        <h2>Catering That Travels Well</h2>
+        <p class="muted">Weddings, graduations, office lunches, or backyard parties—our team handles setup, serving options, and portions so you don't have to stress.</p>
+        <p><a class="btn btn-primary" href="#visit">Request Catering Quote</a></p>
+      </article>
+      <article class="card feature-grid">
+        <div>
+          <h3>Flexible packages</h3>
+          <p class="muted">A la carte meats, sides, and combo bundles.</p>
+        </div>
+        <div>
+          <h3>Fast response</h3>
+          <p class="muted">Same-day callback during business hours.</p>
+        </div>
+        <div>
+          <h3>On-time setup</h3>
+          <p class="muted">Reliable delivery windows for your event.</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="visit" class="container split">
+      <article class="card">
+        <h2>Visit Us</h2>
+        <p class="muted">8960 Zia Boulevard, Las Cruces, NM 88007</p>
+        <p><strong>Phone:</strong> (575) 652-1053<br /><strong>Email:</strong> jimbobsbbqlc@gmail.com</p>
+      </article>
+      <article class="card">
+        <h2>Hours</h2>
+        <ul class="hours muted">
+          <li>Monday–Saturday: 6:00 AM – 6:00 PM</li>
+          <li>Sunday: Closed</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">© 2026 Jim Bob's BBQ • Crafted with smoke, spice, and hospitality.</div>
+  </footer>
+</body>
+</html>
